@@ -1,5 +1,6 @@
 import Navigation from "@/components/Navigation";
 import Hero from "@/components/Hero";
+import AnimatedBackground from "@/components/AnimatedBackground";
 import ProductCard from "@/components/ProductCard";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -69,11 +70,13 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen">
-      <Navigation />
-      
-      {/* Hero Section */}
-      <Hero />
+    <div className="min-h-screen relative">
+      <AnimatedBackground />
+      <div className="relative z-10">
+        <Navigation />
+        
+        {/* Hero Section */}
+        <Hero />
 
       {/* Featured Products */}
       <section className="py-20">
@@ -112,9 +115,9 @@ const Index = () => {
       <section className="py-20 bg-gradient-hero">
         <div className="container mx-auto px-6">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold gradient-text mb-4">Why Choose ClearlyDev?</h2>
+            <h2 className="text-4xl font-bold gradient-text mb-4">Why Choose LuzonDev?</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              The most trusted marketplace for Roblox developers and creators worldwide
+              The most trusted marketplace for game developers and creators worldwide
             </p>
           </div>
 
@@ -147,11 +150,11 @@ const Index = () => {
               Ready to Start Selling?
             </h2>
             <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
-              Join thousands of creators earning money by selling their Roblox assets. 
+              Join thousands of creators earning money by selling their game assets. 
               Start your journey today and turn your creativity into income.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/dashboard">
+              <Link to="/creators">
                 <Button size="lg" className="btn-gaming text-lg px-8 py-4">
                   Start Selling Today
                 </Button>
@@ -169,6 +172,7 @@ const Index = () => {
           </Card>
         </div>
       </section>
+      </div>
     </div>
   );
 };

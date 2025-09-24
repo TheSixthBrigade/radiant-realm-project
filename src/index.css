@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ClearlyDev Design System - Gaming Platform Aesthetics */
+/* LuzonDev Design System - Gaming Platform Aesthetics */
 
 @layer base {
   :root {
@@ -52,7 +52,67 @@
 
     /* Design System */
     --radius: 0.75rem;
+  }
 
+  /* Blue Theme */
+  [data-theme="blue"] {
+    /* Brand Primary - Gaming Blue */
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+    --primary-glow: 221 83% 63%;
+
+    /* Secondary - Cyan */
+    --secondary: 199 89% 48%;
+    --secondary-foreground: 210 40% 98%;
+    --secondary-glow: 199 89% 58%;
+
+    --ring: 221 83% 53%;
+  }
+
+  /* Green Theme */
+  [data-theme="green"] {
+    /* Brand Primary - Gaming Green */
+    --primary: 142 76% 36%;
+    --primary-foreground: 210 40% 98%;
+    --primary-glow: 142 76% 46%;
+
+    /* Secondary - Lime */
+    --secondary: 120 60% 50%;
+    --secondary-foreground: 210 40% 98%;
+    --secondary-glow: 120 60% 60%;
+
+    --ring: 142 76% 36%;
+  }
+
+  /* Orange Theme */
+  [data-theme="orange"] {
+    /* Brand Primary - Gaming Orange */
+    --primary: 25 95% 53%;
+    --primary-foreground: 210 40% 98%;
+    --primary-glow: 25 95% 63%;
+
+    /* Secondary - Yellow */
+    --secondary: 45 93% 58%;
+    --secondary-foreground: 210 40% 98%;
+    --secondary-glow: 45 93% 68%;
+
+    --ring: 25 95% 53%;
+  }
+
+  /* Light mode variant (gaming platforms are typically dark) */
+  .light {
+    --background: 210 40% 98%;
+    --foreground: 240 15% 9%;
+    --card: 210 40% 100%;
+    --card-foreground: 240 15% 9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+  }
+
+  /* Shared variables */
+  :root, [data-theme="blue"], [data-theme="green"], [data-theme="orange"] {
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
     --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--primary)));
@@ -71,35 +131,14 @@
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
-    --radius: 0.75rem;
-
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  /* Light mode variant (gaming platforms are typically dark) */
-  .light {
-    --background: 210 40% 98%;
-    --foreground: 240 15% 9%;
-    --card: 210 40% 100%;
-    --card-foreground: 240 15% 9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
   }
 }
 
