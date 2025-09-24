@@ -3,6 +3,8 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Search, ShoppingBag, User, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ThemeSelector from "./ThemeSelector";
+import luzonLogo from "@/assets/luzondev-logo.png";
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -11,8 +13,10 @@ const Navigation = () => {
   const navItems = [
     { href: "/", label: "Home" },
     { href: "/shop", label: "Shop" },
+    { href: "/creators", label: "For Creators" },
     { href: "/dashboard", label: "Dashboard" },
-    { href: "/pricing", label: "Pricing" },
+    { href: "/about", label: "About" },
+    { href: "/contact", label: "Contact" },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -23,10 +27,8 @@ const Navigation = () => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 group">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center glow-primary group-hover:animate-glow-pulse">
-              <span className="text-white font-bold text-lg">C</span>
-            </div>
-            <span className="text-xl font-bold gradient-text">ClearlyDev</span>
+            <img src={luzonLogo} alt="LuzonDev" className="w-8 h-8 rounded-lg glow-primary group-hover:animate-glow-pulse" />
+            <span className="text-xl font-bold gradient-text">LuzonDev</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -52,6 +54,7 @@ const Navigation = () => {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-4">
+            <ThemeSelector />
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <input
@@ -63,12 +66,16 @@ const Navigation = () => {
             <Button variant="ghost" size="icon">
               <ShoppingBag className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="icon">
-              <User className="w-4 h-4" />
-            </Button>
-            <Button className="btn-gaming">
-              Start Selling
-            </Button>
+            <Link to="/auth">
+              <Button variant="ghost" size="icon">
+                <User className="w-4 h-4" />
+              </Button>
+            </Link>
+            <Link to="/creators">
+              <Button className="btn-gaming">
+                Start Selling
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile Menu Toggle */}
