@@ -2,13 +2,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowRight, Zap, Shield, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useStats } from "@/hooks/useStats";
 
 const Hero = () => {
-  const stats = [
-    { label: "Processed Sales", value: "$2.1M+", icon: TrendingUp },
-    { label: "Total Purchases", value: "11.5K+", icon: Zap },
-    { label: "Products Uploaded", value: "24.3K+", icon: Shield },
-  ];
+  const { stats, loading } = useStats();
 
   return (
     <section className="min-h-screen flex items-center justify-center pt-20 pb-10">
@@ -48,28 +45,47 @@ const Hero = () => {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 animate-fade-in">
-            {stats.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <Card 
-                  key={stat.label} 
-                  className="glass p-6 hover-lift group"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <div className="flex items-center justify-center mb-4">
-                    <div className="p-3 rounded-lg bg-gradient-primary glow-primary group-hover:animate-glow-pulse">
-                      <Icon className="w-6 h-6 text-white" />
-                    </div>
-                  </div>
-                  <div className="text-3xl font-bold gradient-text mb-2">
-                    {stat.value}
-                  </div>
-                  <div className="text-muted-foreground text-sm">
-                    {stat.label}
-                  </div>
-                </Card>
-              );
-            })}
+            <Card className="glass p-6 hover-lift group">
+              <div className="flex items-center justify-center mb-4">
+                <div className="p-3 rounded-lg bg-gradient-primary glow-primary group-hover:animate-glow-pulse">
+                  <TrendingUp className="w-6 h-6 text-white" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold gradient-text mb-2">
+                {loading ? "..." : `$${(stats.totalRevenue / 1000).toFixed(1)}K+`}
+              </div>
+              <div className="text-muted-foreground text-sm">
+                Revenue Generated
+              </div>
+            </Card>
+
+            <Card className="glass p-6 hover-lift group">
+              <div className="flex items-center justify-center mb-4">
+                <div className="p-3 rounded-lg bg-gradient-primary glow-primary group-hover:animate-glow-pulse">
+                  <Zap className="w-6 h-6 text-white" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold gradient-text mb-2">
+                {loading ? "..." : `${stats.totalSales}+`}
+              </div>
+              <div className="text-muted-foreground text-sm">
+                Total Sales
+              </div>
+            </Card>
+
+            <Card className="glass p-6 hover-lift group">
+              <div className="flex items-center justify-center mb-4">
+                <div className="p-3 rounded-lg bg-gradient-primary glow-primary group-hover:animate-glow-pulse">
+                  <Shield className="w-6 h-6 text-white" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold gradient-text mb-2">
+                {loading ? "..." : `${stats.totalProducts}+`}
+              </div>
+              <div className="text-muted-foreground text-sm">
+                Products Available
+              </div>
+            </Card>
           </div>
 
           {/* Featured Badge */}
@@ -77,7 +93,7 @@ const Hero = () => {
             <div className="inline-flex items-center px-6 py-3 rounded-full glass border border-primary/30 glow-primary">
               <Zap className="w-4 h-4 text-primary mr-2 animate-float" />
               <span className="text-sm font-medium">
-                Trusted by <span className="text-primary font-bold">10,000+</span> developers worldwide
+                Trusted by <span className="text-primary font-bold">{loading ? "..." : `${stats.totalCreators}+`}</span> developers worldwide
               </span>
             </div>
           </div>
