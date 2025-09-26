@@ -6,50 +6,28 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Shield, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useProducts } from "@/hooks/useProducts";
+import { useStats } from "@/hooks/useStats";
 
 const Index = () => {
-  // Featured products
-  const featuredProducts = [
-    {
-      id: "1",
-      title: "Advanced Sword Combat System",
-      price: 24.99,
-      image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop",
-      rating: 4.8,
-      downloads: 2340,
-      category: "Scripts",
-      isTopRated: true,
-    },
-    {
-      id: "2",
-      title: "Military Barrier Pack",
-      price: 15.99,
-      image: "https://images.unsplash.com/photo-1586953983027-d7508698d048?w=400&h=300&fit=crop",
-      rating: 4.6,
-      downloads: 1890,
-      category: "3D Models",
-      isTopRated: true,
-    },
-    {
-      id: "3",
-      title: "Village of Cobasna",
-      price: 45.00,
-      image: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop",
-      rating: 4.9,
-      downloads: 567,
-      category: "Maps",
-      isTopRated: true,
-    },
-    {
-      id: "4",
-      title: "Five Seven Weapon",
-      price: 8.99,
-      image: "https://images.unsplash.com/photo-1595590424283-b8f17842773f?w=400&h=300&fit=crop",
-      rating: 4.5,
-      downloads: 3200,
-      category: "3D Models",
-    },
-  ];
+  const { products, loading: productsLoading } = useProducts();
+  const { stats, loading: statsLoading } = useStats();
+  
+  // Get featured products (limit to 4 for display)
+  const featuredProducts = products
+    .filter(product => product.is_featured)
+    .slice(0, 4)
+    .map(product => ({
+      id: product.id,
+      title: product.title,
+      price: product.price,
+      image: product.image_url || "/placeholder.svg",
+      rating: product.rating,
+      downloads: product.downloads,
+      category: product.category,
+      isTopRated: product.is_top_rated,
+      isNew: product.is_new
+    }));
 
   const features = [
     {
@@ -88,17 +66,32 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {featuredProducts.map((product, index) => (
-              <div 
-                key={product.id} 
-                className="animate-fade-in"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <ProductCard {...product} />
-              </div>
-            ))}
-          </div>
+          {productsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-64 bg-muted animate-pulse rounded-lg" />
+              ))}
+            </div>
+          ) : featuredProducts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+              {featuredProducts.map((product, index) => (
+                <div 
+                  key={product.id} 
+                  className="animate-fade-in"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <ProductCard {...product} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">No featured products available yet.</p>
+              <Button asChild className="mt-4">
+                <Link to="/creators">Become a Creator</Link>
+              </Button>
+            </div>
+          )}
 
           <div className="text-center">
             <Link to="/shop">

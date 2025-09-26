@@ -106,6 +106,38 @@ export default {
           "0%": { transform: "rotate(0deg) translateX(100px) rotate(0deg)" },
           "100%": { transform: "rotate(360deg) translateX(100px) rotate(-360deg)" },
         },
+        "smooth-float": {
+          "0%, 100%": {
+            transform: "translateY(0px) translateX(0px)",
+            opacity: "0.6"
+          },
+          "25%": {
+            transform: "translateY(-40px) translateX(20px)",
+            opacity: "1"
+          },
+          "50%": {
+            transform: "translateY(-80px) translateX(-10px)",
+            opacity: "0.8"
+          },
+          "75%": {
+            transform: "translateY(-60px) translateX(-30px)",
+            opacity: "0.9"
+          }
+        },
+        "light-streak": {
+          "0%": {
+            transform: "translateY(-100%) scaleY(0)",
+            opacity: "0"
+          },
+          "50%": {
+            transform: "translateY(0%) scaleY(1)",
+            opacity: "0.8"
+          },
+          "100%": {
+            transform: "translateY(100%) scaleY(0)",
+            opacity: "0"
+          }
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.3s ease-out",
@@ -118,12 +150,16 @@ export default {
         "float": "float 3s ease-in-out infinite",
         "drift": "drift 20s ease-in-out infinite",
         "orbit": "orbit 30s linear infinite",
+        "smooth-float": "smooth-float 15s ease-in-out infinite",
+        "light-streak": "light-streak 8s ease-in-out infinite",
       },
       backgroundImage: {
         "gradient-primary": "var(--gradient-primary)",
         "gradient-secondary": "var(--gradient-secondary)",
         "gradient-hero": "var(--gradient-hero)",
         "gradient-glass": "var(--gradient-glass)",
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+        "gradient-conic": "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
       },
     },
   },
