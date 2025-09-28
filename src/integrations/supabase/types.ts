@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      payment_transactions: {
+        Row: {
+          amount: number
+          buyer_id: string | null
+          created_at: string
+          id: string
+          platform_fee: number
+          product_id: string | null
+          seller_amount: number
+          seller_id: string
+          status: string
+          store_id: string | null
+          stripe_payment_intent_id: string
+        }
+        Insert: {
+          amount: number
+          buyer_id?: string | null
+          created_at?: string
+          id?: string
+          platform_fee: number
+          product_id?: string | null
+          seller_amount: number
+          seller_id: string
+          status?: string
+          store_id?: string | null
+          stripe_payment_intent_id: string
+        }
+        Update: {
+          amount?: number
+          buyer_id?: string | null
+          created_at?: string
+          id?: string
+          platform_fee?: number
+          product_id?: string | null
+          seller_amount?: number
+          seller_id?: string
+          status?: string
+          store_id?: string | null
+          stripe_payment_intent_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transactions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           category: string
@@ -28,6 +85,7 @@ export type Database = {
           is_top_rated: boolean | null
           price: number
           rating: number | null
+          store_id: string | null
           title: string
           updated_at: string
         }
@@ -44,6 +102,7 @@ export type Database = {
           is_top_rated?: boolean | null
           price: number
           rating?: number | null
+          store_id?: string | null
           title: string
           updated_at?: string
         }
@@ -60,10 +119,19 @@ export type Database = {
           is_top_rated?: boolean | null
           price?: number
           rating?: number | null
+          store_id?: string | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -132,6 +200,93 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      store_products: {
+        Row: {
+          created_at: string
+          id: string
+          is_featured: boolean | null
+          product_id: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_featured?: boolean | null
+          product_id: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_featured?: boolean | null
+          product_id?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stores: {
+        Row: {
+          banner_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          store_name: string
+          store_slug: string
+          stripe_connect_account_id: string | null
+          total_earnings: number | null
+          total_sales: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          banner_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          store_name: string
+          store_slug: string
+          stripe_connect_account_id?: string | null
+          total_earnings?: number | null
+          total_sales?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          banner_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          store_name?: string
+          store_slug?: string
+          stripe_connect_account_id?: string | null
+          total_earnings?: number | null
+          total_sales?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

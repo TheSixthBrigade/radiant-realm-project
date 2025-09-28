@@ -14,6 +14,7 @@ interface ProductCardProps {
   category: string;
   isTopRated?: boolean;
   isNew?: boolean;
+  isFeatured?: boolean;
 }
 
 const ProductCard = ({
@@ -26,6 +27,7 @@ const ProductCard = ({
   category,
   isTopRated = false,
   isNew = false,
+  isFeatured = false,
 }: ProductCardProps) => {
   return (
     <Card className="glass overflow-hidden hover-lift group cursor-pointer">
@@ -61,6 +63,11 @@ const ProductCard = ({
               {isTopRated && (
                 <Badge className="bg-warning text-warning-foreground">
                   TOP RATED
+                </Badge>
+              )}
+              {isFeatured && (
+                <Badge className="bg-primary text-primary-foreground">
+                  FEATURED
                 </Badge>
               )}
             </div>
