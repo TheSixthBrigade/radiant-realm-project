@@ -3,6 +3,8 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Search, ShoppingBag, User, Menu, X, Plus, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useStores } from "@/hooks/useStores";
+import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import ThemeSelector from "./ThemeSelector";
 import luzonLogo from "@/assets/luzondev-logo.png";

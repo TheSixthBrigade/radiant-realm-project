@@ -1,1 +1,7 @@
 project_id = "cmmeqzkbiiqqfvzkmkzt"
+
+[functions.create-payment]
+verify_jwt = true
+
+[functions.stripe-connect-onboard]
+verify_jwt = true

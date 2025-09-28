@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
+import { useStores } from "@/hooks/useStores";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import AnimatedBackground from "@/components/AnimatedBackground";
@@ -25,6 +26,7 @@ const AddProduct = () => {
   
   const { user } = useAuth();
   const { addProduct } = useProducts();
+  const { fetchUserStore } = useStores();
   const { toast } = useToast();
   const navigate = useNavigate();
 
