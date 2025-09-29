@@ -1,163 +1,156 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Search, ShoppingBag, User, Menu, X, Plus, LogOut } from "lucide-react";
+import { NavigationMenu, NavigationMenuItem, NavigationMenuList } from "@/components/ui/navigation-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Menu, User, LogOut, Settings } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useStores } from "@/hooks/useStores";
-import { useEffect } from "react";
-import { cn } from "@/lib/utils";
-import ThemeSelector from "./ThemeSelector";
-import luzonLogo from "@/assets/luzondev-logo.png";
+import { useUserRoles } from "@/hooks/useUserRoles";
+import logo from "@/assets/luzondev-logo.png";
 
 const Navigation = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const location = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
   const { user, signOut } = useAuth();
+  const { isAdmin } = useUserRoles();
 
-  const navItems = [
-    { href: "/", label: "Home" },
-    { href: "/shop", label: "Shop" },
-    { href: "/creators", label: "For Creators" },
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/about", label: "About" },
-    { href: "/contact", label: "Contact" },
-  ];
-
-  const isActive = (path: string) => location.pathname === path;
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/30">
-      <div className="container mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
+    <header className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-sm border-b">
+      <div className="container mx-auto px-6">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2 group">
-            <img src={luzonLogo} alt="LuzonDev" className="w-8 h-8 rounded-lg glow-primary group-hover:animate-glow-pulse" />
-            <span className="text-xl font-bold gradient-text">LuzonDev</span>
+          <Link to="/" className="flex items-center space-x-2">
+            <img 
+              src={logo} 
+              alt="LuzonDev" 
+              className="h-8 w-8"
+            />
+            <span className="font-bold text-xl">LuzonDev</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={cn(
-                  "relative text-sm font-medium transition-colors hover:text-primary",
-                  isActive(item.href)
-                    ? "text-primary"
-                    : "text-muted-foreground"
-                )}
-              >
-                {item.label}
-                {isActive(item.href) && (
-                  <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-primary rounded-full" />
-                )}
-              </Link>
-            ))}
-          </div>
+          <NavigationMenu className="hidden md:flex">
+            <NavigationMenuList className="flex space-x-8">
+              <NavigationMenuItem>
+                <Link to="/shop" className="hover:text-primary transition-colors">
+                  Marketplace
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <Link to="/creators" className="hover:text-primary transition-colors">
+                  Creators
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <Link to="/about" className="hover:text-primary transition-colors">
+                  About
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <Link to="/contact" className="hover:text-primary transition-colors">
+                  Contact
+                </Link>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
 
-          {/* Desktop Actions */}
+          {/* Auth Section */}
           <div className="hidden md:flex items-center space-x-4">
-            <ThemeSelector />
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search assets..."
-                className="w-64 pl-10 pr-4 py-2 bg-card/50 border border-border/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-              />
-            </div>
             {user ? (
-              <>
-                <Button asChild variant="ghost" size="sm">
-                  <Link to="/add-product" className="flex items-center">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Product
-                  </Link>
-                </Button>
-                <Button asChild variant="ghost" size="sm">
-                  <Link to="/dashboard" className="flex items-center">
-                    <User className="w-4 h-4 mr-2" />
+              <div className="flex items-center space-x-2">
+                {isAdmin() && (
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/admin">
+                      <Settings className="w-4 h-4 mr-1" />
+                      Admin
+                    </Link>
+                  </Button>
+                )}
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/dashboard">
+                    <User className="w-4 h-4 mr-1" />
                     Dashboard
                   </Link>
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={signOut}
-                  className="flex items-center"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Logout
+                <Button onClick={handleSignOut} variant="ghost" size="sm">
+                  <LogOut className="w-4 h-4 mr-1" />
+                  Sign Out
                 </Button>
-              </>
+              </div>
             ) : (
-              <>
-                <Button variant="ghost" size="icon">
-                  <ShoppingBag className="w-4 h-4" />
+              <div className="flex items-center space-x-2">
+                <Button asChild variant="ghost" size="sm">
+                  <Link to="/auth">Sign In</Link>
                 </Button>
-                <Link to="/auth">
-                  <Button variant="ghost" size="icon">
-                    <User className="w-4 h-4" />
-                  </Button>
-                </Link>
-                <Link to="/creators">
-                  <Button className="btn-gaming">
-                    Start Selling
-                  </Button>
-                </Link>
-              </>
+                <Button asChild size="sm">
+                  <Link to="/auth">Get Started</Link>
+                </Button>
+              </div>
             )}
           </div>
 
-          {/* Mobile Menu Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </Button>
-        </div>
-
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden mt-4 pb-4 border-t border-border/30">
-            <div className="flex flex-col space-y-4 pt-4">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  className={cn(
-                    "text-sm font-medium transition-colors",
-                    isActive(item.href)
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-primary"
-                  )}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item.label}
+          {/* Mobile Menu */}
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="sm" className="md:hidden">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+              <div className="flex flex-col space-y-4 mt-8">
+                <Link to="/shop" onClick={() => setIsOpen(false)} className="text-lg hover:text-primary transition-colors">
+                  Marketplace
                 </Link>
-              ))}
-              <div className="pt-4 space-y-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="Search assets..."
-                    className="w-full pl-10 pr-4 py-2 bg-card/50 border border-border/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                </div>
-                <Button className="w-full btn-gaming">
-                  Start Selling
-                </Button>
+                <Link to="/creators" onClick={() => setIsOpen(false)} className="text-lg hover:text-primary transition-colors">
+                  Creators
+                </Link>
+                <Link to="/about" onClick={() => setIsOpen(false)} className="text-lg hover:text-primary transition-colors">
+                  About
+                </Link>
+                <Link to="/contact" onClick={() => setIsOpen(false)} className="text-lg hover:text-primary transition-colors">
+                  Contact
+                </Link>
+                
+                {user ? (
+                  <div className="space-y-2 pt-4 border-t">
+                    {isAdmin() && (
+                      <Button asChild variant="outline" className="w-full justify-start">
+                        <Link to="/admin" onClick={() => setIsOpen(false)}>
+                          <Settings className="w-4 h-4 mr-2" />
+                          Admin Panel
+                        </Link>
+                      </Button>
+                    )}
+                    <Button asChild variant="outline" className="w-full justify-start">
+                      <Link to="/dashboard" onClick={() => setIsOpen(false)}>
+                        <User className="w-4 h-4 mr-2" />
+                        Dashboard
+                      </Link>
+                    </Button>
+                    <Button onClick={handleSignOut} variant="ghost" className="w-full justify-start">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign Out
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2 pt-4 border-t">
+                    <Button asChild variant="ghost" className="w-full">
+                      <Link to="/auth" onClick={() => setIsOpen(false)}>Sign In</Link>
+                    </Button>
+                    <Button asChild className="w-full">
+                      <Link to="/auth" onClick={() => setIsOpen(false)}>Get Started</Link>
+                    </Button>
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
-        )}
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
-    </nav>
+    </header>
   );
 };
 

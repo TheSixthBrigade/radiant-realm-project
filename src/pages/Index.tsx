@@ -1,10 +1,9 @@
 import Navigation from "@/components/Navigation";
 import Hero from "@/components/Hero";
-import AnimatedBackground from "@/components/AnimatedBackground";
 import ProductCard from "@/components/ProductCard";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Shield, Zap } from "lucide-react";
+import { ArrowRight, Shield, Zap, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useProducts } from "@/hooks/useProducts";
 import { useStats } from "@/hooks/useStats";
@@ -13,10 +12,10 @@ const Index = () => {
   const { products, loading: productsLoading } = useProducts();
   const { stats, loading: statsLoading } = useStats();
   
-  // Get featured products (limit to 4 for display)
+  // Get featured products (limit to 6 for display)
   const featuredProducts = products
     .filter(product => product.is_featured)
-    .slice(0, 4)
+    .slice(0, 6)
     .map(product => ({
       id: product.id,
       title: product.title,
@@ -29,143 +28,137 @@ const Index = () => {
       isNew: product.is_new
     }));
 
-  const features = [
-    {
-      icon: Shield,
-      title: "Secure Transactions",
-      description: "All payments are processed securely with instant downloads and purchase protection.",
-    },
-    {
-      icon: Zap,
-      title: "Instant Access",
-      description: "Download your purchases immediately after payment with no waiting time.",
-    },
-    {
-      icon: Sparkles,
-      title: "Premium Quality",
-      description: "All assets are curated and tested to ensure the highest quality for your projects.",
-    },
-  ];
-
   return (
-    <div className="min-h-screen relative">
-      <AnimatedBackground />
-      <div className="relative z-10">
-        <Navigation />
-        
-        {/* Hero Section */}
-        <Hero />
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      
+      {/* Hero Section */}
+      <Hero />
 
       {/* Featured Products */}
-      <section className="py-20">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold gradient-text mb-4">Featured Products</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Discover our most popular and highest-rated assets from top creators
-            </p>
-          </div>
+      {featuredProducts.length > 0 && (
+        <section className="py-16 bg-muted/30">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold mb-4">Featured Products</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Discover our most popular digital assets from top creators
+              </p>
+            </div>
 
-          {productsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-64 bg-muted animate-pulse rounded-lg" />
-              ))}
-            </div>
-          ) : featuredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-              {featuredProducts.map((product, index) => (
-                <div 
-                  key={product.id} 
-                  className="animate-fade-in"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <ProductCard {...product} />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No featured products available yet.</p>
-              <Button asChild className="mt-4">
-                <Link to="/creators">Become a Creator</Link>
+            {productsLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-64 bg-muted animate-pulse rounded-lg" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                {featuredProducts.map((product) => (
+                  <ProductCard key={product.id} {...product} />
+                ))}
+              </div>
+            )}
+
+            <div className="text-center">
+              <Button asChild size="lg">
+                <Link to="/shop">
+                  View All Products
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </Link>
               </Button>
             </div>
-          )}
-
-          <div className="text-center">
-            <Link to="/shop">
-              <Button size="lg" variant="outline" className="bg-card/30 border-primary/30 hover:border-primary group">
-                View All Products
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Features Section */}
-      <section className="py-20 bg-gradient-hero">
+      <section className="py-16">
         <div className="container mx-auto px-6">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold gradient-text mb-4">Why Choose LuzonDev?</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              The most trusted marketplace for game developers and creators worldwide
+            <h2 className="text-3xl font-bold mb-4">Why Choose LuzonDev?</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              The trusted marketplace for digital creators and developers
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <Card 
-                  key={feature.title} 
-                  className="glass p-8 text-center hover-lift"
-                  style={{ animationDelay: `${index * 0.2}s` }}
-                >
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-lg bg-gradient-primary glow-primary mb-6">
-                    <Icon className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-4">{feature.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
-                </Card>
-              );
-            })}
+            <Card className="p-6 text-center">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Shield className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Secure Transactions</h3>
+              <p className="text-muted-foreground">
+                All payments processed securely with instant downloads and buyer protection
+              </p>
+            </Card>
+
+            <Card className="p-6 text-center">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Zap className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Instant Access</h3>
+              <p className="text-muted-foreground">
+                Download your purchases immediately after payment with no waiting time
+              </p>
+            </Card>
+
+            <Card className="p-6 text-center">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <TrendingUp className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Quality Assets</h3>
+              <p className="text-muted-foreground">
+                All assets are reviewed to ensure high quality for your projects
+              </p>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-16 bg-muted/30">
+        <div className="container mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+            <div>
+              <div className="text-4xl font-bold text-primary mb-2">
+                {statsLoading ? "..." : stats.totalProducts}
+              </div>
+              <div className="text-muted-foreground">Digital Assets</div>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-primary mb-2">
+                {statsLoading ? "..." : stats.totalCreators}
+              </div>
+              <div className="text-muted-foreground">Active Creators</div>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-primary mb-2">
+                {statsLoading ? "..." : stats.totalSales}
+              </div>
+              <div className="text-muted-foreground">Happy Customers</div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-6">
-          <Card className="glass p-12 text-center">
-            <h2 className="text-4xl font-bold gradient-text mb-4">
-              Ready to Start Selling?
-            </h2>
-            <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
-              Join thousands of creators earning money by selling their game assets. 
-              Start your journey today and turn your creativity into income.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/creators">
-                <Button size="lg" className="btn-gaming text-lg px-8 py-4">
-                  Start Selling Today
-                </Button>
-              </Link>
-              <Link to="/shop">
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  className="text-lg px-8 py-4 border-primary/30 hover:border-primary bg-card/30"
-                >
-                  Browse Marketplace
-                </Button>
-              </Link>
-            </div>
-          </Card>
+      <section className="py-16">
+        <div className="container mx-auto px-6 text-center">
+          <h2 className="text-3xl font-bold mb-4">Ready to Start Selling?</h2>
+          <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Join our community of creators and start earning money from your digital assets today.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button asChild size="lg">
+              <Link to="/creators">Start Selling</Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link to="/shop">Browse Marketplace</Link>
+            </Button>
+          </div>
         </div>
       </section>
-      </div>
     </div>
   );
 };
