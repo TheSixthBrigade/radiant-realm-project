@@ -1,8 +1,12 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Star, Download, Eye } from "lucide-react";
+import { Star, Download, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useState } from "react";
 
 interface ProductCardProps {
   id: string;
@@ -29,44 +33,67 @@ const ProductCard = ({
   isNew = false,
   isFeatured = false,
 }: ProductCardProps) => {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+
+  const handlePurchase = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) {
+      toast.error("Please sign in to make a purchase");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: { productId: id }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast.error(error.message || 'Failed to create payment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <Card className="glass overflow-hidden hover-lift group cursor-pointer">
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200 group">
       <Link to={`/product/${id}`}>
         <div className="relative">
           {/* Product Image */}
-          <div className="aspect-video bg-gradient-hero relative overflow-hidden">
+          <div className="aspect-video bg-muted relative overflow-hidden">
             <img
               src={image}
               alt={title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&h=300&fit=crop";
               }}
             />
             
-            {/* Overlay on hover */}
-            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-              <Button variant="secondary" size="sm" className="opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0">
-                <Eye className="w-4 h-4 mr-2" />
-                Quick View
-              </Button>
-            </div>
-
             {/* Badges */}
             <div className="absolute top-3 left-3 flex flex-col gap-2">
               {isNew && (
-                <Badge className="bg-success text-success-foreground">
+                <Badge className="bg-green-500 text-white text-xs">
                   NEW
                 </Badge>
               )}
               {isTopRated && (
-                <Badge className="bg-warning text-warning-foreground">
+                <Badge className="bg-orange-500 text-white text-xs">
                   TOP RATED
                 </Badge>
               )}
               {isFeatured && (
-                <Badge className="bg-primary text-primary-foreground">
+                <Badge className="bg-primary text-primary-foreground text-xs">
                   FEATURED
                 </Badge>
               )}
@@ -75,7 +102,7 @@ const ProductCard = ({
             {/* Rating */}
             <div className="absolute top-3 right-3 flex items-center space-x-1 bg-black/50 backdrop-blur-sm rounded-lg px-2 py-1">
               <Star className="w-3 h-3 text-yellow-400 fill-current" />
-              <span className="text-xs text-white">{rating}</span>
+              <span className="text-xs text-white">{rating.toFixed(1)}</span>
             </div>
           </div>
 
@@ -91,23 +118,28 @@ const ProductCard = ({
               </div>
             </div>
 
-            <h3 className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors line-clamp-2">
+            <h3 className="font-semibold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
               {title}
             </h3>
 
             <div className="flex items-center justify-between">
-              <div className="text-2xl font-bold gradient-text">
+              <div className="text-2xl font-bold text-primary">
                 ${price.toFixed(2)}
               </div>
               <Button 
                 size="sm" 
-                className="btn-gaming opacity-0 group-hover:opacity-100 transition-all duration-300"
-                onClick={(e) => {
-                  e.preventDefault();
-                  // Add to cart functionality
-                }}
+                onClick={handlePurchase}
+                disabled={loading}
+                className="opacity-0 group-hover:opacity-100 transition-opacity"
               >
-                Add to Cart
+                {loading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <ShoppingCart className="w-4 h-4 mr-1" />
+                    Buy Now
+                  </>
+                )}
               </Button>
             </div>
           </div>

@@ -16,6 +16,7 @@ import AddProduct from "./pages/AddProduct";
 import CreateStore from "./pages/CreateStore";
 import StorePage from "./pages/StorePage";
 import StoreManagement from "./pages/StoreManagement";
+import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/create-store" element={<CreateStore />} />
             <Route path="/store/:storeSlug" element={<StorePage />} />
             <Route path="/store-management" element={<StoreManagement />} />
+            <Route path="/admin" element={<AdminPanel />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

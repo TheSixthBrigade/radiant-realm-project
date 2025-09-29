@@ -7,75 +7,47 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Grid3X3, List } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import Navigation from "@/components/Navigation";
+import { useProducts } from "@/hooks/useProducts";
 
 const Shop = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
-
-  // Mock product data
-  const products = [
-    {
-      id: "1",
-      title: "Sword Combat System",
-      price: 24.99,
-      image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop",
-      rating: 4.8,
-      downloads: 2340,
-      category: "Scripts",
-      isTopRated: true,
-    },
-    {
-      id: "2",
-      title: "Military Barrier Pack",
-      price: 15.99,
-      image: "https://images.unsplash.com/photo-1586953983027-d7508698d048?w=400&h=300&fit=crop",
-      rating: 4.6,
-      downloads: 1890,
-      category: "3D Models",
-      isTopRated: true,
-    },
-    {
-      id: "3",
-      title: "Village of Cobasna",
-      price: 45.00,
-      image: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop",
-      rating: 4.9,
-      downloads: 567,
-      category: "Maps",
-      isTopRated: true,
-    },
-    {
-      id: "4",
-      title: "Five Seven Weapon",
-      price: 8.99,
-      image: "https://images.unsplash.com/photo-1595590424283-b8f17842773f?w=400&h=300&fit=crop",
-      rating: 4.5,
-      downloads: 3200,
-      category: "3D Models",
-    },
-    {
-      id: "5",
-      title: "Advanced GUI System",
-      price: 32.99,
-      image: "https://images.unsplash.com/photo-1551650975-87deedd944c3?w=400&h=300&fit=crop",
-      rating: 4.7,
-      downloads: 1456,
-      category: "Scripts",
-      isNew: true,
-    },
-    {
-      id: "6",
-      title: "Character Animation Pack",
-      price: 19.99,
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop",
-      rating: 4.4,
-      downloads: 892,
-      category: "Animations",
-      isNew: true,
-    },
-  ];
+  
+  const { products: allProducts, loading } = useProducts();
+  
+  // Filter and search products
+  const filteredProducts = allProducts
+    .filter(product => {
+      const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          product.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = selectedCategory === "all" || 
+                            product.category.toLowerCase() === selectedCategory.toLowerCase();
+      return matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => {
+      switch(sortBy) {
+        case "price-low": return a.price - b.price;
+        case "price-high": return b.price - a.price;
+        case "rating": return b.rating - a.rating;
+        case "downloads": return b.downloads - a.downloads;
+        default: return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
+  
+  const products = filteredProducts.map(product => ({
+    id: product.id,
+    title: product.title,
+    price: product.price,
+    image: product.image_url || "/placeholder.svg",
+    rating: product.rating,
+    downloads: product.downloads,
+    category: product.category,
+    isTopRated: product.is_top_rated,
+    isNew: product.is_new,
+    isFeatured: product.is_featured
+  }));
 
   const categories = [
     { value: "all", label: "All Categories" },
@@ -200,21 +172,40 @@ const Shop = () => {
         </div>
 
         {/* Products Grid */}
-        <div className={`grid gap-6 ${
-          viewMode === "grid" 
-            ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" 
-            : "grid-cols-1"
-        }`}>
-          {products.map((product, index) => (
-            <div 
-              key={product.id} 
-              className="animate-fade-in"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <ProductCard {...product} />
-            </div>
-          ))}
-        </div>
+        {loading ? (
+          <div className={`grid gap-6 ${
+            viewMode === "grid" 
+              ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" 
+              : "grid-cols-1"
+          }`}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="h-80 bg-muted animate-pulse rounded-lg" />
+            ))}
+          </div>
+        ) : products.length > 0 ? (
+          <div className={`grid gap-6 ${
+            viewMode === "grid" 
+              ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" 
+              : "grid-cols-1"
+          }`}>
+            {products.map((product, index) => (
+              <div 
+                key={product.id} 
+                className="animate-fade-in"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <ProductCard {...product} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground text-lg mb-4">No products found.</p>
+            <Button asChild>
+              <a href="/creators">Start Selling</a>
+            </Button>
+          </div>
+        )}
 
         {/* Load More */}
         <div className="text-center mt-12">
