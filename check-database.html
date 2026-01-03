@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Check</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #0a0e14;
+            color: #00a8e8;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .status { padding: 10px; margin: 10px 0; border-radius: 8px; }
+        .success { background: rgba(0, 255, 255, 0.1); border: 1px solid rgba(0, 255, 255, 0.3); }
+        .error { background: rgba(255, 0, 0, 0.1); border: 1px solid rgba(255, 0, 0, 0.3); }
+        .loading { background: rgba(0, 168, 232, 0.1); border: 1px solid rgba(0, 168, 232, 0.3); }
+        button {
+            background: rgba(0, 168, 232, 0.2);
+            border: 1px solid rgba(0, 168, 232, 0.5);
+            color: #00a8e8;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: rgba(0, 168, 232, 0.3);
+        }
+        pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Database Connection Check</h1>
+    <div id="results"></div>
+    
+    <script>
+        const supabaseUrl = 'https://cmmeqzkbiiqqfvzkmkzt.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNtbWVxemtiaWlxcWZ2emtta3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MDcyNjQsImV4cCI6MjA3NDQ4MzI2NH0.iFnZXQmCkindqhm1sevUrIWdC2z-IjrI_duZE2RxjWg';
+        
+        const { createClient } = supabase;
+        const client = createClient(supabaseUrl, supabaseKey);
+        
+        const results = document.getElementById('results');
+        
+        async function checkDatabase() {
+            results.innerHTML = '<div class="status loading">⏳ Checking database connection...</div>';
+            
+            let html = '';
+            
+            // Check profiles table
+            try {
+                const { data, error, count } = await client
+                    .from('profiles')
+                    .select('*', { count: 'exact', head: false })
+                    .limit(5);
+                
+                if (error) throw error;
+                
+                html += `<div class="status success">✅ Profiles table: ${count || 0} records</div>`;
+                if (data && data.length > 0) {
+                    html += `<pre>${JSON.stringify(data[0], null, 2)}</pre>`;
+                }
+            } catch (e) {
+                html += `<div class="status error">❌ Profiles table: ${e.message}</div>`;
+            }
+            
+            // Check products table
+            try {
+                const { data, error, count } = await client
+                    .from('products')
+                    .select('*', { count: 'exact', head: false })
+                    .limit(5);
+                
+                if (error) throw error;
+                
+                html += `<div class="status success">✅ Products table: ${count || 0} records</div>`;
+                if (data && data.length > 0) {
+                    html += `<pre>${JSON.stringify(data[0], null, 2)}</pre>`;
+                } else {
+                    html += `<div class="status error">⚠️ No products found! You need to run migrations.</div>`;
+                }
+            } catch (e) {
+                html += `<div class="status error">❌ Products table: ${e.message}</div>`;
+            }
+            
+            // Check stores table
+            try {
+                const { data, error, count } = await client
+                    .from('stores')
+                    .select('*', { count: 'exact', head: false })
+                    .limit(5);
+                
+                if (error) throw error;
+                
+                html += `<div class="status success">✅ Stores table: ${count || 0} records</div>`;
+            } catch (e) {
+                html += `<div class="status error">❌ Stores table: ${e.message}</div>`;
+            }
+            
+            // Check storage buckets
+            try {
+                const { data, error } = await client.storage.listBuckets();
+                
+                if (error) throw error;
+                
+                const hasWebsiteAssets = data.some(b => b.name === 'website-assets');
+                const hasProductFiles = data.some(b => b.name === 'product-files');
+                
+                html += `<div class="status ${hasWebsiteAssets ? 'success' : 'error'}">
+                    ${hasWebsiteAssets ? '✅' : '❌'} website-assets bucket
+                </div>`;
+                html += `<div class="status ${hasProductFiles ? 'success' : 'error'}">
+                    ${hasProductFiles ? '✅' : '❌'} product-files bucket
+                </div>`;
+            } catch (e) {
+                html += `<div class="status error">❌ Storage buckets: ${e.message}</div>`;
+            }
+            
+            html += `
+                <div style="margin-top: 30px; padding: 20px; background: rgba(0, 168, 232, 0.1); border-radius: 8px;">
+                    <h3>📋 Next Steps:</h3>
+                    <ol style="line-height: 2;">
+                        <li>Go to <a href="https://supabase.com/dashboard/project/cmmeqzkbiiqqfvzkmkzt" target="_blank" style="color: #00ffff;">Supabase Dashboard</a></li>
+                        <li>Click on "SQL Editor" in the left sidebar</li>
+                        <li>Click "New Query"</li>
+                        <li>Copy and paste each migration file from <code>supabase/migrations/</code></li>
+                        <li>Run them in order (by filename timestamp)</li>
+                        <li>Refresh this page to verify</li>
+                    </ol>
+                    <button onclick="checkDatabase()">🔄 Refresh Check</button>
+                </div>
+            `;
+            
+            results.innerHTML = html;
+        }
+        
+        checkDatabase();
+    </script>
+</body>
+</html>

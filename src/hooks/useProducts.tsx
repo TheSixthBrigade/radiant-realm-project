@@ -14,8 +14,18 @@ export interface Product {
   is_featured: boolean;
   is_top_rated: boolean;
   is_new: boolean;
+  file_urls?: string[];
   created_at: string;
   updated_at: string;
+  creator?: {
+    display_name: string;
+    avatar_url?: string;
+    is_creator: boolean;
+  };
+  store?: {
+    store_name: string;
+    store_slug: string;
+  };
 }
 
 export const useProducts = () => {
@@ -26,19 +36,58 @@ export const useProducts = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Get products
+      const { data: productsData, error: productsError } = await supabase
         .from('products')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setProducts(data || []);
+      if (productsError) {
+        console.error('Products query error:', productsError);
+        throw productsError;
+      }
+
+      console.log('Products data:', productsData);
+
+      if (!productsData || productsData.length === 0) {
+        console.log('No products found in database');
+        setProducts([]);
+        return;
+      }
+
+      // Get unique creator IDs
+      const creatorIds = [...new Set(productsData.map(p => p.creator_id).filter(Boolean))];
+
+      // Fetch all creators in one query
+      const { data: creatorsData } = await supabase
+        .from('profiles')
+        .select('user_id, display_name, avatar_url, is_creator')
+        .in('user_id', creatorIds);
+
+      // Create a map for quick lookup
+      const creatorsMap = new Map(
+        creatorsData?.map(c => [c.user_id, c]) || []
+      );
+
+      // Combine products with creator data
+      const productsWithCreators: Product[] = productsData.map(product => ({
+        ...product,
+        creator: product.creator_id ? creatorsMap.get(product.creator_id) : undefined,
+      }));
+
+      console.log('Products with creators:', productsWithCreators);
+      setProducts(productsWithCreators);
     } catch (err) {
+      console.error('Error in fetchProducts:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
+      setProducts([]);
     } finally {
       setLoading(false);
     }
   };
+
+
 
   useEffect(() => {
     fetchProducts();

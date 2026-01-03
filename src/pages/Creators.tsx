@@ -5,8 +5,10 @@ import { Upload, DollarSign, Users, TrendingUp, Star, Clock } from "lucide-react
 import Navigation from "@/components/Navigation";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { Link } from "react-router-dom";
+import { useStats } from "@/hooks/useStats";
 
 const Creators = () => {
+  const { stats, loading: statsLoading, error: statsError, formatNumber } = useStats();
   const features = [
     {
       icon: Upload,
@@ -57,7 +59,7 @@ const Creators = () => {
     {
       name: "Alex Rodriguez",
       role: "3D Artist",
-      content: "LuzonDev has transformed my freelance career. I've made over $5,000 in my first month!",
+      content: "Vectabse has transformed my freelance career. I've made over $5,000 in my first month!",
       rating: 5,
       earnings: "$12,450",
     },
@@ -71,7 +73,7 @@ const Creators = () => {
     {
       name: "Mike Johnson",
       role: "Game Designer",
-      content: "Best decision I made was joining LuzonDev. The revenue share is fair and payments are always on time.",
+      content: "Best decision I made was joining Vectabse. The revenue share is fair and payments are always on time.",
       rating: 5,
       earnings: "$15,680",
     },
@@ -90,7 +92,7 @@ const Creators = () => {
               Turn Your <span className="gradient-text">Creative Skills</span> Into Passive Income
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
-              Join thousands of creators earning money by selling game assets, scripts, and tools on LuzonDev
+              Join thousands of creators earning money by selling game assets, scripts, and tools on Vectabse
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/auth">
@@ -111,22 +113,52 @@ const Creators = () => {
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
             <Card className="glass p-6 text-center hover-lift">
-              <div className="text-3xl font-bold gradient-text mb-2">$2.1M+</div>
+              <div className="text-3xl font-bold gradient-text mb-2">
+                {statsLoading ? (
+                  <div className="animate-pulse bg-muted h-8 w-20 mx-auto rounded"></div>
+                ) : statsError ? (
+                  "N/A"
+                ) : stats.hasRealData ? (
+                  `$${formatNumber(stats.totalRevenue)}`
+                ) : (
+                  "$0"
+                )}
+              </div>
               <div className="text-muted-foreground">Paid to Creators</div>
             </Card>
             <Card className="glass p-6 text-center hover-lift">
-              <div className="text-3xl font-bold gradient-text mb-2">850+</div>
+              <div className="text-3xl font-bold gradient-text mb-2">
+                {statsLoading ? (
+                  <div className="animate-pulse bg-muted h-8 w-20 mx-auto rounded"></div>
+                ) : statsError ? (
+                  "N/A"
+                ) : stats.hasRealData ? (
+                  formatNumber(stats.totalCreators)
+                ) : (
+                  "0"
+                )}
+              </div>
               <div className="text-muted-foreground">Active Creators</div>
             </Card>
             <Card className="glass p-6 text-center hover-lift">
-              <div className="text-3xl font-bold gradient-text mb-2">45K+</div>
+              <div className="text-3xl font-bold gradient-text mb-2">
+                {statsLoading ? (
+                  <div className="animate-pulse bg-muted h-8 w-20 mx-auto rounded"></div>
+                ) : statsError ? (
+                  "N/A"
+                ) : stats.hasRealData ? (
+                  formatNumber(stats.totalSales)
+                ) : (
+                  "0"
+                )}
+              </div>
               <div className="text-muted-foreground">Products Sold</div>
             </Card>
           </div>
 
           {/* Features */}
           <div className="mb-16">
-            <h2 className="text-3xl font-bold text-center mb-12">Why Choose LuzonDev?</h2>
+            <h2 className="text-3xl font-bold text-center mb-12">Why Choose Vectabse?</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {features.map((feature, index) => {
                 const Icon = feature.icon;

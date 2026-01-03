@@ -4,9 +4,12 @@ import { Shield, Zap, Users, Heart } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { Link } from "react-router-dom";
-import luzonLogo from "@/assets/luzondev-logo.png";
+import { useStats } from "@/hooks/useStats";
+import vectabseLogo from "@/assets/vectabse-logo.png";
 
 const About = () => {
+  const { stats, loading, formatNumber } = useStats();
+  
   const values = [
     {
       icon: Shield,
@@ -30,11 +33,23 @@ const About = () => {
     },
   ];
 
-  const stats = [
-    { label: "Happy Developers", value: "10,000+" },
-    { label: "Assets Available", value: "25,000+" },
-    { label: "Countries Served", value: "120+" },
-    { label: "Creator Earnings", value: "$2.1M+" },
+  const statsData = [
+    { 
+      label: "Happy Developers", 
+      value: loading ? "..." : stats.hasRealData ? formatNumber(stats.totalSales) : "Growing" 
+    },
+    { 
+      label: "Assets Available", 
+      value: loading ? "..." : stats.hasRealData ? formatNumber(stats.totalProducts) : "0" 
+    },
+    { 
+      label: "Active Creators", 
+      value: loading ? "..." : stats.hasRealData ? formatNumber(stats.totalCreators) : "0" 
+    },
+    { 
+      label: "Creator Earnings", 
+      value: loading ? "..." : stats.hasRealData ? `$${formatNumber(stats.totalRevenue)}` : "$0" 
+    },
   ];
 
   return (
@@ -47,10 +62,10 @@ const About = () => {
           {/* Hero Section */}
           <div className="text-center max-w-4xl mx-auto mb-16">
             <div className="flex justify-center mb-6">
-              <img src={luzonLogo} alt="LuzonDev" className="w-20 h-20 rounded-2xl" />
+              <img src={vectabseLogo} alt="Vectabse" className="w-20 h-20 rounded-2xl" />
             </div>
             <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-6">
-              About <span className="gradient-text">LuzonDev</span>
+              About <span className="gradient-text">Vectabse</span>
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
               Empowering game developers worldwide with premium assets, tools, and a thriving creative community
@@ -62,7 +77,7 @@ const About = () => {
             <div className="text-center max-w-3xl mx-auto">
               <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                LuzonDev was founded with a simple yet powerful mission: to democratize game development by providing 
+                Vectabse was founded with a simple yet powerful mission: to democratize game development by providing 
                 creators with a platform to monetize their skills while giving developers access to high-quality assets 
                 and tools. We believe that great games are built by passionate communities, and we're here to fuel that passion.
               </p>
@@ -71,7 +86,7 @@ const About = () => {
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-            {stats.map((stat, index) => (
+            {statsData.map((stat, index) => (
               <Card key={stat.label} className="glass p-6 text-center hover-lift">
                 <div className="text-3xl font-bold gradient-text mb-2">{stat.value}</div>
                 <div className="text-sm text-muted-foreground">{stat.label}</div>
@@ -103,7 +118,7 @@ const About = () => {
             <Card className="glass p-8">
               <h3 className="text-2xl font-bold mb-4">The Beginning</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Started in 2024 by a team of passionate game developers and entrepreneurs, LuzonDev was born out of 
+                Started in 2024 by a team of passionate game developers and entrepreneurs, Vectabse was born out of 
                 frustration with existing marketplaces that didn't truly serve the gaming community. We saw talented 
                 creators struggling to monetize their work and developers spending countless hours searching for 
                 quality assets.
@@ -112,7 +127,7 @@ const About = () => {
             <Card className="glass p-8">
               <h3 className="text-2xl font-bold mb-4">Today & Tomorrow</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Today, LuzonDev hosts thousands of creators and serves developers worldwide. But we're just getting 
+                Today, Vectabse hosts thousands of creators and serves developers worldwide. But we're just getting 
                 started. Our roadmap includes AI-powered asset recommendations, collaborative tools, and educational 
                 resources to help the entire game development ecosystem thrive.
               </p>

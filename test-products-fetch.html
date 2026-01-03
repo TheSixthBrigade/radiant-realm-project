@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Products Fetch</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body style="font-family: monospace; padding: 20px; background: #0a0e14; color: #00a8e8;">
+    <h1>Testing Products Fetch</h1>
+    <div id="status">Loading...</div>
+    <pre id="results"></pre>
+    
+    <script>
+        const { createClient } = supabase;
+        const client = createClient(
+            'https://cmmeqzkbiiqqfvzkmkzt.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNtbWVxemtiaWlxcWZ2emtta3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MDcyNjQsImV4cCI6MjA3NDQ4MzI2NH0.iFnZXQmCkindqhm1sevUrIWdC2z-IjrI_duZE2RxjWg'
+        );
+        
+        async function test() {
+            const status = document.getElementById('status');
+            const results = document.getElementById('results');
+            
+            try {
+                status.textContent = 'Fetching products...';
+                
+                const { data, error, count } = await client
+                    .from('products')
+                    .select('*', { count: 'exact' })
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    status.textContent = '❌ ERROR: ' + error.message;
+                    results.textContent = JSON.stringify(error, null, 2);
+                    return;
+                }
+                
+                status.textContent = `✅ SUCCESS: Found ${count} products`;
+                results.textContent = JSON.stringify(data, null, 2);
+                
+                console.log('Products:', data);
+            } catch (e) {
+                status.textContent = '❌ EXCEPTION: ' + e.message;
+                results.textContent = e.stack;
+            }
+        }
+        
+        test();
+    </script>
+</body>
+</html>

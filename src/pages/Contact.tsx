@@ -23,7 +23,7 @@ const Contact = () => {
     {
       icon: Mail,
       title: "Email Us",
-      content: "hello@luzondev.com",
+      content: "hello@vectabse.com",
       description: "Send us an email and we'll respond within 24 hours",
     },
     {
@@ -59,7 +59,7 @@ const Contact = () => {
               Get In <span className="gradient-text">Touch</span>
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
-              Have questions, feedback, or need support? We're here to help you succeed on LuzonDev
+              Have questions, feedback, or need support? We're here to help you succeed on Vectabse
             </p>
           </div>
 

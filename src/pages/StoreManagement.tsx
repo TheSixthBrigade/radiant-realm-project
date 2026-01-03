@@ -480,7 +480,7 @@ const StoreManagement = () => {
                     </div>
                     <div>
                       <Label>Store URL</Label>
-                      <p className="text-muted-foreground">luzondev.com/store/{userStore.store_slug}</p>
+                      <p className="text-muted-foreground">vectabse.com/store/{userStore.store_slug}</p>
                     </div>
                     <div>
                       <Label>Description</Label>

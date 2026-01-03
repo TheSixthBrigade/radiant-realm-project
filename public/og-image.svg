@@ -1,0 +1,47 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#0a0e14"/>
+  
+  <!-- Grid pattern -->
+  <defs>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1" fill="#22c55e" opacity="0.3"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  
+  <!-- Gradient overlay -->
+  <rect width="1200" height="630" fill="url(#gradient)" opacity="0.3"/>
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c55e;stop-opacity:0.2" />
+      <stop offset="100%" style="stop-color:#16a34a;stop-opacity:0.2" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Logo/Icon -->
+  <g transform="translate(100, 200)">
+    <!-- Circle icon -->
+    <circle cx="60" cy="60" r="50" fill="#22c55e" opacity="0.2"/>
+    <circle cx="60" cy="60" r="30" fill="#22c55e"/>
+    <circle cx="60" cy="60" r="15" fill="#0a0e14"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="220" y="280" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="#22c55e">
+    Vectabse
+  </text>
+  <text x="220" y="330" font-family="Arial, sans-serif" font-size="32" fill="#FFFFFF" opacity="0.9">
+    Premium Digital Assets Marketplace
+  </text>
+  
+  <!-- Subtitle -->
+  <text x="220" y="400" font-family="Arial, sans-serif" font-size="28" fill="#22c55e" opacity="0.8">
+    Discover premium game assets, scripts, and 3D models
+  </text>
+  
+  <!-- Domain -->
+  <text x="220" y="500" font-family="Arial, sans-serif" font-size="24" fill="#FFFFFF" opacity="0.6">
+    vectabse.com
+  </text>
+</svg>

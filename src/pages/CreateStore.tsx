@@ -139,7 +139,7 @@ const CreateStore = () => {
                 <Label htmlFor="store_slug">Store URL *</Label>
                 <div className="flex">
                   <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-border bg-muted text-muted-foreground text-sm">
-                    luzondev.com/store/
+                    vectabse.com/store/
                   </span>
                   <Input
                     id="store_slug"

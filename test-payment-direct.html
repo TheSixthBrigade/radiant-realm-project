@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Payment</title>
+</head>
+<body>
+    <h1>Test PayPal Payment</h1>
+    <button onclick="testPayment()">Test Payment</button>
+    <pre id="result"></pre>
+
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+        const supabase = createClient(
+            'https://cmmeqzkbiiqqfvzkmkzt.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNtbWVxemtiaWlxcWZ2emtta3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MDcyNjQsImV4cCI6MjA3NDQ4MzI2NH0.iFnZXQmCkindqhm1sevUrIWdC2z-IjrI_duZE2RxjWg'
+        )
+
+        window.testPayment = async function() {
+            const resultEl = document.getElementById('result');
+            resultEl.textContent = 'Testing...';
+
+            try {
+                // Get a product
+                const { data: products } = await supabase
+                    .from('products')
+                    .select('id')
+                    .limit(1);
+
+                if (!products || products.length === 0) {
+                    resultEl.textContent = 'No products found';
+                    return;
+                }
+
+                const productId = products[0].id;
+                resultEl.textContent = `Testing with product: ${productId}\n\nCalling edge function...`;
+
+                // Call edge function
+                const { data, error } = await supabase.functions.invoke('paypal-create-order', {
+                    body: {
+                        productId: productId,
+                        buyerId: 'test-buyer-id'
+                    }
+                });
+
+                if (error) {
+                    resultEl.textContent = 'ERROR:\n\n' + JSON.stringify(error, null, 2);
+                    
+                    // Try to get more details
+                    if (error.context) {
+                        resultEl.textContent += '\n\nContext:\n' + JSON.stringify(error.context, null, 2);
+                    }
+                } else {
+                    resultEl.textContent = 'SUCCESS:\n\n' + JSON.stringify(data, null, 2);
+                }
+            } catch (err) {
+                resultEl.textContent = 'EXCEPTION:\n\n' + err.message + '\n\n' + err.stack;
+            }
+        }
+    </script>
+</body>
+</html>

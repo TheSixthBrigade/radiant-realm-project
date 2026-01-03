@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,26 +9,69 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
-import { useStores } from "@/hooks/useStores";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import { ImageUploadZone } from "@/components/ImageUploadZone";
 
 const AddProduct = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [stripeConnected, setStripeConnected] = useState(false);
+  const [checkingStripe, setCheckingStripe] = useState(true);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     price: "",
     category: "",
-    image: null as File | null,
   });
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [productFiles, setProductFiles] = useState<File[]>([]);
+  const [fileUploading, setFileUploading] = useState(false);
   
   const { user } = useAuth();
   const { addProduct } = useProducts();
-  const { fetchUserStore } = useStores();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Prevent default drag behavior globally on this page
+  useEffect(() => {
+    const preventDefaults = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    // Prevent opening images in new tab when dragging
+    document.addEventListener('dragover', preventDefaults);
+    document.addEventListener('drop', preventDefaults);
+
+    return () => {
+      document.removeEventListener('dragover', preventDefaults);
+      document.removeEventListener('drop', preventDefaults);
+    };
+  }, []);
+
+  // Check if Stripe is connected
+  useState(() => {
+    const checkPaymentMethods = async () => {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('stripe_account_id, stripe_onboarding_status')
+          .eq('user_id', user?.id)
+          .single();
+        
+        const hasStripe = data?.stripe_account_id && (data?.stripe_onboarding_status === 'connected' || data?.stripe_onboarding_status === 'complete');
+        
+        setStripeConnected(hasStripe);
+      } catch (error) {
+        console.error('Error checking payment methods:', error);
+      } finally {
+        setCheckingStripe(false);
+      }
+    };
+    
+    if (user) checkPaymentMethods();
+  });
 
   const categories = [
     "Scripts", "Models", "Maps", "Textures", "Audio", "UI", "Tools", "Other"
@@ -38,33 +81,35 @@ const AddProduct = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFormData(prev => ({ ...prev, image: file }));
-    }
-  };
+  const uploadProductFiles = async (files: File[]): Promise<string[]> => {
+    const uploadPromises = files.map(async (file, index) => {
+      try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `files/${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+        
+        // Try to upload to product-images bucket first (since it exists)
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(fileName, file);
 
-  const uploadImage = async (file: File): Promise<string | null> => {
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(fileName, file);
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          throw uploadError;
+        }
 
-      if (uploadError) throw uploadError;
+        const { data } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(fileName);
 
-      const { data } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(fileName);
+        return data.publicUrl;
+      } catch (error) {
+        console.error('Error uploading product file:', error);
+        return null;
+      }
+    });
 
-      return data.publicUrl;
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      return null;
-    }
+    const results = await Promise.all(uploadPromises);
+    return results.filter(url => url !== null) as string[];
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,36 +127,68 @@ const AddProduct = () => {
     setIsLoading(true);
 
     try {
-      let imageUrl = null;
-      
-      if (formData.image) {
-        imageUrl = await uploadImage(formData.image);
-        if (!imageUrl) {
-          throw new Error("Failed to upload image");
-        }
+      // Check if product files are provided
+      if (productFiles.length === 0) {
+        throw new Error("Please upload at least one product file");
       }
 
-      const { error } = await addProduct({
+      let fileUrls: string[] = [];
+
+      // Upload product files
+      setFileUploading(true);
+      fileUrls = await uploadProductFiles(productFiles);
+      if (fileUrls.length === 0) {
+        throw new Error("Failed to upload product files");
+      }
+
+      // Create the product first
+      const { data: productData, error } = await addProduct({
         title: formData.title,
         description: formData.description,
         price: parseFloat(formData.price),
         category: formData.category,
-        image_url: imageUrl,
+        image_url: imageUrls[0] || null, // Keep first image as primary for backward compatibility
         creator_id: user.id,
         downloads: 0,
         rating: 0,
         is_featured: false,
         is_top_rated: false,
         is_new: true,
+        file_urls: fileUrls, // Store the file URLs
       });
 
       if (error) {
         throw new Error(error);
       }
 
+      // Multiple images are stored with the primary image in image_url field
+      // Additional images can be added in future updates
+
+      // Send newsletter to subscribers
+      if (productData && productData.id) {
+        try {
+          // Get the user's store
+          const { data: storeData } = await supabase
+            .from('stores')
+            .select('id')
+            .eq('user_id', user.id)
+            .single();
+
+          if (storeData) {
+            // Trigger newsletter sending (fire and forget - don't wait for it)
+            supabase.functions.invoke('send-newsletter', {
+              body: { productId: productData.id, storeId: storeData.id }
+            }).catch(err => console.error('Newsletter error:', err));
+          }
+        } catch (err) {
+          console.error('Error triggering newsletter:', err);
+          // Don't fail the product creation if newsletter fails
+        }
+      }
+
       toast({
         title: "Success",
-        description: "Product added successfully!",
+        description: "Product added successfully! Newsletter sent to your subscribers.",
       });
 
       navigate("/dashboard");
@@ -125,6 +202,57 @@ const AddProduct = () => {
       setIsLoading(false);
     }
   };
+
+  // TEMPORARILY DISABLED - PayPal OAuth pending approval
+  // Show PayPal requirement if not connected
+  // if (!checkingPaypal && !paypalConnected) {
+  //   return (
+  //     <div className="min-h-screen bg-[#0a0a0a]">
+  //       <Navigation />
+  //       <div className="container mx-auto px-6 pt-24 pb-12">
+  //         <Card className="max-w-2xl mx-auto p-8 text-center" style={{
+  //           border: '1px solid rgba(33, 150, 243, 0.2)',
+  //           background: 'rgba(33, 150, 243, 0.03)'
+  //         }}>
+  //           <div className="mb-6">
+  //             <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+  //               <span className="text-3xl">⚠️</span>
+  //             </div>
+  //             <h2 className="text-2xl font-bold mb-2" style={{ color: 'hsl(210, 100%, 50%)' }}>
+  //               PayPal Account Required
+  //             </h2>
+  //             <p className="text-muted-foreground">
+  //               You must connect your PayPal account before you can upload and sell products.
+  //             </p>
+  //           </div>
+  //           
+  //           <div className="space-y-4 text-left mb-6">
+  //             <div className="p-4 bg-muted rounded-lg">
+  //               <h3 className="font-semibold mb-2">Why do I need PayPal?</h3>
+  //               <ul className="text-sm space-y-1 text-muted-foreground">
+  //                 <li>• Receive payments instantly</li>
+  //                 <li>• Get 95% of each sale</li>
+  //                 <li>• Secure and trusted payment processing</li>
+  //                 <li>• No manual payouts needed</li>
+  //               </ul>
+  //             </div>
+  //           </div>
+  //
+  //           <Button 
+  //             onClick={() => navigate('/dashboard?tab=settings')}
+  //             className="w-full"
+  //             style={{
+  //               background: 'hsl(210, 100%, 50%)',
+  //               color: 'white'
+  //             }}
+  //           >
+  //             Connect PayPal Account
+  //           </Button>
+  //         </Card>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   if (!user) {
     return (
@@ -149,13 +277,36 @@ const AddProduct = () => {
   }
 
   return (
-    <div className="min-h-screen">
-      <AnimatedBackground />
+    <div className="min-h-screen bg-[#EDEDED] dark:bg-[#0a0e14] transition-colors duration-500 relative">
+      {/* Dotted Grid Pattern - Dark Mode Only */}
+      <div className="hidden dark:block fixed inset-0 pointer-events-none opacity-30">
+        <div className="absolute inset-0" style={{
+          backgroundImage: 'radial-gradient(circle, rgba(0, 168, 232, 0.4) 1px, transparent 1px)',
+          backgroundSize: '30px 30px',
+          backgroundPosition: '0 0, 15px 15px'
+        }} />
+      </div>
+
+      {/* Animated Grid Lines - Dark Mode Only */}
+      <div className="hidden dark:block fixed inset-0 pointer-events-none opacity-15">
+        <div className="absolute inset-0" style={{
+          backgroundImage: 'linear-gradient(rgba(0, 168, 232, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 168, 232, 0.2) 1px, transparent 1px)',
+          backgroundSize: '60px 60px',
+          animation: 'gridMove 20s linear infinite'
+        }} />
+      </div>
+      
+      {/* Glowing Orbs - Dark Mode Only */}
+      <div className="hidden dark:block fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-20 left-20 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 right-20 w-[500px] h-[500px] bg-cyan-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+      </div>
+
       <Navigation />
-      <div className="container mx-auto px-6 py-24">
-        <Card className="max-w-2xl mx-auto">
+      <div className="container mx-auto px-6 py-24 relative z-10">
+        <Card className="max-w-2xl mx-auto dark:bg-[#0d1219]/80 dark:border-cyan-400/20 dark:backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="text-3xl text-center">Add New Product</CardTitle>
+            <CardTitle className="text-3xl text-center dark:text-cyan-400">Add New Product</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -213,19 +364,93 @@ const AddProduct = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="image">Product Image</Label>
-                <Input
-                  id="image"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
+              <div className="space-y-4">
+                <ImageUploadZone
+                  value=""
+                  onChange={() => {}}
+                  label="Product Images (drag from Payhip or upload)"
+                  multiple
+                  values={imageUrls}
+                  onMultipleChange={setImageUrls}
                 />
+                <p className="text-sm text-muted-foreground dark:text-cyan-300/70">
+                  Drag images directly from Payhip or other websites! AVIF images auto-convert to PNG.
+                </p>
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              {/* Product Files Section */}
+              <div className="space-y-4">
+                <Label htmlFor="files">Product Files (Required)</Label>
+                
+                {/* File List */}
+                {productFiles.length > 0 && (
+                  <div className="space-y-2">
+                    {productFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded flex items-center justify-center">
+                            <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                              {file.name.split('.').pop()?.toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">{file.name}</p>
+                            <p className="text-xs text-slate-500">
+                              {(file.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setProductFiles(files => files.filter((_, i) => i !== index));
+                          }}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <Input
+                  id="files"
+                  type="file"
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    setProductFiles(prev => [...prev, ...files]);
+                  }}
+                  accept="*"
+                />
+                <p className="text-sm text-muted-foreground dark:text-cyan-300/70">
+                  Upload any file type (.exe, .rbxm, .zip, etc.). Files are stored securely in isolated storage and scanned before delivery. Maximum 100MB per file.
+                </p>
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                  ⚠️ Note: Files are stored in isolated cloud storage and cannot execute on our servers. Buyers download at their own risk.
+                </p>
+                {productFiles.length === 0 && (
+                  <p className="text-sm text-red-600">
+                    You must upload at least one file for customers to download.
+                  </p>
+                )}
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isLoading || productFiles.length === 0 || imageUrls.length === 0}
+              >
                 {isLoading ? "Adding Product..." : "Add Product"}
               </Button>
+              {imageUrls.length === 0 && (
+                <p className="text-sm text-red-600 text-center">
+                  Please add at least one product image
+                </p>
+              )}
             </form>
           </CardContent>
         </Card>

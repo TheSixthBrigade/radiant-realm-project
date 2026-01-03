@@ -1,105 +1,99 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import Stripe from 'https://esm.sh/stripe@14.21.0'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-    );
+    const { userId } = await req.json()
 
-    // Get authenticated user
-    const authHeader = req.headers.get("Authorization")!;
-    const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
-
-    if (!user?.email) {
-      throw new Error("User not authenticated or email not available");
+    if (!userId) {
+      throw new Error('userId is required')
     }
 
-    const { storeId } = await req.json();
-
-    if (!storeId) {
-      throw new Error("Store ID is required");
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')
+    if (!stripeKey) {
+      throw new Error('Stripe credentials not configured. Please contact support.')
     }
 
-    // Verify user owns the store
-    const { data: store, error: storeError } = await supabaseClient
-      .from('stores')
-      .select('*')
-      .eq('id', storeId)
-      .eq('user_id', user.id)
-      .single();
+    const stripe = new Stripe(stripeKey, {
+      apiVersion: '2023-10-16',
+    })
 
-    if (storeError || !store) {
-      throw new Error("Store not found or access denied");
-    }
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    )
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2025-08-27.basil",
-    });
+    // Check if user already has a Stripe account
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('stripe_account_id')
+      .eq('user_id', userId)
+      .single()
 
-    let accountId = store.stripe_connect_account_id;
+    let accountId = profile?.stripe_account_id
 
-    // Create Stripe Connect account if it doesn't exist
+    // Create account only if it doesn't exist
     if (!accountId) {
       const account = await stripe.accounts.create({
         type: 'express',
-        email: user.email,
         capabilities: {
           card_payments: { requested: true },
           transfers: { requested: true },
         },
-        business_type: 'individual',
-        metadata: {
-          storeId: store.id,
-          userId: user.id,
-          storeName: store.store_name,
-        },
-      });
+      })
+      
+      accountId = account.id
 
-      accountId = account.id;
-
-      // Update store with Stripe Connect account ID
-      const { error: updateError } = await supabaseClient
-        .from('stores')
-        .update({ stripe_connect_account_id: accountId })
-        .eq('id', storeId);
-
+      // Save the account ID to database
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          stripe_account_id: accountId,
+          stripe_onboarding_status: 'pending'
+        })
+        .eq('user_id', userId)
+      
       if (updateError) {
-        console.error('Error updating store with Stripe account:', updateError);
+        console.error('Database update error:', updateError)
+        throw new Error(`Failed to save Stripe account: ${updateError.message}`)
       }
     }
 
-    // Create account link for onboarding
+    // Create account link for onboarding (works for new or existing accounts)
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${req.headers.get("origin")}/store-management`,
-      return_url: `${req.headers.get("origin")}/store-management?stripe_onboarding=success`,
+      refresh_url: `${req.headers.get('origin') || 'http://127.0.0.1:8080'}/dashboard?stripe_refresh=true`,
+      return_url: `${req.headers.get('origin') || 'http://127.0.0.1:8080'}/dashboard?stripe_success=true`,
       type: 'account_onboarding',
-    });
+    })
 
-    return new Response(JSON.stringify({ url: accountLink.url, accountId }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        onboardingUrl: accountLink.url,
+        accountId: accountId
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
   } catch (error) {
-    console.error('Stripe Connect onboarding error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An error occurred';
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    console.error('Error in stripe-connect-onboard:', error)
+    return new Response(
+      JSON.stringify({ 
+        success: false,
+        error: error.message || 'Unknown error occurred',
+        details: error.toString()
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+    )
   }
-});
+})

@@ -15,6 +15,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [isCreatorSignup, setIsCreatorSignup] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -50,7 +51,7 @@ const Auth = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    const { error } = await signUp(email, password, displayName);
+    const { error } = await signUp(email, password, displayName, isCreatorSignup);
     
     if (error) {
       toast({
@@ -61,8 +62,14 @@ const Auth = () => {
     } else {
       toast({
         title: "Success",
-        description: "Check your email to confirm your account!",
+        description: isCreatorSignup 
+          ? "Account created! Complete your creator profile to start selling."
+          : "Check your email to confirm your account!",
       });
+      if (isCreatorSignup) {
+        // Will redirect to onboarding after email confirmation
+        navigate("/dashboard");
+      }
     }
     setIsLoading(false);
   };
@@ -77,7 +84,7 @@ const Auth = () => {
           <div className="max-w-md mx-auto">
             <Card className="glass p-8">
               <div className="text-center mb-6">
-                <h1 className="text-3xl font-bold gradient-text mb-2">Welcome to LuzonDev</h1>
+                <h1 className="text-3xl font-bold gradient-text mb-2">Welcome to Vectabse</h1>
                 <p className="text-muted-foreground">Join our community of creators and developers</p>
               </div>
 
@@ -156,12 +163,27 @@ const Auth = () => {
                         required
                       />
                     </div>
+                    
+                    {/* Creator Signup Option */}
+                    <div className="flex items-center space-x-2 p-4 border rounded-lg">
+                      <input
+                        type="checkbox"
+                        id="creator-signup"
+                        checked={isCreatorSignup}
+                        onChange={(e) => setIsCreatorSignup(e.target.checked)}
+                        className="rounded"
+                      />
+                      <Label htmlFor="creator-signup" className="text-sm">
+                        I want to become a creator and sell digital assets
+                      </Label>
+                    </div>
+                    
                     <Button 
                       type="submit" 
                       className="w-full btn-gaming"
                       disabled={isLoading}
                     >
-                      {isLoading ? "Creating account..." : "Sign Up"}
+                      {isLoading ? "Creating account..." : isCreatorSignup ? "Become a Creator" : "Sign Up"}
                     </Button>
                   </form>
                 </TabsContent>

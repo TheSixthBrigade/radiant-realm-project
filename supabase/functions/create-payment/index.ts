@@ -28,29 +28,34 @@ serve(async (req) => {
       throw new Error("User not authenticated or email not available");
     }
 
-    const { productId } = await req.json();
+    const { product_id, amount, currency, success_url, cancel_url } = await req.json();
 
-    if (!productId) {
+    if (!product_id) {
       throw new Error("Product ID is required");
     }
 
-    // Fetch product details including store info
+    // Fetch product details with creator info
     const { data: product, error: productError } = await supabaseClient
       .from('products')
       .select(`
         *,
-        stores (
-          id,
-          user_id,
+        profiles!creator_id (
           stripe_connect_account_id,
-          store_name
+          stripe_connect_status,
+          display_name
         )
       `)
-      .eq('id', productId)
+      .eq('id', product_id)
       .single();
 
     if (productError || !product) {
       throw new Error("Product not found");
+    }
+
+    // Check if creator has Stripe Connect set up
+    const creatorProfile = product.profiles;
+    if (!creatorProfile?.stripe_connect_account_id || creatorProfile.stripe_connect_status !== 'connected') {
+      throw new Error("Seller has not set up Stripe payments");
     }
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -65,83 +70,57 @@ serve(async (req) => {
     }
 
     // Calculate platform fee (5%)
-    const amount = Math.round(product.price * 100); // Convert to cents
-    const platformFee = Math.round(amount * 0.05); // 5% platform fee
-    const sellerAmount = amount - platformFee;
+    const amountCents = Math.round((amount || product.price) * 100); // Convert to cents
+    const platformFee = Math.round(amountCents * 0.05); // 5% platform fee
+    const sellerAmount = amountCents - platformFee;
 
-    // Create payment intent with application fee
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount,
-      currency: 'usd',
-      customer: customerId,
-      metadata: {
-        productId: product.id,
-        sellerId: product.stores?.user_id || product.creator_id,
-        storeId: product.store_id,
-        buyerId: user.id,
-      },
-      application_fee_amount: platformFee,
-      transfer_data: product.stores?.stripe_connect_account_id ? {
-        destination: product.stores.stripe_connect_account_id,
-      } : undefined,
-    });
-
-    // Create checkout session
+    // Create checkout session - simplified like Payhip
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
           price_data: {
-            currency: 'usd',
+            currency: currency || 'usd',
             product_data: {
               name: product.title,
-              description: product.description || `Digital asset from ${product.stores?.store_name || 'LuzonDev'}`,
+              description: product.description || `Digital asset from ${creatorProfile.display_name || 'LuzonDev'}`,
               images: product.image_url ? [product.image_url] : [],
             },
-            unit_amount: amount,
+            unit_amount: amountCents,
           },
           quantity: 1,
         },
       ],
       mode: "payment",
+      success_url: success_url || `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}&product_id=${product.id}`,
+      cancel_url: cancel_url || `${req.headers.get("origin")}/product/${product.id}`,
       payment_intent_data: {
-        metadata: paymentIntent.metadata,
         application_fee_amount: platformFee,
-        transfer_data: product.stores?.stripe_connect_account_id ? {
-          destination: product.stores.stripe_connect_account_id,
-        } : undefined,
+        transfer_data: {
+          destination: creatorProfile.stripe_connect_account_id,
+        },
       },
-      success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get("origin")}/shop`,
+      allow_promotion_codes: true,
+      billing_address_collection: 'auto',
       metadata: {
         productId: product.id,
-        sellerId: product.stores?.user_id || product.creator_id,
-        storeId: product.store_id,
+        sellerId: product.creator_id,
         buyerId: user.id,
       },
     });
 
-    // Store transaction record
-    const { error: transactionError } = await supabaseClient
-      .from('payment_transactions')
-      .insert({
-        stripe_payment_intent_id: paymentIntent.id,
-        buyer_id: user.id,
-        seller_id: product.stores?.user_id || product.creator_id,
-        store_id: product.store_id,
-        product_id: product.id,
-        amount: product.price,
-        platform_fee: platformFee / 100, // Convert back to dollars
-        seller_amount: sellerAmount / 100, // Convert back to dollars
-        status: 'pending',
-      });
+    // Don't try to store anything in database for now - just process payment
+    console.log('Payment session created successfully:', session.id);
 
-    if (transactionError) {
-      console.error('Error storing transaction:', transactionError);
+    if (!session.url) {
+      throw new Error("Failed to create checkout session URL");
     }
 
-    return new Response(JSON.stringify({ url: session.url }), {
+    return new Response(JSON.stringify({ 
+      url: session.url,
+      sessionId: session.id 
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
