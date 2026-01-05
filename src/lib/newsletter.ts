@@ -18,30 +18,36 @@ export interface NewsletterCampaign {
   recipients_count: number;
 }
 
-// Subscribe to newsletter
-export async function subscribeToNewsletter(email: string, storeId: string): Promise<{ success: boolean; message: string }> {
+// Subscribe to newsletter - supports both store-specific and main site subscriptions
+export async function subscribeToNewsletter(email: string, storeId?: string | null): Promise<{ success: boolean; message: string }> {
   try {
+    const insertData: any = {
+      email,
+      is_active: true
+    };
+    
+    // Only add store_id if provided (null = main site subscription)
+    if (storeId) {
+      insertData.store_id = storeId;
+    }
+
     const { data, error } = await (supabase as any)
       .from('newsletter_subscribers')
-      .insert({
-        email,
-        store_id: storeId,
-        is_active: true
-      })
+      .insert(insertData)
       .select()
       .single();
 
     if (error) {
       if (error.code === '23505') { // Unique constraint violation
-        return { success: false, message: 'You are already subscribed to this newsletter.' };
+        return { success: false, message: 'You\'re already on the list!' };
       }
       throw error;
     }
 
-    return { success: true, message: 'Successfully subscribed! You will receive updates about new products.' };
+    return { success: true, message: 'You\'re in! We\'ll keep you posted.' };
   } catch (error) {
     console.error('Newsletter subscription error:', error);
-    return { success: false, message: 'Failed to subscribe. Please try again.' };
+    return { success: false, message: 'Something went wrong. Try again?' };
   }
 }
 
@@ -177,7 +183,7 @@ function generateProductEmailHTML(product: any, unsubscribeToken: string): strin
               <tr>
                 <td style="background: linear-gradient(135deg, #00c2ff22 0%, #0066ff22 100%); padding: 30px; text-align: center; border-bottom: 2px solid #00c2ff;">
                   <h1 style="margin: 0; color: #00c2ff; font-size: 28px; font-weight: bold; letter-spacing: 2px;">
-                    ${(product.stores as any)?.name || 'VECTABSE'}
+                    ${(product.stores as any)?.name || 'VECTABASE'}
                   </h1>
                   <p style="margin: 10px 0 0 0; color: #00c2ff99; font-size: 12px; letter-spacing: 1px;">
                     NEW PRODUCT AVAILABLE

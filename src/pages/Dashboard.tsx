@@ -551,143 +551,20 @@ const Dashboard = () => {
             </TabsContent>
             
             <TabsContent value="analytics" className="mt-6">
-              <div className="space-y-6">
-                <h3 className="text-lg font-semibold mb-4">Performance Analytics</h3>
-                
-                {/* Revenue Chart */}
-                <Card 
-                  className="p-6"
-                  style={{
-                    border: '1px solid rgba(33, 150, 243, 0.2)',
-                    background: 'rgba(33, 150, 243, 0.03)'
-                  }}
-                >
-                  <h4 className="font-semibold mb-4">Revenue Overview</h4>
-                  <div className="space-y-4">
-                    {/* Last 7 days revenue bars */}
-                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => {
-                      const revenue = Math.random() * 100;
-                      return (
-                        <div key={day} className="flex items-center gap-4">
-                          <span className="w-12 text-sm" style={{ color: 'rgba(33, 150, 243, 0.7)' }}>{day}</span>
-                          <div className="flex-1 h-8 rounded overflow-hidden" style={{ background: 'rgba(33, 150, 243, 0.1)' }}>
-                            <div 
-                              className="h-full transition-all duration-500"
-                              style={{ 
-                                width: `${revenue}%`,
-                                background: 'linear-gradient(90deg, hsl(210, 100%, 50%), hsl(180, 100%, 50%))',
-                                boxShadow: '0 0 10px rgba(33, 150, 243, 0.4)'
-                              }}
-                            />
-                          </div>
-                          <span className="w-16 text-sm font-semibold" style={{ color: 'hsl(210, 100%, 50%)' }}>
-                            ${revenue.toFixed(2)}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </Card>
-
-                {/* Top Products */}
-                <Card 
-                  className="p-6"
-                  style={{
-                    border: '1px solid rgba(33, 150, 243, 0.2)',
-                    background: 'rgba(33, 150, 243, 0.03)'
-                  }}
-                >
-                  <h4 className="font-semibold mb-4">Top Performing Products</h4>
-                  <div className="space-y-3">
-                    {products.slice(0, 5).map((product, i) => (
-                      <div key={product.id} className="flex items-center justify-between p-3 rounded" style={{ background: 'rgba(33, 150, 243, 0.05)' }}>
-                        <div className="flex items-center gap-3">
-                          <div 
-                            className="w-8 h-8 rounded flex items-center justify-center font-bold"
-                            style={{ 
-                              background: 'rgba(33, 150, 243, 0.2)',
-                              color: 'hsl(210, 100%, 50%)'
-                            }}
-                          >
-                            #{i + 1}
-                          </div>
-                          <div>
-                            <p className="font-medium">{product.title}</p>
-                            <p className="text-sm" style={{ color: 'rgba(33, 150, 243, 0.6)' }}>
-                              {product.downloads} downloads
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold" style={{ color: 'hsl(180, 100%, 50%)' }}>
-                            ${product.revenue.toFixed(2)}
-                          </p>
-                          <p className="text-sm" style={{ color: 'rgba(33, 150, 243, 0.6)' }}>
-                            {product.rating.toFixed(1)}★
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                    {products.length === 0 && (
-                      <div className="text-center py-8">
-                        <p style={{ color: 'rgba(33, 150, 243, 0.6)' }}>
-                          No products yet. Upload your first product to see analytics!
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </Card>
-
-                {/* Traffic Sources */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <Card 
-                    className="p-6"
-                    style={{
-                      border: '1px solid rgba(33, 150, 243, 0.2)',
-                      background: 'rgba(33, 150, 243, 0.03)'
-                    }}
-                  >
-                    <h4 className="font-semibold mb-2">Direct Traffic</h4>
-                    <p className="text-3xl font-bold" style={{ color: 'hsl(210, 100%, 50%)' }}>
-                      {Math.floor(Math.random() * 1000)}
-                    </p>
-                    <p className="text-sm mt-1" style={{ color: 'rgba(33, 150, 243, 0.6)' }}>
-                      +{Math.floor(Math.random() * 50)}% this week
-                    </p>
-                  </Card>
-                  
-                  <Card 
-                    className="p-6"
-                    style={{
-                      border: '1px solid rgba(33, 150, 243, 0.2)',
-                      background: 'rgba(33, 150, 243, 0.03)'
-                    }}
-                  >
-                    <h4 className="font-semibold mb-2">Social Media</h4>
-                    <p className="text-3xl font-bold" style={{ color: 'hsl(180, 100%, 50%)' }}>
-                      {Math.floor(Math.random() * 500)}
-                    </p>
-                    <p className="text-sm mt-1" style={{ color: 'rgba(33, 150, 243, 0.6)' }}>
-                      +{Math.floor(Math.random() * 30)}% this week
-                    </p>
-                  </Card>
-                  
-                  <Card 
-                    className="p-6"
-                    style={{
-                      border: '1px solid rgba(33, 150, 243, 0.2)',
-                      background: 'rgba(33, 150, 243, 0.03)'
-                    }}
-                  >
-                    <h4 className="font-semibold mb-2">Search Engines</h4>
-                    <p className="text-3xl font-bold" style={{ color: 'hsl(195, 100%, 50%)' }}>
-                      {Math.floor(Math.random() * 750)}
-                    </p>
-                    <p className="text-sm mt-1" style={{ color: 'rgba(33, 150, 243, 0.6)' }}>
-                      +{Math.floor(Math.random() * 40)}% this week
-                    </p>
-                  </Card>
+              <div className="text-center py-12">
+                <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+                  <TrendingUp className="w-10 h-10 text-green-400" />
                 </div>
+                <h3 className="text-2xl font-bold mb-3">Advanced Analytics</h3>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                  View detailed real-time analytics with animated charts, live visitor tracking, and comprehensive insights.
+                </p>
+                <Button asChild size="lg" className="bg-green-600 hover:bg-green-700">
+                  <Link to="/analytics">
+                    <TrendingUp className="w-5 h-5 mr-2" />
+                    Open Analytics Dashboard
+                  </Link>
+                </Button>
               </div>
             </TabsContent>
             

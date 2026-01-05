@@ -1,0 +1,52 @@
+{
+  "name": "discord-roblox-whitelist-bot",
+  "version": "1.0.0",
+  "description": "Discord bot that manages Roblox group whitelist access through Payhip product key validation",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "export-server": "node src/export-server/index.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:property": "jest --testPathPattern=property"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "roblox",
+    "whitelist",
+    "payhip"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.89.0",
+    "axios": "^1.6.2",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1",
+    "express": "^4.22.1",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "fast-check": "^3.15.0",
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "transform": {},
+    "extensionsToTreatAsEsm": [
+      ".js"
+    ],
+    "globals": {
+      "jest": {
+        "useESM": true
+      }
+    }
+  }
+}

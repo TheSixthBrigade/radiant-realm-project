@@ -44,10 +44,16 @@ export const PageBuilderSidebar = ({
   const [editingSection, setEditingSection] = useState<any>(null);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [expandedSubsection, setExpandedSubsection] = useState<string | null>(null);
+  const [expandedSubsections, setExpandedSubsections] = useState<Record<string, boolean>>({});
   const [showAddSectionMenu, setShowAddSectionMenu] = useState(false);
   const [showProductPicker, setShowProductPicker] = useState(false);
   const [currentSection, setCurrentSection] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
+
+  // Toggle subsection for footer and other complex sections
+  const toggleSubsection = (key: string) => {
+    setExpandedSubsections(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   // Fetch products for collection manager
   useEffect(() => {
@@ -85,6 +91,12 @@ export const PageBuilderSidebar = ({
     newsletter: Type,
     testimonials: Type,
     footer: LayoutIcon,
+    text: Type,
+    video: Image,
+    gallery: Grid,
+    contact_us: Type,
+    image: Image,
+    image_with_text: Image,
   };
 
   const sectionNames: Record<string, string> = {
@@ -98,6 +110,12 @@ export const PageBuilderSidebar = ({
     newsletter: "Newsletter Signup",
     testimonials: "Testimonials",
     footer: "Footer",
+    text: "Text Block",
+    video: "Video",
+    gallery: "Gallery",
+    contact_us: "Contact Form",
+    image: "Image",
+    image_with_text: "Image with Text",
   };
 
   const toggleSection = (sectionId: string) => {
@@ -1221,6 +1239,234 @@ export const PageBuilderSidebar = ({
           </>
         )}
 
+        {/* Text Section Settings */}
+        {section.type === 'text' && (
+          <>
+            <div>
+              <Label className="text-xs text-gray-300">Heading</Label>
+              <Input
+                value={section.settings?.heading || ''}
+                onChange={(e) => onUpdateSection({ ...section, settings: { ...section.settings, heading: e.target.value }})}
+                placeholder="Section heading (optional)"
+                className="bg-gray-900 border-gray-700 text-white"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-gray-300">Content</Label>
+              <Textarea
+                value={section.settings?.content || ''}
+                onChange={(e) => onUpdateSection({ ...section, settings: { ...section.settings, content: e.target.value }})}
+                placeholder="Your text content..."
+                rows={6}
+                className="bg-gray-900 border-gray-700 text-white"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-gray-300">Text Alignment</Label>
+              <Select 
+                value={section.settings?.alignment || 'left'} 
+                onValueChange={(value) => onUpdateSection({ ...section, settings: { ...section.settings, alignment: value }})}
+              >
+                <SelectTrigger className="bg-gray-900 border-gray-700 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="left">Left</SelectItem>
+                  <SelectItem value="center">Center</SelectItem>
+                  <SelectItem value="right">Right</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </>
+        )}
+
+        {/* Video Section Settings */}
+        {section.type === 'video' && (
+          <>
+            <div>
+              <Label className="text-xs text-gray-300">Section Title</Label>
+              <Input
+                value={section.settings?.title || ''}
+                onChange={(e) => onUpdateSection({ ...section, settings: { ...section.settings, title: e.target.value }})}
+                placeholder="Video title (optional)"
+                className="bg-gray-900 border-gray-700 text-white"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-gray-300">Video URL</Label>
+              <Input
+                value={section.settings?.video_url || ''}
+                onChange={(e) => onUpdateSection({ ...section, settings: { ...section.settings, video_url: e.target.value }})}
+                placeholder="YouTube or Vimeo URL"
+                className="bg-gray-900 border-gray-700 text-white"
+              />
+              <p className="text-xs text-gray-500 mt-1">Supports YouTube and Vimeo links</p>
+            </div>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-gray-300">Autoplay</Label>
+              <Switch
+                checked={section.settings?.autoplay === true}
+                onCheckedChange={(checked) => onUpdateSection({ ...section, settings: { ...section.settings, autoplay: checked }})}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Gallery Section Settings */}
+        {section.type === 'gallery' && (
+          <>
+            <div>
+              <Label className="text-xs text-gray-300">Section Title</Label>
+              <Input
+                value={section.settings?.title || ''}
+                onChange={(e) => onUpdateSection({ ...section, settings: { ...section.settings, title: e.target.value }})}
+                placeholder="Gallery title (optional)"
+                className="bg-gray-900 border-gray-700 text-white"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-gray-300">Columns</Label>
+              <Select 
+                value={section.settings?.columns?.toString() || '3'} 
+                onValueChange={(value) => onUpdateSection({ ...section, settings: { ...section.settings, columns: parseInt(value) }})}
+              >
+                <SelectTrigger className="bg-gray-900 border-gray-700 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2">2 Columns</SelectItem>
+                  <SelectItem value="3">3 Columns</SelectItem>
+                  <SelectItem value="4">4 Columns</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <ImageUploadZone
+                value=""
+                onChange={() => {}}
+                label="Gallery Images"
+                multiple
+                values={section.settings?.images || []}
+                onMultipleChange={(urls) => onUpdateSection({ ...section, settings: { ...section.settings, images: urls }})}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Testimonials Section Settings */}
+        {section.type === 'testimonials' && (
+          <>
+            <div>
+              <Label className="text-xs text-gray-300">Section Title</Label>
+              <Input
+                value={section.settings?.title || 'What Our Customers Say'}
+                onChange={(e) => onUpdateSection({ ...section, settings: { ...section.settings, title: e.target.value }})}
+                className="bg-gray-900 border-gray-700 text-white"
+              />
+            </div>
+            <div className="space-y-3">
+              <Label className="text-xs text-gray-300">Testimonials</Label>
+              {(section.settings?.testimonials || []).map((testimonial: any, index: number) => (
+                <div key={index} className="p-3 bg-gray-800 rounded space-y-2">
+                  <Input
+                    placeholder="Customer name"
+                    value={testimonial.name || ''}
+                    onChange={(e) => {
+                      const testimonials = [...(section.settings?.testimonials || [])];
+                      testimonials[index] = { ...testimonials[index], name: e.target.value };
+                      onUpdateSection({ ...section, settings: { ...section.settings, testimonials }});
+                    }}
+                    className="bg-gray-900 border-gray-700 text-white text-xs"
+                  />
+                  <Textarea
+                    placeholder="Testimonial text..."
+                    value={testimonial.text || ''}
+                    onChange={(e) => {
+                      const testimonials = [...(section.settings?.testimonials || [])];
+                      testimonials[index] = { ...testimonials[index], text: e.target.value };
+                      onUpdateSection({ ...section, settings: { ...section.settings, testimonials }});
+                    }}
+                    rows={2}
+                    className="bg-gray-900 border-gray-700 text-white text-xs"
+                  />
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs text-gray-400">Rating:</Label>
+                    <Select 
+                      value={testimonial.rating?.toString() || '5'} 
+                      onValueChange={(value) => {
+                        const testimonials = [...(section.settings?.testimonials || [])];
+                        testimonials[index] = { ...testimonials[index], rating: parseInt(value) };
+                        onUpdateSection({ ...section, settings: { ...section.settings, testimonials }});
+                      }}
+                    >
+                      <SelectTrigger className="bg-gray-900 border-gray-700 text-white w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5 ⭐</SelectItem>
+                        <SelectItem value="4">4 ⭐</SelectItem>
+                        <SelectItem value="3">3 ⭐</SelectItem>
+                        <SelectItem value="2">2 ⭐</SelectItem>
+                        <SelectItem value="1">1 ⭐</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      const testimonials = (section.settings?.testimonials || []).filter((_: any, i: number) => i !== index);
+                      onUpdateSection({ ...section, settings: { ...section.settings, testimonials }});
+                    }}
+                    className="w-full text-red-400 hover:text-red-300 text-xs"
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+              <Button
+                size="sm"
+                onClick={() => {
+                  const testimonials = [...(section.settings?.testimonials || []), { name: '', text: '', rating: 5 }];
+                  onUpdateSection({ ...section, settings: { ...section.settings, testimonials }});
+                }}
+                className="w-full bg-cyan-600 hover:bg-cyan-700 text-xs"
+              >
+                + Add Testimonial
+              </Button>
+            </div>
+          </>
+        )}
+
+        {/* Contact Form Section Settings */}
+        {section.type === 'contact_us' && (
+          <>
+            <div>
+              <Label className="text-xs text-gray-300">Heading</Label>
+              <Input
+                value={section.settings?.heading || 'Get In Touch'}
+                onChange={(e) => onUpdateSection({ ...section, settings: { ...section.settings, heading: e.target.value }})}
+                className="bg-gray-900 border-gray-700 text-white"
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-gray-300">Show Phone Field</Label>
+              <Switch
+                checked={section.settings?.show_phone !== false}
+                onCheckedChange={(checked) => onUpdateSection({ ...section, settings: { ...section.settings, show_phone: checked }})}
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-gray-300">Submit Button Text</Label>
+              <Input
+                value={section.settings?.button_text || 'Send Message'}
+                onChange={(e) => onUpdateSection({ ...section, settings: { ...section.settings, button_text: e.target.value }})}
+                className="bg-gray-900 border-gray-700 text-white"
+              />
+            </div>
+          </>
+        )}
+
         {/* Footer Section Settings */}
         {section.type === 'footer' && (
           <>
@@ -1588,6 +1834,81 @@ export const PageBuilderSidebar = ({
                 </div>
                 <h4 className="font-semibold text-white mb-1 text-sm">Footer</h4>
                 <p className="text-xs text-gray-400">Links, social, and copyright</p>
+              </button>
+
+              {/* Testimonials Section */}
+              <button
+                onClick={() => {
+                  onAddSection('testimonials');
+                  setShowAddSectionMenu(false);
+                }}
+                className="p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-left transition-colors border border-gray-700 hover:border-cyan-500"
+              >
+                <div className="w-8 h-8 bg-gray-700 rounded flex items-center justify-center mb-2">
+                  <Type className="w-4 h-4 text-cyan-400" />
+                </div>
+                <h4 className="font-semibold text-white mb-1 text-sm">Testimonials</h4>
+                <p className="text-xs text-gray-400">Customer reviews and quotes</p>
+              </button>
+
+              {/* Text Section */}
+              <button
+                onClick={() => {
+                  onAddSection('text');
+                  setShowAddSectionMenu(false);
+                }}
+                className="p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-left transition-colors border border-gray-700 hover:border-cyan-500"
+              >
+                <div className="w-8 h-8 bg-gray-700 rounded flex items-center justify-center mb-2">
+                  <Type className="w-4 h-4 text-cyan-400" />
+                </div>
+                <h4 className="font-semibold text-white mb-1 text-sm">Text Block</h4>
+                <p className="text-xs text-gray-400">Custom text content</p>
+              </button>
+
+              {/* Video Section */}
+              <button
+                onClick={() => {
+                  onAddSection('video');
+                  setShowAddSectionMenu(false);
+                }}
+                className="p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-left transition-colors border border-gray-700 hover:border-cyan-500"
+              >
+                <div className="w-8 h-8 bg-gray-700 rounded flex items-center justify-center mb-2">
+                  <Image className="w-4 h-4 text-cyan-400" />
+                </div>
+                <h4 className="font-semibold text-white mb-1 text-sm">Video</h4>
+                <p className="text-xs text-gray-400">YouTube or Vimeo embed</p>
+              </button>
+
+              {/* Gallery Section */}
+              <button
+                onClick={() => {
+                  onAddSection('gallery');
+                  setShowAddSectionMenu(false);
+                }}
+                className="p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-left transition-colors border border-gray-700 hover:border-cyan-500"
+              >
+                <div className="w-8 h-8 bg-gray-700 rounded flex items-center justify-center mb-2">
+                  <Grid className="w-4 h-4 text-cyan-400" />
+                </div>
+                <h4 className="font-semibold text-white mb-1 text-sm">Gallery</h4>
+                <p className="text-xs text-gray-400">Image grid showcase</p>
+              </button>
+
+              {/* Contact Section */}
+              <button
+                onClick={() => {
+                  onAddSection('contact_us');
+                  setShowAddSectionMenu(false);
+                }}
+                className="p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-left transition-colors border border-gray-700 hover:border-cyan-500"
+              >
+                <div className="w-8 h-8 bg-gray-700 rounded flex items-center justify-center mb-2">
+                  <Type className="w-4 h-4 text-cyan-400" />
+                </div>
+                <h4 className="font-semibold text-white mb-1 text-sm">Contact Form</h4>
+                <p className="text-xs text-gray-400">Get in touch form</p>
               </button>
             </div>
           </div>

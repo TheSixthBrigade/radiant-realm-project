@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Palette, Type } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { X, Palette, Type, Sparkles } from "lucide-react";
 import { ImageUploadZone } from "./ImageUploadZone";
 
 interface StoreStyleEditorProps {
@@ -193,12 +194,150 @@ export const StoreStyleEditor = ({ isOpen, onClose, settings, onSettingsChange, 
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="solid">Solid Color</SelectItem>
-                    <SelectItem value="gradient">Gradient</SelectItem>
+                    <SelectItem value="gradient">Static Gradient</SelectItem>
+                    <SelectItem value="animated_gradient">✨ Animated Gradient Wave</SelectItem>
                     <SelectItem value="image">Image</SelectItem>
                     <SelectItem value="gif">Animated GIF</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Animated Gradient Wave Settings */}
+              {settings.background_type === 'animated_gradient' && (
+                <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="w-4 h-4 text-cyan-500" />
+                    <span className="font-medium text-sm">Animated Wave Settings</span>
+                  </div>
+                  
+                  <div>
+                    <Label>Color Theme</Label>
+                    <Select 
+                      value={settings.animated_gradient_preset || 'green'} 
+                      onValueChange={(value) => onSettingsChange({ ...settings, animated_gradient_preset: value })}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="green">🌿 Green (Developer)</SelectItem>
+                        <SelectItem value="blue">💙 Blue (Ocean)</SelectItem>
+                        <SelectItem value="purple">💜 Purple (Galaxy)</SelectItem>
+                        <SelectItem value="cyan">🩵 Cyan (Tech)</SelectItem>
+                        <SelectItem value="pink">💗 Pink (Vibrant)</SelectItem>
+                        <SelectItem value="orange">🧡 Orange (Sunset)</SelectItem>
+                        <SelectItem value="red">❤️ Red (Fire)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Animation Speed: {((settings.animated_gradient_speed || 0.5) * 100).toFixed(0)}%</Label>
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="2"
+                      step="0.1"
+                      value={settings.animated_gradient_speed || 0.5}
+                      onChange={(e) => onSettingsChange({ ...settings, animated_gradient_speed: parseFloat(e.target.value) })}
+                      className="w-full mt-1"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Slower ← → Faster</p>
+                  </div>
+
+                  <div>
+                    <Label>Wave Intensity: {((settings.animated_gradient_wave_intensity || 0.7) * 100).toFixed(0)}%</Label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={settings.animated_gradient_wave_intensity || 0.7}
+                      onChange={(e) => onSettingsChange({ ...settings, animated_gradient_wave_intensity: parseFloat(e.target.value) })}
+                      className="w-full mt-1"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Subtle ← → Strong waves</p>
+                  </div>
+
+                  <div>
+                    <Label>Particle Count: {settings.animated_gradient_particles || 50}</Label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="10"
+                      value={settings.animated_gradient_particles || 50}
+                      onChange={(e) => onSettingsChange({ ...settings, animated_gradient_particles: parseInt(e.target.value) })}
+                      className="w-full mt-1"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Floating particles (0 = none)</p>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm">Show Glow Effect</Label>
+                    <Switch
+                      checked={settings.animated_gradient_glow !== false}
+                      onCheckedChange={(checked) => onSettingsChange({ ...settings, animated_gradient_glow: checked })}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Dark Overlay: {((settings.animated_gradient_overlay || 0) * 100).toFixed(0)}%</Label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="0.5"
+                      step="0.05"
+                      value={settings.animated_gradient_overlay || 0}
+                      onChange={(e) => onSettingsChange({ ...settings, animated_gradient_overlay: parseFloat(e.target.value) })}
+                      className="w-full mt-1"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Add dark overlay for better text readability</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Static Gradient Settings */}
+              {settings.background_type === 'gradient' && (
+                <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border">
+                  <span className="font-medium text-sm">Gradient Colors</span>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Start Color</Label>
+                      <div className="flex gap-2 mt-1">
+                        <Input
+                          type="color"
+                          value={settings.background_gradient_start || '#1e3a8a'}
+                          onChange={(e) => onSettingsChange({ ...settings, background_gradient_start: e.target.value })}
+                          className="w-16 h-10 p-1"
+                        />
+                        <Input
+                          value={settings.background_gradient_start || '#1e3a8a'}
+                          onChange={(e) => onSettingsChange({ ...settings, background_gradient_start: e.target.value })}
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label>End Color</Label>
+                      <div className="flex gap-2 mt-1">
+                        <Input
+                          type="color"
+                          value={settings.background_gradient_end || '#7c3aed'}
+                          onChange={(e) => onSettingsChange({ ...settings, background_gradient_end: e.target.value })}
+                          className="w-16 h-10 p-1"
+                        />
+                        <Input
+                          value={settings.background_gradient_end || '#7c3aed'}
+                          onChange={(e) => onSettingsChange({ ...settings, background_gradient_end: e.target.value })}
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {settings.background_type === 'image' && (
                 <ImageUploadZone

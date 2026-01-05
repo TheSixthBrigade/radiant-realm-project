@@ -9,6 +9,7 @@ import Navigation from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { SEO, ProductSchema, BreadcrumbSchema } from "@/components/SEO";
 import type { Product } from "@/hooks/useProducts";
 
 const ProductDetail = () => {
@@ -322,6 +323,41 @@ const ProductDetail = () => {
 
   return (
     <div className="min-h-screen bg-[#EDEDED] dark:bg-[#0a0e14] transition-colors duration-500 relative">
+      {product && (
+        <>
+          <SEO 
+            title={product.title}
+            description={product.description || `${product.title} - Premium digital asset available on Vectabase. ${product.category} for game developers.`}
+            url={`/product/${product.id}`}
+            image={product.image_url || undefined}
+            type="product"
+            price={product.price}
+            currency="USD"
+            availability="in stock"
+            category={product.category}
+            rating={product.rating}
+            reviewCount={product.downloads}
+          />
+          <ProductSchema 
+            name={product.title}
+            description={product.description || `${product.title} - Premium digital asset`}
+            image={product.image_url || '/placeholder.svg'}
+            price={product.price}
+            category={product.category}
+            rating={product.rating}
+            reviewCount={product.downloads}
+            seller={product.creator?.display_name}
+            url={`/product/${product.id}`}
+          />
+          <BreadcrumbSchema items={[
+            { name: 'Home', url: '/' },
+            { name: 'Shop', url: '/shop' },
+            { name: product.category, url: `/shop?category=${product.category}` },
+            { name: product.title, url: `/product/${product.id}` }
+          ]} />
+        </>
+      )}
+      
       {/* Dotted Grid Pattern - Dark Mode Only */}
       <div className="hidden dark:block fixed inset-0 pointer-events-none opacity-30">
         <div className="absolute inset-0" style={{

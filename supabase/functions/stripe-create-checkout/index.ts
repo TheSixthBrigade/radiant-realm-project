@@ -99,16 +99,21 @@ serve(async (req) => {
       apiVersion: '2023-10-16',
     })
 
-    // Calculate amounts - Payhip style (buyer pays Stripe fees)
+    // Calculate amounts - Payhip style (buyer pays Stripe fees, platform collects them)
     const productPriceCents = Math.round(product.price * 100)
-    const platformFeeCents = Math.round(productPriceCents * 0.05) // 5% platform fee
-    const stripeFee = calculateStripeFee(productPriceCents) // Stripe processing fee
+    const platformFeePercent = Math.round(productPriceCents * 0.05) // 5% platform fee
+    const stripeFee = calculateStripeFee(productPriceCents + platformFeePercent) // Stripe processing fee on total
     const totalAmountCents = productPriceCents + stripeFee // Buyer pays product + Stripe fees
+    
+    // CRITICAL: Platform collects BOTH the 5% fee AND the Stripe processing fee
+    // This way YOU get the processing fee to cover Stripe's charges
+    // Seller receives exactly: productPrice - 5% platform fee
+    const totalPlatformFeeCents = platformFeePercent + stripeFee
 
-    console.log('Amounts - Product:', productPriceCents / 100, 'Platform fee:', platformFeeCents / 100, 'Stripe fee:', stripeFee / 100, 'Total:', totalAmountCents / 100)
+    console.log('Amounts - Product:', productPriceCents / 100, 'Platform 5%:', platformFeePercent / 100, 'Stripe fee:', stripeFee / 100, 'Total platform fee:', totalPlatformFeeCents / 100, 'Total charge:', totalAmountCents / 100)
 
     // Create Stripe Checkout Session with destination charges (marketplace split)
-    // Customized with Vectabse branding
+    // Customized with Vectabase branding
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -140,7 +145,9 @@ serve(async (req) => {
       success_url: `${req.headers.get('origin')}/payment-success?session_id={CHECKOUT_SESSION_ID}&product_id=${productId}`,
       cancel_url: `${req.headers.get('origin')}/checkout?product_id=${productId}`,
       payment_intent_data: {
-        application_fee_amount: platformFeeCents,
+        // CRITICAL: Platform fee now includes BOTH 5% + Stripe processing fee
+        // This ensures YOU receive the processing fee to cover Stripe's charges
+        application_fee_amount: totalPlatformFeeCents,
         transfer_data: {
           destination: destinationAccount,
         },
@@ -167,8 +174,8 @@ serve(async (req) => {
         buyer_id: buyerId,
         seller_id: product.creator_id,
         amount: product.price,
-        platform_fee: platformFeeCents / 100,
-        seller_amount: (productPriceCents - platformFeeCents) / 100,
+        platform_fee: totalPlatformFeeCents / 100, // Total platform fee (5% + processing)
+        seller_amount: (productPriceCents - platformFeePercent) / 100, // Seller gets product price minus 5%
         payment_method: 'stripe',
         stripe_session_id: session.id,
         status: 'pending',

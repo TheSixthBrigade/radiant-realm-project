@@ -1,0 +1,98 @@
+# Implementation Plan
+
+- [x] 1. Create ServerConfigService and data models
+  - [x] 1.1 Create server config data models and types
+    - Create Product and ServerConfig interfaces in `src/models/serverConfig.js`
+    - Define validation schemas for product input
+    - _Requirements: 1.1, 1.2, 1.3_
+  - [x]* 1.2 Write property test for input validation
+    - **Property 2: Input Validation Consistency**
+    - **Validates: Requirements 1.2, 1.3, 4.2**
+  - [x] 1.3 Implement ServerConfigService class
+    - Create `src/services/serverConfigService.js`
+    - Implement getProducts, getProduct, addProduct, removeProduct, updateProduct methods
+    - Implement validateProductInput method
+    - _Requirements: 1.1, 2.1, 3.1, 4.1_
+  - [ ]* 1.4 Write property test for product CRUD round trip
+    - **Property 1: Product CRUD Round Trip**
+    - **Validates: Requirements 1.1, 7.1**
+  - [ ]* 1.5 Write property test for product name uniqueness
+    - **Property 3: Product Name Uniqueness**
+    - **Validates: Requirements 1.4**
+
+- [x] 2. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 3. Update database service for server configs
+  - [x] 3.1 Extend database service to handle server configurations
+    - Add methods to `src/services/database.js` for server config persistence
+    - Implement loadServerConfigs, saveServerConfig methods
+    - Encrypt Payhip API keys before storage
+    - _Requirements: 7.1, 7.2_
+  - [ ]* 3.2 Write property test for remove then query
+    - **Property 4: Remove Then Query Returns Empty**
+    - **Validates: Requirements 2.1**
+
+- [x] 4. Implement admin commands
+  - [x] 4.1 Create permission middleware
+    - Create `src/bot/middleware/adminCheck.js`
+    - Implement requireAdmin function checking Administrator permission
+    - _Requirements: 6.1, 6.2, 6.3_
+  - [x] 4.2 Implement /admin-product-add command
+    - Create `src/bot/commands/admin-product-add.js`
+    - Add name, payhip_key, group_id options
+    - Validate inputs and store product
+    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
+  - [x] 4.3 Implement /admin-product-remove command
+    - Create `src/bot/commands/admin-product-remove.js`
+    - Add name option with autocomplete
+    - Remove product and confirm
+    - _Requirements: 2.1, 2.2, 2.3_
+  - [x] 4.4 Implement /admin-product-list command
+    - Create `src/bot/commands/admin-product-list.js`
+    - Display all products with masked API keys
+    - Handle empty state
+    - _Requirements: 3.1, 3.2, 3.3_
+  - [x] 4.5 Implement /admin-product-edit command
+    - Create `src/bot/commands/admin-product-edit.js`
+    - Add name, new_name, payhip_key, group_id options
+    - Update specified fields only
+    - _Requirements: 4.1, 4.2, 4.3_
+  - [x]* 4.6 Write property test for list returns all products
+    - **Property 5: List Returns All Products**
+    - **Validates: Requirements 3.1, 3.3**
+  - [ ]* 4.7 Write property test for edit preserves unmodified fields
+    - **Property 6: Edit Preserves Unmodified Fields**
+    - **Validates: Requirements 4.1**
+
+- [x] 5. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 6. Update redeem command for multi-product support
+  - [x] 6.1 Update /redeem command to support product selection
+    - Modify `src/bot/commands/redeem.js`
+    - Check product count for server
+    - Show select menu for multiple products
+    - Auto-select for single product
+    - Handle no products configured
+    - _Requirements: 5.1, 5.2, 5.3, 5.4_
+  - [x] 6.2 Update KeyManager to use product-specific credentials
+    - Modify `src/services/keyManager.js`
+    - Accept product parameter with Payhip key and group ID
+    - Use product credentials instead of env vars
+    - _Requirements: 5.3_
+  - [ ]* 6.3 Write property test for product selection uses correct credentials
+    - **Property 7: Product Selection Uses Correct Credentials**
+    - **Validates: Requirements 5.3**
+
+- [x] 7. Register new commands and update bot client
+  - [x] 7.1 Register admin commands in command registry
+    - Update `src/bot/commandRegistry.js` to include new admin commands
+    - _Requirements: 1.1, 2.1, 3.1, 4.1_
+  - [x] 7.2 Initialize ServerConfigService in bot startup
+    - Update `src/index.js` to create and inject ServerConfigService
+    - Load server configs on startup
+    - _Requirements: 7.2_
+
+- [x] 8. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.

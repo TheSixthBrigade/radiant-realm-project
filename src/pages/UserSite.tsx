@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { PageBuilderSidebar } from '@/components/PageBuilderSidebar';
 import { StoreStyleEditor } from '@/components/StoreStyleEditor';
+import { AnimatedGradientCanvas } from '@/components/AnimatedGradientCanvas';
 import ProductCard from '@/components/ProductCard';
 
 const UserSite = () => {
@@ -69,6 +70,13 @@ const UserSite = () => {
     show_badges: true,
     show_sale_tags: true,
     show_hover_effects: true,
+    // Animated gradient settings
+    animated_gradient_preset: "green",
+    animated_gradient_speed: 0.5,
+    animated_gradient_wave_intensity: 0.7,
+    animated_gradient_particles: 50,
+    animated_gradient_glow: true,
+    animated_gradient_overlay: 0,
   });
 
   useEffect(() => {
@@ -162,6 +170,13 @@ const UserSite = () => {
         show_badges: websiteSettings.show_badges !== false,
         show_sale_tags: websiteSettings.show_sale_tags !== false,
         show_hover_effects: websiteSettings.show_hover_effects !== false,
+        // Animated gradient settings
+        animated_gradient_preset: websiteSettings.animated_gradient_preset || "green",
+        animated_gradient_speed: websiteSettings.animated_gradient_speed || 0.5,
+        animated_gradient_wave_intensity: websiteSettings.animated_gradient_wave_intensity || 0.7,
+        animated_gradient_particles: websiteSettings.animated_gradient_particles || 50,
+        animated_gradient_glow: websiteSettings.animated_gradient_glow !== false,
+        animated_gradient_overlay: websiteSettings.animated_gradient_overlay || 0,
       });
 
       // Load saved page sections if they exist
@@ -245,6 +260,7 @@ const UserSite = () => {
 
   // Background styling
   let backgroundStyle: any = { backgroundColor: editSettings.page_bg_color };
+  const useAnimatedGradient = editSettings.background_type === 'animated_gradient';
 
   if (editSettings.background_type === 'gradient') {
     backgroundStyle = {
@@ -264,12 +280,30 @@ const UserSite = () => {
       backgroundPosition: 'center',
       backgroundAttachment: 'fixed'
     };
+  } else if (useAnimatedGradient) {
+    // For animated gradient, we use transparent background and render the canvas
+    backgroundStyle = { backgroundColor: 'transparent' };
   }
 
   return (
     <>
-      {/* Fixed Background Layer */}
-      <div className='fixed inset-0 -z-10' style={backgroundStyle} />
+      {/* Animated Gradient Background */}
+      {useAnimatedGradient && (
+        <AnimatedGradientCanvas
+          preset={editSettings.animated_gradient_preset as any || 'green'}
+          speed={editSettings.animated_gradient_speed || 0.5}
+          waveIntensity={editSettings.animated_gradient_wave_intensity || 0.7}
+          particleCount={editSettings.animated_gradient_particles || 50}
+          showParticles={(editSettings.animated_gradient_particles || 50) > 0}
+          showGlow={editSettings.animated_gradient_glow !== false}
+          overlayOpacity={editSettings.animated_gradient_overlay || 0}
+        />
+      )}
+      
+      {/* Fixed Background Layer (for non-animated backgrounds) */}
+      {!useAnimatedGradient && (
+        <div className='fixed inset-0 -z-10' style={backgroundStyle} />
+      )}
       
       <div className='min-h-screen relative' style={{ fontFamily: editSettings.font_family, fontSize: fontSize.base, color: editSettings.text_color }}>
       <style>{`
@@ -829,12 +863,13 @@ const UserSite = () => {
 
           // Gallery Section
           if (section.type === 'gallery') {
-            const images = section.images || [];
-            const cols = section.columns || 3;
+            const images = section.settings?.images || section.images || [];
+            const cols = section.settings?.columns || section.columns || 3;
+            const title = section.settings?.title || section.title;
             return (
               <div key={section.id} className='py-12 px-6'>
                 <div className='max-w-7xl mx-auto'>
-                  {section.title && <h2 className='text-3xl font-bold mb-8'>{section.title}</h2>}
+                  {title && <h2 className='text-3xl font-bold mb-8'>{title}</h2>}
                   <div className={`grid grid-cols-2 md:grid-cols-${cols} gap-4`}>
                     {images.map((img: string, idx: number) => (
                       <div key={idx} className='aspect-square overflow-hidden rounded-lg'>
@@ -866,11 +901,14 @@ const UserSite = () => {
 
           // Text Section
           if (section.type === 'text') {
+            const heading = section.settings?.heading || section.heading;
+            const content = section.settings?.content || section.content;
+            const alignment = section.settings?.alignment || section.alignment || 'left';
             return (
               <div key={section.id} className='py-12 px-6'>
-                <div className='max-w-4xl mx-auto' style={{ textAlign: section.alignment || 'left' }}>
-                  {section.heading && <h2 className='text-3xl font-bold mb-6'>{section.heading}</h2>}
-                  <div className='text-lg whitespace-pre-wrap'>{section.content}</div>
+                <div className='max-w-4xl mx-auto' style={{ textAlign: alignment as any }}>
+                  {heading && <h2 className='text-3xl font-bold mb-6'>{heading}</h2>}
+                  <div className='text-lg whitespace-pre-wrap'>{content}</div>
                 </div>
               </div>
             );
@@ -878,14 +916,18 @@ const UserSite = () => {
 
           // Video Section
           if (section.type === 'video') {
+            const videoUrl = section.settings?.video_url || section.video_url || '';
+            const autoplay = section.settings?.autoplay || section.autoplay;
+            const title = section.settings?.title || section.title;
+            
             const getEmbedUrl = (url: string) => {
               if (url.includes('youtube.com') || url.includes('youtu.be')) {
                 const videoId = url.includes('youtu.be') ? url.split('/').pop() : new URL(url).searchParams.get('v');
-                return `https://www.youtube.com/embed/${videoId}${section.autoplay ? '?autoplay=1' : ''}`;
+                return `https://www.youtube.com/embed/${videoId}${autoplay ? '?autoplay=1' : ''}`;
               }
               if (url.includes('vimeo.com')) {
                 const videoId = url.split('/').pop();
-                return `https://player.vimeo.com/video/${videoId}${section.autoplay ? '?autoplay=1' : ''}`;
+                return `https://player.vimeo.com/video/${videoId}${autoplay ? '?autoplay=1' : ''}`;
               }
               return url;
             };
@@ -893,10 +935,10 @@ const UserSite = () => {
             return (
               <div key={section.id} className='py-12 px-6'>
                 <div className='max-w-5xl mx-auto'>
-                  {section.title && <h2 className='text-3xl font-bold mb-6 text-center'>{section.title}</h2>}
+                  {title && <h2 className='text-3xl font-bold mb-6 text-center'>{title}</h2>}
                   <div className='aspect-video rounded-lg overflow-hidden shadow-2xl'>
                     <iframe
-                      src={getEmbedUrl(section.video_url || '')}
+                      src={getEmbedUrl(videoUrl)}
                       className='w-full h-full'
                       allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
                       allowFullScreen
@@ -909,17 +951,24 @@ const UserSite = () => {
 
           // Testimonials Section
           if (section.type === 'testimonials') {
+            // Get testimonials from settings (array) or legacy format (JSON string)
             let testimonials = [];
-            try {
-              testimonials = JSON.parse(section.testimonials || '[]');
-            } catch (e) {
-              testimonials = [];
+            if (section.settings?.testimonials && Array.isArray(section.settings.testimonials)) {
+              testimonials = section.settings.testimonials;
+            } else if (section.testimonials) {
+              try {
+                testimonials = JSON.parse(section.testimonials);
+              } catch (e) {
+                testimonials = [];
+              }
             }
+            
+            const title = section.settings?.title || section.title || 'What Our Customers Say';
 
             return (
               <div key={section.id} className='py-12 px-6 bg-gray-50 dark:bg-gray-900'>
                 <div className='max-w-7xl mx-auto'>
-                  {section.title && <h2 className='text-3xl font-bold mb-12 text-center'>{section.title}</h2>}
+                  {title && <h2 className='text-3xl font-bold mb-12 text-center'>{title}</h2>}
                   <div className='grid md:grid-cols-3 gap-8'>
                     {testimonials.map((testimonial: any, idx: number) => (
                       <div key={idx} className='bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg'>
@@ -940,10 +989,14 @@ const UserSite = () => {
 
           // Contact Us Section
           if (section.type === 'contact_us') {
+            const heading = section.settings?.heading || section.heading || 'Get In Touch';
+            const showPhone = section.settings?.show_phone !== false && section.show_phone !== false;
+            const buttonText = section.settings?.button_text || section.button_text || 'Send Message';
+            
             return (
               <div key={section.id} className='py-12 px-6'>
                 <div className='max-w-2xl mx-auto'>
-                  <h2 className='text-3xl font-bold mb-8 text-center'>{section.heading || 'Get In Touch'}</h2>
+                  <h2 className='text-3xl font-bold mb-8 text-center'>{heading}</h2>
                   <form className='space-y-4'>
                     <div>
                       <label className='block mb-2 font-medium'>Name</label>
@@ -953,7 +1006,7 @@ const UserSite = () => {
                       <label className='block mb-2 font-medium'>Email</label>
                       <Input type='email' placeholder='your@email.com' className='w-full' />
                     </div>
-                    {section.show_phone !== false && (
+                    {showPhone && (
                       <div>
                         <label className='block mb-2 font-medium'>Phone</label>
                         <Input type='tel' placeholder='Your phone number' className='w-full' />
@@ -963,7 +1016,7 @@ const UserSite = () => {
                       <label className='block mb-2 font-medium'>Message</label>
                       <Textarea placeholder='Your message...' rows={5} className='w-full' />
                     </div>
-                    <Button type='submit' className='w-full primary-btn'>Send Message</Button>
+                    <Button type='submit' className='w-full primary-btn'>{buttonText}</Button>
                   </form>
                 </div>
               </div>

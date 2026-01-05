@@ -13,8 +13,9 @@ import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { ImageUploadZone } from "@/components/ImageUploadZone";
+import SellerRoute from "@/components/SellerRoute";
 
-const AddProduct = () => {
+const AddProductContent = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [stripeConnected, setStripeConnected] = useState(false);
   const [checkingStripe, setCheckingStripe] = useState(true);
@@ -119,6 +120,16 @@ const AddProduct = () => {
       toast({
         title: "Error",
         description: "You must be logged in to add products",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Require at least one image
+    if (imageUrls.length === 0) {
+      toast({
+        title: "Image Required",
+        description: "Please upload at least one product image before publishing",
         variant: "destructive",
       });
       return;
@@ -365,6 +376,12 @@ const AddProduct = () => {
               </div>
 
               <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Product Images (Required)</Label>
+                  {imageUrls.length === 0 && (
+                    <span className="text-xs text-red-500 font-medium">* Required</span>
+                  )}
+                </div>
                 <ImageUploadZone
                   value=""
                   onChange={() => {}}
@@ -376,6 +393,11 @@ const AddProduct = () => {
                 <p className="text-sm text-muted-foreground dark:text-cyan-300/70">
                   Drag images directly from Payhip or other websites! AVIF images auto-convert to PNG.
                 </p>
+                {imageUrls.length === 0 && (
+                  <p className="text-sm text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                    ⚠️ You must upload at least one product image to publish your product.
+                  </p>
+                )}
               </div>
 
               {/* Product Files Section */}
@@ -446,16 +468,20 @@ const AddProduct = () => {
               >
                 {isLoading ? "Adding Product..." : "Add Product"}
               </Button>
-              {imageUrls.length === 0 && (
-                <p className="text-sm text-red-600 text-center">
-                  Please add at least one product image
-                </p>
-              )}
             </form>
           </CardContent>
         </Card>
       </div>
     </div>
+  );
+};
+
+// Wrap with SellerRoute to require onboarding
+const AddProduct = () => {
+  return (
+    <SellerRoute>
+      <AddProductContent />
+    </SellerRoute>
   );
 };
 

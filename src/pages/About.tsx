@@ -1,165 +1,288 @@
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Shield, Zap, Users, Heart } from "lucide-react";
-import Navigation from "@/components/Navigation";
-import AnimatedBackground from "@/components/AnimatedBackground";
 import { Link } from "react-router-dom";
-import { useStats } from "@/hooks/useStats";
-import vectabseLogo from "@/assets/vectabse-logo.png";
+import { Button } from "@/components/ui/button";
+import Navigation from "@/components/Navigation";
+import { SEO, BreadcrumbSchema, FAQSchema } from "@/components/SEO";
+import { 
+  Shield, Zap, TrendingUp, Users, Lock, CheckCircle, 
+  ArrowRight, Gamepad2, Code, Box, ShoppingBag
+} from "lucide-react";
 
 const About = () => {
-  const { stats, loading, formatNumber } = useStats();
-  
-  const values = [
-    {
-      icon: Shield,
-      title: "Trust & Security",
-      description: "We prioritize the security of transactions and protect both creators and buyers with our robust verification systems.",
-    },
-    {
-      icon: Zap,
-      title: "Innovation",
-      description: "Constantly evolving our platform with cutting-edge features and tools to empower the game development community.",
-    },
-    {
-      icon: Users,
-      title: "Community First",
-      description: "Building a supportive ecosystem where creators can thrive and developers can find exactly what they need.",
-    },
-    {
-      icon: Heart,
-      title: "Passion for Gaming",
-      description: "Driven by our love for game development and commitment to helping creators turn their passion into profit.",
-    },
-  ];
-
-  const statsData = [
-    { 
-      label: "Happy Developers", 
-      value: loading ? "..." : stats.hasRealData ? formatNumber(stats.totalSales) : "Growing" 
-    },
-    { 
-      label: "Assets Available", 
-      value: loading ? "..." : stats.hasRealData ? formatNumber(stats.totalProducts) : "0" 
-    },
-    { 
-      label: "Active Creators", 
-      value: loading ? "..." : stats.hasRealData ? formatNumber(stats.totalCreators) : "0" 
-    },
-    { 
-      label: "Creator Earnings", 
-      value: loading ? "..." : stats.hasRealData ? `$${formatNumber(stats.totalRevenue)}` : "$0" 
-    },
+  const faqQuestions = [
+    { question: "What is Vectabase?", answer: "Vectabase is an e-commerce platform built specifically for the gaming community. We help creators sell their scripts, models, UI kits, and other digital assets to game developers worldwide." },
+    { question: "How much do sellers keep?", answer: "Sellers keep 95% of their revenue. We only take a 5% platform fee, and processing fees are covered by buyers." },
+    { question: "How do payouts work?", answer: "We use Stripe Connect for instant payouts. Once you connect your Stripe account, you receive payments directly." },
+    { question: "How does the protection system work?", answer: "We offer built-in whitelisting systems that let you control exactly who can use your products. You can whitelist specific users or servers to prevent unauthorized distribution." },
   ];
 
   return (
-    <div className="min-h-screen bg-background relative">
-      <AnimatedBackground />
-      <div className="relative z-10">
-        <Navigation />
-        
-        <div className="container mx-auto px-6 pt-24 pb-12">
-          {/* Hero Section */}
-          <div className="text-center max-w-4xl mx-auto mb-16">
-            <div className="flex justify-center mb-6">
-              <img src={vectabseLogo} alt="Vectabse" className="w-20 h-20 rounded-2xl" />
-            </div>
-            <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-6">
-              About <span className="gradient-text">Vectabse</span>
-            </h1>
-            <p className="text-xl text-muted-foreground mb-8">
-              Empowering game developers worldwide with premium assets, tools, and a thriving creative community
-            </p>
-          </div>
-
-          {/* Mission Section */}
-          <Card className="glass p-8 mb-16">
-            <div className="text-center max-w-3xl mx-auto">
-              <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                Vectabse was founded with a simple yet powerful mission: to democratize game development by providing 
-                creators with a platform to monetize their skills while giving developers access to high-quality assets 
-                and tools. We believe that great games are built by passionate communities, and we're here to fuel that passion.
-              </p>
-            </div>
-          </Card>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-            {statsData.map((stat, index) => (
-              <Card key={stat.label} className="glass p-6 text-center hover-lift">
-                <div className="text-3xl font-bold gradient-text mb-2">{stat.value}</div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
-              </Card>
-            ))}
-          </div>
-
-          {/* Values */}
-          <div className="mb-16">
-            <h2 className="text-3xl font-bold text-center mb-12">Our Values</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {values.map((value, index) => {
-                const Icon = value.icon;
-                return (
-                  <Card key={value.title} className="glass p-6 hover-lift">
-                    <div className="p-3 rounded-lg bg-gradient-primary glow-primary mb-4 w-fit">
-                      <Icon className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="font-semibold mb-2">{value.title}</h3>
-                    <p className="text-sm text-muted-foreground">{value.description}</p>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Story Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
-            <Card className="glass p-8">
-              <h3 className="text-2xl font-bold mb-4">The Beginning</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Started in 2024 by a team of passionate game developers and entrepreneurs, Vectabse was born out of 
-                frustration with existing marketplaces that didn't truly serve the gaming community. We saw talented 
-                creators struggling to monetize their work and developers spending countless hours searching for 
-                quality assets.
-              </p>
-            </Card>
-            <Card className="glass p-8">
-              <h3 className="text-2xl font-bold mb-4">Today & Tomorrow</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Today, Vectabse hosts thousands of creators and serves developers worldwide. But we're just getting 
-                started. Our roadmap includes AI-powered asset recommendations, collaborative tools, and educational 
-                resources to help the entire game development ecosystem thrive.
-              </p>
-            </Card>
-          </div>
-
-          {/* CTA */}
-          <Card className="glass p-8 text-center">
-            <h2 className="text-3xl font-bold mb-4">Join Our Journey</h2>
-            <p className="text-muted-foreground mb-6">
-              Whether you're a creator looking to share your work or a developer building the next big game, 
-              we'd love to have you as part of our community.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/creators">
-                <Button size="lg" className="btn-gaming">
-                  Become a Creator
-                </Button>
-              </Link>
-              <Link to="/shop">
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  className="border-primary/30 hover:border-primary bg-card/30 backdrop-blur-sm"
-                >
-                  Browse Assets
-                </Button>
-              </Link>
-            </div>
-          </Card>
-        </div>
+    <div className="min-h-screen bg-slate-950 relative">
+      <SEO 
+        title="About Us - Digital Assets Marketplace"
+        description="Learn about Vectabase, the marketplace built for game developers and creators. Sell your digital assets with 95% revenue share and built-in protection."
+        url="/about"
+        keywords="about Vectabase, digital assets marketplace, game creator platform, sell game scripts, creator protection"
+      />
+      <BreadcrumbSchema items={[
+        { name: 'Home', url: '/' },
+        { name: 'About', url: '/about' }
+      ]} />
+      <FAQSchema questions={faqQuestions} />
+      
+      {/* Ambient background */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-green-500/[0.04] rounded-full blur-[100px]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-emerald-500/[0.04] rounded-full blur-[120px]" />
       </div>
+
+      <Navigation />
+
+      {/* Hero */}
+      <section className="pt-32 pb-20 relative z-10">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
+              About <span className="text-green-400">Vectabase</span>
+            </h1>
+            <p className="text-lg sm:text-xl text-slate-400 leading-relaxed">
+              We're building the go-to marketplace for game developers and creators 
+              to sell their digital assets with confidence and protection.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* What We Do */}
+      <section className="py-16 relative z-10">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              <div>
+                <h2 className="text-3xl font-bold text-white mb-6">
+                  What is Vectabase?
+                </h2>
+                <p className="text-slate-400 mb-4 leading-relaxed">
+                  Vectabase is an e-commerce platform built specifically for the gaming community. 
+                  We help creators sell their scripts, models, UI kits, and other digital assets 
+                  to game developers worldwide.
+                </p>
+                <p className="text-slate-400 mb-6 leading-relaxed">
+                  But we're not just another marketplace. We understand that protecting your 
+                  intellectual property is crucial. That's why we offer built-in protection 
+                  systems including whitelisting to help you control who can use your products.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <span className="px-3 py-1.5 bg-slate-800/60 border border-slate-700/50 rounded-full text-sm text-slate-300">
+                    <Gamepad2 className="w-4 h-4 inline mr-1.5" />Game Scripts
+                  </span>
+                  <span className="px-3 py-1.5 bg-slate-800/60 border border-slate-700/50 rounded-full text-sm text-slate-300">
+                    <Box className="w-4 h-4 inline mr-1.5" />3D Models
+                  </span>
+                  <span className="px-3 py-1.5 bg-slate-800/60 border border-slate-700/50 rounded-full text-sm text-slate-300">
+                    <Code className="w-4 h-4 inline mr-1.5" />UI Kits
+                  </span>
+                </div>
+              </div>
+              <div className="bg-slate-900/50 border border-slate-800/50 rounded-2xl p-8">
+                <div className="space-y-6">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                      <TrendingUp className="w-5 h-5 text-green-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white mb-1">95% Revenue Share</h3>
+                      <p className="text-slate-400 text-sm">Keep almost everything you earn. We only take 5%.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                      <Zap className="w-5 h-5 text-green-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white mb-1">Instant Payouts</h3>
+                      <p className="text-slate-400 text-sm">Get paid directly via Stripe Connect.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                      <Shield className="w-5 h-5 text-green-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white mb-1">Buyer Pays Fees</h3>
+                      <p className="text-slate-400 text-sm">Processing fees are covered by buyers, not you.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Protection Features */}
+      <section className="py-16 bg-slate-900/30 relative z-10">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-white mb-4">
+                Protect Your Creations
+              </h2>
+              <p className="text-slate-400 max-w-2xl mx-auto">
+                We know how hard you work on your products. That's why we provide tools 
+                to help you protect them from unauthorized use.
+              </p>
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="bg-slate-900/50 border border-slate-800/50 rounded-xl p-6">
+                <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-4">
+                  <Lock className="w-6 h-6 text-green-400" />
+                </div>
+                <h3 className="font-semibold text-white mb-2">Whitelisting System</h3>
+                <p className="text-slate-400 text-sm">
+                  Control exactly who can use your products. Whitelist specific users 
+                  or servers to prevent unauthorized distribution.
+                </p>
+              </div>
+
+              <div className="bg-slate-900/50 border border-slate-800/50 rounded-xl p-6">
+                <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-4">
+                  <CheckCircle className="w-6 h-6 text-green-400" />
+                </div>
+                <h3 className="font-semibold text-white mb-2">License Verification</h3>
+                <p className="text-slate-400 text-sm">
+                  Each purchase generates a unique license. Verify buyers are legitimate 
+                  before they can access your content.
+                </p>
+              </div>
+
+              <div className="bg-slate-900/50 border border-slate-800/50 rounded-xl p-6">
+                <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-4">
+                  <Users className="w-6 h-6 text-green-400" />
+                </div>
+                <h3 className="font-semibold text-white mb-2">Community Trust</h3>
+                <p className="text-slate-400 text-sm">
+                  Build your reputation with reviews and ratings. Trusted sellers 
+                  get more visibility and sales.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* For Who */}
+      <section className="py-16 relative z-10">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-white mb-4">
+                Built For
+              </h2>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="bg-slate-900/50 border border-slate-800/50 rounded-2xl p-8">
+                <h3 className="text-xl font-bold text-white mb-4">Sellers</h3>
+                <ul className="space-y-3">
+                  <li className="flex items-center gap-3 text-slate-300">
+                    <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    Game script developers
+                  </li>
+                  <li className="flex items-center gap-3 text-slate-300">
+                    <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    3D modelers and artists
+                  </li>
+                  <li className="flex items-center gap-3 text-slate-300">
+                    <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    UI/UX designers
+                  </li>
+                  <li className="flex items-center gap-3 text-slate-300">
+                    <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    Audio producers
+                  </li>
+                  <li className="flex items-center gap-3 text-slate-300">
+                    <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    Anyone creating digital game assets
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-slate-900/50 border border-slate-800/50 rounded-2xl p-8">
+                <h3 className="text-xl font-bold text-white mb-4">Buyers</h3>
+                <ul className="space-y-3">
+                  <li className="flex items-center gap-3 text-slate-300">
+                    <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    Game server owners
+                  </li>
+                  <li className="flex items-center gap-3 text-slate-300">
+                    <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    Indie game developers
+                  </li>
+                  <li className="flex items-center gap-3 text-slate-300">
+                    <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    Gaming communities
+                  </li>
+                  <li className="flex items-center gap-3 text-slate-300">
+                    <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    Content creators
+                  </li>
+                  <li className="flex items-center gap-3 text-slate-300">
+                    <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    Anyone building games or servers
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-16 relative z-10">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl font-bold text-white mb-4">
+              Ready to Get Started?
+            </h2>
+            <p className="text-slate-400 mb-8">
+              Join our growing community of creators and start selling today.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Button asChild className="bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded-xl font-medium">
+                <Link to="/auth?mode=register" className="flex items-center gap-2">
+                  Create Account
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="border-slate-700 hover:bg-slate-800 text-white px-8 py-3 rounded-xl">
+                <Link to="/shop" className="flex items-center gap-2">
+                  <ShoppingBag className="w-4 h-4" />
+                  Browse Marketplace
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-8 border-t border-slate-800/30 relative z-10">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <img src="/Logo_pic.png" alt="Vectabase" className="w-6 h-6 object-contain" />
+              <span className="text-white font-medium text-sm">Vectabase</span>
+            </div>
+            <p className="text-slate-600 text-xs">© {new Date().getFullYear()} Vectabase</p>
+            <div className="flex items-center gap-4">
+              <Link to="/about" className="text-slate-500 hover:text-white text-xs transition-colors">About</Link>
+              <Link to="/shop" className="text-slate-500 hover:text-white text-xs transition-colors">Shop</Link>
+              <Link to="/auth?mode=register" className="text-slate-500 hover:text-white text-xs transition-colors">Sell</Link>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

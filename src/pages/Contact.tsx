@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Mail, MessageSquare, Phone, MapPin } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import AnimatedBackground from "@/components/AnimatedBackground";
+import { SEO, BreadcrumbSchema, FAQSchema } from "@/components/SEO";
 
 const Contact = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -46,8 +47,26 @@ const Contact = () => {
     },
   ];
 
+  const faqQuestions = [
+    { question: "How do I become a creator?", answer: "Simply sign up, complete your profile, and start uploading your assets. Our team reviews submissions to ensure quality standards." },
+    { question: "What's the revenue share?", answer: "Creators keep 80% of their earnings. We handle all payment processing, hosting, and customer support." },
+    { question: "How do refunds work?", answer: "We offer a 30-day refund policy for purchases. Contact our support team if you're not satisfied with your purchase." },
+    { question: "Can I use assets commercially?", answer: "Yes! All assets come with commercial licensing unless otherwise specified. Check the license details on each product page." }
+  ];
+
   return (
     <div className="min-h-screen bg-background relative">
+      <SEO 
+        title="Contact Us"
+        description="Get in touch with Vectabase. Contact our support team for help with purchases, creator support, technical issues, or business partnerships."
+        url="/contact"
+        keywords="contact, support, help, customer service, Vectabase support"
+      />
+      <BreadcrumbSchema items={[
+        { name: 'Home', url: '/' },
+        { name: 'Contact', url: '/contact' }
+      ]} />
+      <FAQSchema questions={faqQuestions} />
       <AnimatedBackground />
       <div className="relative z-10">
         <Navigation />

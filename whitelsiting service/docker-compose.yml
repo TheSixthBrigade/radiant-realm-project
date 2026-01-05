@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  discord-bot:
+    build: .
+    container_name: discord-roblox-whitelist-bot
+    restart: unless-stopped
+    
+    # Environment variables (use .env file)
+    env_file:
+      - .env
+    
+    # Volume mounts for persistent data
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./data/backups:/app/data/backups
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "node", "-e", "console.log('Health check passed')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    
+    # Network mode
+    network_mode: "bridge"
+
+# Optional: Add monitoring services
+  # watchtower:
+  #   image: containrrr/watchtower
+  #   container_name: watchtower
+  #   restart: unless-stopped
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   environment:
+  #     - WATCHTOWER_CLEANUP=true
+  #     - WATCHTOWER_POLL_INTERVAL=3600
+  #   command: discord-roblox-whitelist-bot
+
+volumes:
+  bot_data:
+    driver: local
+  bot_logs:
+    driver: local

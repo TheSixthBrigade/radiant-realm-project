@@ -97,21 +97,35 @@ serve(async (req) => {
         payouts_enabled: account.payouts_enabled
       })
       
-      // Update profile with account status using correct field names
-      // Account is considered "connected" when it can accept charges and receive payouts
-      const isConnected = account.charges_enabled && account.payouts_enabled
+      // Determine account status based on Stripe's verification state
+      // 'complete' = fully verified and can accept payments + receive payouts
+      // 'incomplete' = started but needs more info
+      // 'pending' = waiting for Stripe verification
+      let status = 'pending'
+      if (account.charges_enabled && account.payouts_enabled) {
+        status = 'complete'
+      } else if (account.details_submitted) {
+        status = 'incomplete'
+      }
+      
+      const updateData: Record<string, any> = {
+        stripe_connect_status: status
+      }
+      
+      // If complete, also mark onboarding as done
+      if (status === 'complete') {
+        updateData.onboarding_completed_at = new Date().toISOString()
+      }
       
       const { error: accountUpdateError } = await supabase
         .from('profiles')
-        .update({
-          stripe_connect_status: isConnected ? 'connected' : 'pending'
-        })
+        .update(updateData)
         .eq('stripe_connect_account_id', account.id)
 
       if (accountUpdateError) {
         console.error('Error updating account status:', accountUpdateError)
       } else {
-        console.log('Account updated:', account.id, 'status set to:', isConnected ? 'connected' : 'pending')
+        console.log('Account updated:', account.id, 'status set to:', status)
       }
     }
 

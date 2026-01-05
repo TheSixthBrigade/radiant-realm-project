@@ -1,8 +1,13 @@
+# Vectabase - Digital Assets Marketplace
+# https://vectabase.com
+
 User-agent: Googlebot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Bingbot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Twitterbot
 Allow: /
@@ -10,5 +15,32 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+Crawl-delay: 1
+
+User-agent: DuckDuckBot
+Allow: /
+Crawl-delay: 1
+
 User-agent: *
 Allow: /
+Crawl-delay: 2
+
+# Sitemap location
+Sitemap: https://vectabase.com/sitemap.xml
+
+# Disallow private/auth areas from indexing
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /checkout
+Disallow: /payment-success
+Disallow: /payment-failure
+Disallow: /downloads
+Disallow: /store-management
+Disallow: /add-product
+Disallow: /create-store
+Disallow: /analytics

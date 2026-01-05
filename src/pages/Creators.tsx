@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Upload, DollarSign, Users, TrendingUp, Star, Clock } from "lucide-react";
+import { Upload, DollarSign, Users, TrendingUp, Star } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { Link } from "react-router-dom";
 import { useStats } from "@/hooks/useStats";
+import { SEO, BreadcrumbSchema } from "@/components/SEO";
 
 const Creators = () => {
   const { stats, loading: statsLoading, error: statsError, formatNumber } = useStats();
@@ -81,6 +82,16 @@ const Creators = () => {
 
   return (
     <div className="min-h-screen bg-background relative">
+      <SEO 
+        title="Become a Creator"
+        description="Turn your creative skills into passive income. Join thousands of creators earning money by selling game assets, scripts, and tools on Vectabase. Keep 80% of your earnings."
+        url="/creators"
+        keywords="sell digital assets, become a creator, game asset marketplace, passive income, sell scripts, sell 3D models"
+      />
+      <BreadcrumbSchema items={[
+        { name: 'Home', url: '/' },
+        { name: 'Creators', url: '/creators' }
+      ]} />
       <AnimatedBackground />
       <div className="relative z-10">
         <Navigation />

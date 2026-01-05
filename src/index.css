@@ -1098,3 +1098,15 @@
     box-shadow: 0 8px 20px rgba(168, 85, 247, 0.4);
   }
 }
+
+
+/* Animated gradient for hero text */
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient {
+  animation: gradient 3s ease infinite;
+}

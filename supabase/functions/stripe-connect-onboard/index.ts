@@ -13,11 +13,29 @@ serve(async (req) => {
   }
 
   try {
-    const { userId } = await req.json()
-
-    if (!userId) {
-      throw new Error('userId is required')
+    // Get auth token from request
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      throw new Error('No authorization header')
     }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    )
+
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      throw new Error('Not authenticated')
+    }
+
+    // Parse request body for return/refresh URLs
+    const body = await req.json().catch(() => ({}))
+    const origin = req.headers.get('origin') || 'http://localhost:8080'
+    const returnUrl = body.return_url || `${origin}/onboarding?stripe_return=true`
+    const refreshUrl = body.refresh_url || `${origin}/onboarding?stripe_refresh=true`
 
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')
     if (!stripeKey) {
@@ -28,40 +46,53 @@ serve(async (req) => {
       apiVersion: '2023-10-16',
     })
 
-    const supabase = createClient(
+    // Use service role for database operations
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    // Check if user already has a Stripe account
-    const { data: profile } = await supabase
+    // Check if user already has a Stripe Connect account
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('stripe_account_id')
-      .eq('user_id', userId)
+      .select('stripe_connect_account_id, stripe_connect_status, business_name')
+      .eq('user_id', user.id)
       .single()
 
-    let accountId = profile?.stripe_account_id
+    if (profileError) {
+      throw new Error('Failed to fetch profile')
+    }
+
+    let accountId = profile?.stripe_connect_account_id
 
     // Create account only if it doesn't exist
     if (!accountId) {
       const account = await stripe.accounts.create({
         type: 'express',
+        email: user.email,
+        business_profile: {
+          name: profile?.business_name || undefined,
+        },
         capabilities: {
           card_payments: { requested: true },
           transfers: { requested: true },
+        },
+        metadata: {
+          user_id: user.id,
+          platform: 'vectabase',
         },
       })
       
       accountId = account.id
 
       // Save the account ID to database
-      const { error: updateError } = await supabase
+      const { error: updateError } = await supabaseAdmin
         .from('profiles')
         .update({
-          stripe_account_id: accountId,
-          stripe_onboarding_status: 'pending'
+          stripe_connect_account_id: accountId,
+          stripe_connect_status: 'pending'
         })
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
       
       if (updateError) {
         console.error('Database update error:', updateError)
@@ -72,15 +103,15 @@ serve(async (req) => {
     // Create account link for onboarding (works for new or existing accounts)
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${req.headers.get('origin') || 'http://127.0.0.1:8080'}/dashboard?stripe_refresh=true`,
-      return_url: `${req.headers.get('origin') || 'http://127.0.0.1:8080'}/dashboard?stripe_success=true`,
+      refresh_url: refreshUrl,
+      return_url: returnUrl,
       type: 'account_onboarding',
     })
 
     return new Response(
       JSON.stringify({
         success: true,
-        onboardingUrl: accountLink.url,
+        url: accountLink.url,
         accountId: accountId
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -91,9 +122,8 @@ serve(async (req) => {
       JSON.stringify({ 
         success: false,
         error: error.message || 'Unknown error occurred',
-        details: error.toString()
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
     )
   }
 })
