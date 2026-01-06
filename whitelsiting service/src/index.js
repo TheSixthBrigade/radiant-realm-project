@@ -1,5 +1,5 @@
-import dotenv from 'dotenv';
 import { initializeDatabase, validateDatabaseConfig } from './config/database.js';
+import { fetchConfig } from './config/supabaseConfig.js';
 import DiscordBotClient from './bot/client.js';
 import CommandRegistry from './bot/commandRegistry.js';
 import RobloxApiService from './services/robloxApi.js';
@@ -22,8 +22,8 @@ import adminWhitelistAddCommand from './bot/commands/admin-whitelist-add.js';
 import adminWhitelistRemoveCommand from './bot/commands/admin-whitelist-remove.js';
 import { logBotEvent, logError, logDebug } from './utils/logger.js';
 
-// Load environment variables
-dotenv.config();
+// Config loaded from Supabase (no .env needed!)
+let config = {};
 
 /**
  * Discord Roblox Whitelist Bot
@@ -47,32 +47,25 @@ class WhitelistBot {
   validateConfiguration() {
     const errors = [];
     
-    // Check required environment variables
-    if (!process.env.DISCORD_TOKEN) {
+    // Check required config values (loaded from Supabase)
+    if (!config.DISCORD_TOKEN) {
       errors.push('DISCORD_TOKEN is required');
     }
     
-    if (!process.env.DISCORD_CLIENT_ID) {
+    if (!config.DISCORD_CLIENT_ID) {
       errors.push('DISCORD_CLIENT_ID is required');
     }
     
-    if (!process.env.ROBLOX_API_KEY) {
+    if (!config.ROBLOX_API_KEY) {
       errors.push('ROBLOX_API_KEY is required');
     }
     
-    if (!process.env.ROBLOX_GROUP_ID) {
+    if (!config.ROBLOX_GROUP_ID) {
       errors.push('ROBLOX_GROUP_ID is required');
     }
     
-    if (!process.env.PAYHIP_API_KEY) {
-      errors.push('PAYHIP_API_KEY is required');
-    }
-    
-    // Validate database configuration
-    const dbValidation = validateDatabaseConfig();
-    if (!dbValidation.isValid) {
-      errors.push(...dbValidation.errors);
-    }
+    // Note: PAYHIP_API_KEY is now per-product in bot_products table
+    // No longer a global requirement
     
     return {
       isValid: errors.length === 0,
@@ -94,8 +87,8 @@ class WhitelistBot {
       // Initialize Roblox API service
       console.log('🎮 Initializing Roblox API service...');
       this.robloxApi = new RobloxApiService({
-        apiKey: process.env.ROBLOX_API_KEY,
-        groupId: process.env.ROBLOX_GROUP_ID
+        apiKey: config.ROBLOX_API_KEY,
+        groupId: config.ROBLOX_GROUP_ID
       });
       
       // Validate Roblox API configuration
@@ -124,8 +117,8 @@ class WhitelistBot {
       // Initialize Discord bot client
       console.log('🤖 Initializing Discord bot...');
       this.botClient = new DiscordBotClient({
-        token: process.env.DISCORD_TOKEN,
-        clientId: process.env.DISCORD_CLIENT_ID
+        token: config.DISCORD_TOKEN,
+        clientId: config.DISCORD_CLIENT_ID
       });
       
       // Attach services to bot client for command access
@@ -160,9 +153,9 @@ class WhitelistBot {
       
       // Initialize command registry
       this.commandRegistry = new CommandRegistry({
-        token: process.env.DISCORD_TOKEN,
-        clientId: process.env.DISCORD_CLIENT_ID,
-        guildId: process.env.DISCORD_GUILD_ID
+        token: config.DISCORD_TOKEN,
+        clientId: config.DISCORD_CLIENT_ID,
+        guildId: config.DISCORD_GUILD_ID
       });
       
       // Register commands with the bot client
@@ -200,7 +193,7 @@ class WhitelistBot {
       this.commandRegistry.addCommand(adminWhitelistRemoveCommand.data);
       
       // Deploy commands
-      if (process.env.DISCORD_GUILD_ID) {
+      if (config.DISCORD_GUILD_ID) {
         // Deploy to specific guild (faster for development)
         console.log('📋 Deploying guild commands...');
         await this.commandRegistry.deployGuildCommands();
@@ -224,6 +217,17 @@ class WhitelistBot {
   async start() {
     try {
       console.log('🚀 Starting Discord Roblox Whitelist Bot...\n');
+      
+      // Load configuration from Supabase
+      console.log('☁️ Loading configuration from Supabase...');
+      try {
+        config = await fetchConfig();
+        console.log('✅ Configuration loaded from Supabase\n');
+      } catch (error) {
+        console.error('❌ Failed to load config from Supabase:', error.message);
+        console.error('   Make sure SUPABASE_SERVICE_KEY is set or bot_config table exists');
+        process.exit(1);
+      }
       
       // Validate configuration
       console.log('⚙️ Validating configuration...');
