@@ -1,0 +1,163 @@
+{
+  "redemptions": [
+    {
+      "id": "1fa4c5ae9030985ea4ce001d74b7d218",
+      "key_hash": "$2b$12$24qUWWJ0PjAFimmuMG6xxOs5S4PONDenLloflzQzONqKA0HvxW0P.",
+      "discord_user_id": "123456789012345678",
+      "roblox_username": "TestUser123",
+      "roblox_user_id": 987654321,
+      "ip_address_hash": "cc9120650f6e3a107b9d2b924d0e9899696b3f7847cd8a5a74f5eee5209fe6f5",
+      "user_agent_hash": "6d07832e3b1d11f338b4f4268e02ba18658285b11da1cd298d434e564016bf22",
+      "redeemed_at": "2025-12-22T15:59:38.753Z",
+      "created_at": "2025-12-22T15:59:38.753Z",
+      "updated_at": "2025-12-22T15:59:38.753Z"
+    },
+    {
+      "id": "46434e10ae0981848587a95606fede58",
+      "key_hash": "$2b$12$jJhrJrpgyp5Z4mASuDO25eFbPZTOcnY2bJ7qvSy8sRg4PAmSGL1oa",
+      "discord_user_id": "1431385498214994040",
+      "roblox_username": "yesbossmansigma",
+      "roblox_user_id": 5764886623,
+      "ip_address_hash": null,
+      "user_agent_hash": "e3eeaf8adf6b7e8f700d5fa000628226fcf5d5a8063a7e98841e56160ce6aab6",
+      "redeemed_at": "2025-12-23T11:19:21.046Z",
+      "created_at": "2025-12-23T11:19:21.046Z",
+      "updated_at": "2025-12-23T11:19:21.046Z"
+    },
+    {
+      "id": "642ee39e90c26c5de06be514249797af",
+      "key_hash": "$2b$12$CLtA.OBqa7j072fd2tybIOWSFV4IlLwjhlAygsXH95i5F5jexUlji",
+      "discord_user_id": "1015012791079411742",
+      "roblox_username": "lowp_ly",
+      "roblox_user_id": 522473500,
+      "ip_address_hash": null,
+      "user_agent_hash": "e3eeaf8adf6b7e8f700d5fa000628226fcf5d5a8063a7e98841e56160ce6aab6",
+      "redeemed_at": "2025-12-29T19:00:51.982Z",
+      "created_at": "2025-12-29T19:00:51.982Z",
+      "updated_at": "2025-12-29T19:00:51.982Z"
+    },
+    {
+      "id": "204f7761e9a5ae083f3fdf5749d3be60",
+      "key_hash": "$2b$12$zzP.uzKxTYrgRFeMJUZyt.id9OtV./ssDPf1JmLpWHQlMcg8AEgf2",
+      "discord_user_id": "635462177679081472",
+      "roblox_username": "flappy5100",
+      "roblox_user_id": 1181225689,
+      "ip_address_hash": null,
+      "user_agent_hash": "e3eeaf8adf6b7e8f700d5fa000628226fcf5d5a8063a7e98841e56160ce6aab6",
+      "redeemed_at": "2026-01-01T13:03:14.475Z",
+      "created_at": "2026-01-01T13:03:14.475Z",
+      "updated_at": "2026-01-01T13:03:14.475Z"
+    }
+  ],
+  "activity_logs": [
+    {
+      "id": "20a3604f0cb33d9b116a6bc7675a0551",
+      "event_type": "REDEMPTION_STORED",
+      "discord_user_id": "123456789012345678",
+      "details": "{\"roblox_username\":\"TestUser123\",\"roblox_user_id\":987654321,\"redemption_id\":\"1fa4c5ae9030985ea4ce001d74b7d218\"}",
+      "severity": "INFO",
+      "timestamp": "2025-12-22T15:59:38.755Z"
+    },
+    {
+      "id": "22ad0dc8c0561906169f851b58d58ae6",
+      "event_type": "REDEMPTION_STORED",
+      "discord_user_id": "1431385498214994040",
+      "details": "{\"roblox_username\":\"yesbossmansigma\",\"roblox_user_id\":5764886623,\"redemption_id\":\"46434e10ae0981848587a95606fede58\"}",
+      "severity": "INFO",
+      "timestamp": "2025-12-23T11:19:21.263Z"
+    },
+    {
+      "id": "9dc50813eb435bac36cf019bf716d176",
+      "event_type": "REDEMPTION_STORED",
+      "discord_user_id": "1431385498214994040",
+      "details": "{\"roblox_username\":\"maxswatcheetah\",\"roblox_user_id\":462667946,\"redemption_id\":\"c0bb6d0251b073fa4d425667369feb9b\"}",
+      "severity": "INFO",
+      "timestamp": "2025-12-26T11:42:48.873Z"
+    },
+    {
+      "id": "4e6ed83d77728cbc95eada64d21a4ee2",
+      "event_type": "REDEMPTION_STORED",
+      "discord_user_id": "1015012791079411742",
+      "details": "{\"roblox_username\":\"lowp_ly\",\"roblox_user_id\":522473500,\"redemption_id\":\"642ee39e90c26c5de06be514249797af\"}",
+      "severity": "INFO",
+      "timestamp": "2025-12-29T19:00:52.453Z"
+    },
+    {
+      "id": "d551af3769c6fa376b9607f941e24083",
+      "event_type": "REDEMPTION_STORED",
+      "discord_user_id": "635462177679081472",
+      "details": "{\"roblox_username\":\"flappy5100\",\"roblox_user_id\":1181225689,\"redemption_id\":\"204f7761e9a5ae083f3fdf5749d3be60\"}",
+      "severity": "INFO",
+      "timestamp": "2026-01-01T13:03:15.079Z"
+    }
+  ],
+  "security_events": [],
+  "metadata": {
+    "version": "1.0.0",
+    "created_at": "2025-12-22T15:59:38.099Z",
+    "encryption": "AES-256-CBC",
+    "security_level": "Enterprise"
+  },
+  "server_configs": {
+    "1431739716918841396": {
+      "guildId": "1431739716918841396",
+      "products": [
+        {
+          "name": "Core Chassis Whitelist",
+          "robloxGroupId": "1023692953",
+          "roleId": "1454082782585163966",
+          "redemptionMessage": null,
+          "createdAt": "2025-12-26T11:58:19.228Z",
+          "updatedAt": "2025-12-26T12:05:32.366Z",
+          "encryptedPayhipKey": {
+            "encrypted": "2ef34b4f7df2a37886013411390ca785bb91cd256fdc1bbab998f5ca91cb9f8305e6b2b77357f75c949da81c3f039813734d43120e2a7556ed916f366b45f3b7",
+            "iv": "c43cca1c52199e6ed2a7877197faf680"
+          }
+        },
+        {
+          "name": "Breachcore Whitelist",
+          "robloxGroupId": "5451777",
+          "roleId": "1454082785416319006",
+          "redemptionMessage": null,
+          "createdAt": "2025-12-26T11:58:19.231Z",
+          "updatedAt": "2025-12-26T12:05:32.967Z",
+          "encryptedPayhipKey": {
+            "encrypted": "c52bb7e85351b83ca14b9c0b5e1644b006d10c8add83a52abf5f90852bc9166bebb0cbb99f308ffe40435da141fffa3e371b791dcd0dd70816f5974549278679",
+            "iv": "e9818d50e55d49ad6924ce899afb0449"
+          }
+        }
+      ],
+      "createdAt": "2025-12-23T11:14:10.707Z",
+      "updatedAt": "2025-12-26T12:05:32.967Z"
+    },
+    "1199310437326532668": {
+      "guildId": "1199310437326532668",
+      "products": [
+        {
+          "name": "Core Chassis Whitelist",
+          "robloxGroupId": "1023692953",
+          "roleId": "1454076413157183588",
+          "createdAt": "2025-12-26T10:58:55.982Z",
+          "updatedAt": "2025-12-26T11:41:09.724Z",
+          "encryptedPayhipKey": {
+            "encrypted": "cea6764546b3d7f94c0e97bd973d651014880f696213437f8e22a4abe972813a23e0688853ab56bf0ec4b0d71224563f70e3d584632b3d9c25ca196c2e8e5d14",
+            "iv": "2b742ff449e1f14cc68c32ee41e520c6"
+          }
+        },
+        {
+          "name": "Breachcore Whitelist",
+          "robloxGroupId": "5451777",
+          "roleId": "1398359697483890820",
+          "createdAt": "2025-12-26T10:58:55.985Z",
+          "updatedAt": "2026-01-03T08:40:33.129Z",
+          "encryptedPayhipKey": {
+            "encrypted": "0228caba4ddf0b01c8bef552c5aa14c5f06df17f8ba08cc3331ce9939f4cd3a19eb99cb2a0534b81ca65a6e394907d2e458a756ffd773553f4907fb39fed0dfd",
+            "iv": "436bc42704ddb65790f1541140f1d927"
+          }
+        }
+      ],
+      "createdAt": "2025-12-26T10:58:55.982Z",
+      "updatedAt": "2026-01-03T08:40:33.130Z"
+    }
+  }
+}
