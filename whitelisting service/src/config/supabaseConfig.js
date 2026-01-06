@@ -17,6 +17,19 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let configCache = null;
 let cacheTimestamp = null;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const FETCH_TIMEOUT = 10000; // 10 second timeout
+
+/**
+ * Helper to add timeout to a promise
+ */
+function withTimeout(promise, ms, errorMessage) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => 
+      setTimeout(() => reject(new Error(errorMessage)), ms)
+    )
+  ]);
+}
 
 /**
  * Fetch all configuration from Supabase
@@ -24,19 +37,24 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 export async function fetchConfig() {
   // Return cached config if still valid
   if (configCache && cacheTimestamp && (Date.now() - cacheTimestamp < CACHE_TTL)) {
+    console.log('📦 Using cached config');
     return configCache;
   }
 
   try {
-    const { data, error } = await supabase
-      .from('bot_config')
-      .select('key, value');
+    console.log('🔄 Fetching config from Supabase...');
+    
+    const { data, error } = await withTimeout(
+      supabase.from('bot_config').select('key, value'),
+      FETCH_TIMEOUT,
+      'Supabase config fetch timed out after 10 seconds'
+    );
 
     if (error) {
       console.error('Failed to fetch config from Supabase:', error.message);
       // Return cached config if available, even if stale
       if (configCache) {
-        console.warn('Using stale cached config');
+        console.warn('⚠️ Using stale cached config');
         return configCache;
       }
       throw error;
@@ -52,9 +70,17 @@ export async function fetchConfig() {
     configCache = config;
     cacheTimestamp = Date.now();
 
+    console.log(`✅ Loaded ${Object.keys(config).length} config values`);
     return config;
   } catch (error) {
-    console.error('Error fetching config:', error);
+    console.error('❌ Error fetching config:', error.message);
+    
+    // Return cached config if available
+    if (configCache) {
+      console.warn('⚠️ Using stale cached config due to error');
+      return configCache;
+    }
+    
     throw error;
   }
 }
