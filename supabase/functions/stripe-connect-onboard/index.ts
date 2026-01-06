@@ -53,14 +53,33 @@ serve(async (req) => {
     )
 
     // Check if user already has a Stripe Connect account
-    const { data: profile, error: profileError } = await supabaseAdmin
+    let { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('stripe_connect_account_id, stripe_connect_status, business_name')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (profileError) {
-      throw new Error('Failed to fetch profile')
+    // If no profile exists, create one
+    if (!profile && (!profileError || profileError.code === 'PGRST116')) {
+      console.log('Creating profile for user:', user.id)
+      const { data: newProfile, error: createError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          user_id: user.id,
+          display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          avatar_url: user.user_metadata?.avatar_url || null,
+        })
+        .select('stripe_connect_account_id, stripe_connect_status, business_name')
+        .single()
+      
+      if (createError) {
+        console.error('Failed to create profile:', createError)
+        throw new Error(`Failed to create profile: ${createError.message}`)
+      }
+      profile = newProfile
+    } else if (profileError && profileError.code !== 'PGRST116') {
+      console.error('Profile fetch error:', profileError)
+      throw new Error(`Failed to fetch profile: ${profileError.message}`)
     }
 
     let accountId = profile?.stripe_connect_account_id

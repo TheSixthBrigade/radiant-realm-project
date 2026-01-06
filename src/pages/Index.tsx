@@ -269,7 +269,7 @@ const Index = () => {
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="w-full sm:w-auto border-slate-700 hover:bg-slate-800/80 hover:border-slate-600 text-white px-8 py-5 lg:px-10 lg:py-6 rounded-xl font-semibold text-base lg:text-lg transition-all hover:scale-[1.02]">
-                <Link to="/auth?mode=register" className="flex items-center gap-2">
+                <Link to="/auth?mode=register&creator=true" className="flex items-center gap-2">
                   <Play className="w-4 h-4" />
                   Start Selling
                 </Link>
@@ -360,7 +360,7 @@ const Index = () => {
               <Package className="w-12 h-12 text-slate-600 mx-auto mb-3" />
               <h3 className="text-lg font-semibold text-white mb-2">No Products Yet</h3>
               <p className="text-slate-400 text-sm mb-4">Be the first to list!</p>
-              <Button asChild className="bg-green-600 hover:bg-green-500"><Link to="/auth?mode=register">Start Selling</Link></Button>
+              <Button asChild className="bg-green-600 hover:bg-green-500"><Link to="/auth?mode=register&creator=true">Start Selling</Link></Button>
             </div>
           )}
         </div>
@@ -485,7 +485,7 @@ const Index = () => {
             <div className="flex items-center gap-4">
               <Link to="/about" className="text-slate-500 hover:text-white text-xs transition-colors">About</Link>
               <Link to="/shop" className="text-slate-500 hover:text-white text-xs transition-colors">Shop</Link>
-              <Link to="/auth?mode=register" className="text-slate-500 hover:text-white text-xs transition-colors">Sell</Link>
+              <Link to="/auth?mode=register&creator=true" className="text-slate-500 hover:text-white text-xs transition-colors">Sell</Link>
             </div>
           </div>
         </div>

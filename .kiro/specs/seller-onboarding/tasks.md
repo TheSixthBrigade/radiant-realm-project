@@ -97,19 +97,19 @@ Implement a multi-step seller onboarding flow with TOS agreement, business profi
     - Prompt when non-creator tries to create product
     - _Requirements: 6.2, 6.3_
 
-- [ ] 8. Checkpoint - Test full onboarding flow
+- [x] 8. Checkpoint - Test full onboarding flow
   - Ensure all tests pass, ask the user if questions arise.
   - Test email signup → onboarding flow
   - Test Google OAuth → TOS → onboarding flow
   - Test Stripe Connect → webhook → completion
 
-- [ ] 9. Final polish
-  - [ ] 9.1 Add success celebration on completion
+- [x] 9. Final polish
+  - [x] 9.1 Add success celebration on completion
     - Confetti or animation on final step
     - Redirect to seller dashboard
     - _Requirements: 5.5_
   
-  - [ ] 9.2 Add mobile responsiveness
+  - [x] 9.2 Add mobile responsiveness
     - Test and fix any mobile layout issues
     - _Requirements: 5.3_
 

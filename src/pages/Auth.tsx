@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link, useLocation } from "react-router-dom";
+import { useNavigate, Link, useLocation, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,44 +8,117 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
+import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
 import AnimatedBackground from "@/components/AnimatedBackground";
 
 const Auth = () => {
+  const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [isCreatorSignup, setIsCreatorSignup] = useState(false);
+  // Check URL param for creator signup (from "Start Selling" button)
+  const [isCreatorSignup, setIsCreatorSignup] = useState(searchParams.get('creator') === 'true');
   const [agreedToTOS, setAgreedToTOS] = useState(false);
   const { signIn, signUp, signInWithGoogle, user } = useAuth();
-  const { status: onboardingStatus, isLoading: onboardingLoading } = useOnboardingStatus();
+  const { status: onboardingStatus, isLoading: onboardingLoading, becomeCreator } = useOnboardingStatus();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [processingOAuth, setProcessingOAuth] = useState(false);
+  
+  // Track if this is a creator signup flow (for Google OAuth)
+  const isCreatorFlow = searchParams.get('creator') === 'true';
+
+  // Handle OAuth callback - process tokens from URL hash
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      // Check if we have OAuth tokens in the URL hash
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      
+      if (accessToken && refreshToken) {
+        setProcessingOAuth(true);
+        try {
+          // Set the session from the URL tokens
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          
+          if (error) {
+            console.error('OAuth session error:', error);
+            toast({
+              title: 'Authentication Error',
+              description: error.message,
+              variant: 'destructive',
+            });
+          } else if (data.session) {
+            // Clear the hash from URL but preserve query params
+            const currentUrl = new URL(window.location.href);
+            currentUrl.hash = '';
+            window.history.replaceState(null, '', currentUrl.toString());
+            
+            // If this was a creator signup flow, mark user as creator
+            if (isCreatorFlow) {
+              try {
+                await supabase
+                  .from('profiles')
+                  .update({ is_creator: true })
+                  .eq('user_id', data.session.user.id);
+              } catch (err) {
+                console.error('Failed to set creator flag:', err);
+              }
+            }
+            
+            toast({
+              title: 'Success',
+              description: 'Signed in with Google successfully!',
+            });
+          }
+        } catch (err) {
+          console.error('OAuth processing error:', err);
+          toast({
+            title: 'Error',
+            description: 'Failed to complete sign in. Please try again.',
+            variant: 'destructive',
+          });
+        } finally {
+          setProcessingOAuth(false);
+        }
+      }
+    };
+    
+    handleOAuthCallback();
+  }, [toast, isCreatorFlow]);
 
   // Handle redirect after login - check if user needs onboarding
   useEffect(() => {
-    if (user && !onboardingLoading) {
+    if (user && !onboardingLoading && !processingOAuth) {
       const from = location.state?.from || "/";
       
-      // If user is a creator but hasn't completed onboarding, redirect to onboarding
+      // Only redirect to onboarding if user is a CREATOR and hasn't completed onboarding
+      // Non-creators (customers) should go straight to their destination
       if (onboardingStatus?.is_creator && !onboardingStatus?.is_fully_onboarded) {
         navigate("/onboarding", { state: { from } });
         return;
       }
       
-      // If user signed up via OAuth and hasn't agreed to TOS yet, redirect to onboarding
-      if (onboardingStatus && !onboardingStatus.tos_agreed && onboardingStatus.is_creator) {
-        navigate("/onboarding", { state: { from } });
+      // If user came from "Start Selling" flow but isn't marked as creator yet
+      // (e.g., Google OAuth just completed), redirect to onboarding
+      if (isCreatorFlow && onboardingStatus && !onboardingStatus.is_creator) {
+        // The OAuth callback should have set is_creator, but refetch to be sure
+        navigate("/onboarding", { state: { from, becomeCreator: true } });
         return;
       }
       
-      // Otherwise, go to intended destination
+      // Otherwise, go to intended destination (customers go to shop/home)
       navigate(from);
     }
-  }, [user, onboardingStatus, onboardingLoading, navigate, location.state]);
+  }, [user, onboardingStatus, onboardingLoading, navigate, location.state, processingOAuth, isCreatorFlow]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,7 +180,20 @@ const Auth = () => {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    const { error } = await signInWithGoogle();
+    // Preserve the creator param in the redirect URL so we know this is a creator signup
+    const redirectUrl = window.location.origin + '/auth' + (isCreatorFlow ? '?creator=true' : '');
+    
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectUrl,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      }
+    });
+    
     if (error) {
       toast({
         title: "Error",
@@ -127,6 +213,15 @@ const Auth = () => {
         
         <div className="container mx-auto px-6 pt-24 pb-12">
           <div className="max-w-md mx-auto">
+            {processingOAuth ? (
+              <Card className="glass p-8">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                  <h2 className="text-xl font-semibold mb-2">Completing Sign In...</h2>
+                  <p className="text-muted-foreground">Please wait while we set up your session.</p>
+                </div>
+              </Card>
+            ) : (
             <Card className="glass p-8">
               <div className="text-center mb-6">
                 <h1 className="text-3xl font-bold gradient-text mb-2">Welcome to Vectabase</h1>
@@ -312,6 +407,7 @@ const Auth = () => {
                 </p>
               </div>
             </Card>
+            )}
           </div>
         </div>
       </div>

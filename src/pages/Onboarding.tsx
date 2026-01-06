@@ -7,13 +7,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { useOnboardingStatus, getCurrentOnboardingStep } from '@/hooks/useOnboardingStatus';
 import Navigation from '@/components/Navigation';
 import AnimatedBackground from '@/components/AnimatedBackground';
-import KineticLoadingScreen from '@/components/KineticLoadingScreen';
 import { Check, ChevronRight, ChevronLeft, FileText, Building2, CreditCard } from 'lucide-react';
 
 // Step components
 import TOSStep from '@/components/onboarding/TOSStep';
 import BusinessProfileStep from '@/components/onboarding/BusinessProfileStep';
 import StripeConnectStep from '@/components/onboarding/StripeConnectStep';
+import SuccessCelebration from '@/components/onboarding/SuccessCelebration';
 
 const STEPS = [
   { id: 'tos', title: 'Terms of Service', icon: FileText, description: 'Review and accept our terms' },
@@ -30,6 +30,7 @@ const Onboarding = () => {
   const location = useLocation();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   // Determine initial step based on onboarding status
   useEffect(() => {
@@ -72,9 +73,13 @@ const Onboarding = () => {
     if (currentStepIndex < STEPS.length - 1) {
       setCurrentStepIndex(prev => prev + 1);
     } else {
-      // All steps complete
-      navigate(location.state?.from || '/dashboard');
+      // All steps complete - show celebration
+      setShowCelebration(true);
     }
+  };
+
+  const handleCelebrationContinue = () => {
+    navigate(location.state?.from || '/dashboard');
   };
 
   const handleBack = () => {
@@ -103,7 +108,14 @@ const Onboarding = () => {
   };
 
   if (authLoading || statusLoading) {
-    return <KineticLoadingScreen />;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!user) {
@@ -119,47 +131,48 @@ const Onboarding = () => {
       <div className="relative z-10">
         <Navigation />
         
-        <div className="container mx-auto px-6 pt-24 pb-12">
+        <div className="container mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-8 sm:pb-12">
           <div className="max-w-2xl mx-auto">
             {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold gradient-text mb-2">Become a Seller</h1>
-              <p className="text-muted-foreground">Complete these steps to start selling on Vectabase</p>
+            <div className="text-center mb-6 sm:mb-8">
+              <h1 className="text-2xl sm:text-3xl font-bold gradient-text mb-2">Become a Seller</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">Complete these steps to start selling on Vectabase</p>
             </div>
 
             {/* Progress Bar */}
-            <div className="mb-8">
+            <div className="mb-6 sm:mb-8">
               <div className="flex justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Step {currentStepIndex + 1} of {STEPS.length}</span>
-                <span className="text-sm text-muted-foreground">{Math.round(progress)}% complete</span>
+                <span className="text-xs sm:text-sm text-muted-foreground">Step {currentStepIndex + 1} of {STEPS.length}</span>
+                <span className="text-xs sm:text-sm text-muted-foreground">{Math.round(progress)}% complete</span>
               </div>
               <Progress value={progress} className="h-2" />
             </div>
 
             {/* Step Indicators */}
-            <div className="flex justify-between mb-8">
+            <div className="flex justify-between mb-6 sm:mb-8 gap-2">
               {STEPS.map((step, index) => {
                 const stepStatus = getStepStatus(step.id);
                 const StepIcon = step.icon;
                 
                 return (
-                  <div key={step.id} className="flex flex-col items-center flex-1">
+                  <div key={step.id} className="flex flex-col items-center flex-1 min-w-0">
                     <div className={`
-                      w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-all
+                      w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center mb-1 sm:mb-2 transition-all
                       ${stepStatus === 'complete' ? 'bg-green-500/20 text-green-500 border-2 border-green-500' : ''}
                       ${stepStatus === 'current' ? 'bg-primary/20 text-primary border-2 border-primary' : ''}
                       ${stepStatus === 'upcoming' ? 'bg-muted text-muted-foreground border-2 border-muted' : ''}
                     `}>
                       {stepStatus === 'complete' ? (
-                        <Check className="w-6 h-6" />
+                        <Check className="w-5 h-5 sm:w-6 sm:h-6" />
                       ) : (
-                        <StepIcon className="w-6 h-6" />
+                        <StepIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                       )}
                     </div>
-                    <span className={`text-sm font-medium text-center ${
+                    <span className={`text-xs sm:text-sm font-medium text-center truncate w-full ${
                       stepStatus === 'current' ? 'text-primary' : 'text-muted-foreground'
                     }`}>
-                      {step.title}
+                      <span className="hidden sm:inline">{step.title}</span>
+                      <span className="sm:hidden">{step.title.split(' ')[0]}</span>
                     </span>
                   </div>
                 );
@@ -167,36 +180,42 @@ const Onboarding = () => {
             </div>
 
             {/* Step Content */}
-            <Card className="glass p-8">
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold mb-1">{currentStep.title}</h2>
-                <p className="text-muted-foreground">{currentStep.description}</p>
-              </div>
+            <Card className="glass p-4 sm:p-8">
+              {showCelebration ? (
+                <SuccessCelebration onContinue={handleCelebrationContinue} />
+              ) : (
+                <>
+                  <div className="mb-6">
+                    <h2 className="text-xl font-semibold mb-1">{currentStep.title}</h2>
+                    <p className="text-muted-foreground">{currentStep.description}</p>
+                  </div>
 
-              {currentStep.id === 'tos' && (
-                <TOSStep 
-                  onComplete={handleStepComplete}
-                  isSubmitting={isSubmitting}
-                  setIsSubmitting={setIsSubmitting}
-                />
-              )}
+                  {currentStep.id === 'tos' && (
+                    <TOSStep 
+                      onComplete={handleStepComplete}
+                      isSubmitting={isSubmitting}
+                      setIsSubmitting={setIsSubmitting}
+                    />
+                  )}
 
-              {currentStep.id === 'profile' && (
-                <BusinessProfileStep
-                  onComplete={handleStepComplete}
-                  onBack={handleBack}
-                  isSubmitting={isSubmitting}
-                  setIsSubmitting={setIsSubmitting}
-                />
-              )}
+                  {currentStep.id === 'profile' && (
+                    <BusinessProfileStep
+                      onComplete={handleStepComplete}
+                      onBack={handleBack}
+                      isSubmitting={isSubmitting}
+                      setIsSubmitting={setIsSubmitting}
+                    />
+                  )}
 
-              {currentStep.id === 'stripe' && (
-                <StripeConnectStep
-                  onComplete={handleStepComplete}
-                  onBack={handleBack}
-                  isSubmitting={isSubmitting}
-                  setIsSubmitting={setIsSubmitting}
-                />
+                  {currentStep.id === 'stripe' && (
+                    <StripeConnectStep
+                      onComplete={handleStepComplete}
+                      onBack={handleBack}
+                      isSubmitting={isSubmitting}
+                      setIsSubmitting={setIsSubmitting}
+                    />
+                  )}
+                </>
               )}
             </Card>
           </div>

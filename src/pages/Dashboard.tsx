@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, TrendingUp, Download, DollarSign, Eye } from "lucide-react";
+import { Plus, TrendingUp, Download, DollarSign, Eye, Store, ShoppingBag, Package } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import CreatorOnboarding from "@/components/CreatorOnboarding";
 import ProfileSettings from "@/components/ProfileSettings";
@@ -14,19 +14,22 @@ import DatabaseDebugger from "@/components/DatabaseDebugger";
 import StripeSettings from "@/components/StripeSettings";
 import { useCreatorStats } from "@/hooks/useCreatorStats";
 import { useCreatorOnboarding } from "@/hooks/useCreatorOnboarding";
+import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeStyle } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { isCyberpunk } = useThemeStyle();
   const [activeTab, setActiveTab] = useState("overview");
   const { stats: creatorStats, products, recentActivity, loading, error, refetch } = useCreatorStats();
   const { needsOnboarding, loading: onboardingLoading, completeOnboarding } = useCreatorOnboarding();
+  const { status: sellerStatus, isLoading: sellerStatusLoading } = useOnboardingStatus();
   const [profile, setProfile] = useState<any>(null);
 
   // Fetch user profile for site URL
@@ -158,7 +161,7 @@ const Dashboard = () => {
     return <CreatorOnboarding onComplete={completeOnboarding} />;
   }
 
-  if (loading || onboardingLoading) {
+  if (loading || onboardingLoading || sellerStatusLoading) {
     return (
       <div className={`min-h-screen ${
         isCyberpunk 
@@ -175,6 +178,90 @@ const Dashboard = () => {
               <p className={`mt-4 ${
                 isCyberpunk ? 'text-muted-foreground' : 'text-slate-400'
               }`}>Loading dashboard...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show customer dashboard for non-creators
+  if (!sellerStatus?.is_creator) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <Navigation />
+        <div className="container mx-auto px-6 pt-24 pb-12">
+          <div className="max-w-4xl mx-auto">
+            <h1 className="text-4xl font-bold text-white mb-2">My Account</h1>
+            <p className="text-slate-400 mb-8">Manage your purchases and account settings</p>
+            
+            {/* Customer Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              <Card className="p-6 bg-slate-800/50 border-slate-700/50 hover:border-slate-600/50 transition-all">
+                <Link to="/downloads" className="flex flex-col items-center text-center gap-3">
+                  <div className="p-3 rounded-lg bg-green-500/10">
+                    <Download className="w-8 h-8 text-green-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white">My Downloads</h3>
+                    <p className="text-sm text-slate-400">Access purchased products</p>
+                  </div>
+                </Link>
+              </Card>
+              
+              <Card className="p-6 bg-slate-800/50 border-slate-700/50 hover:border-slate-600/50 transition-all">
+                <Link to="/shop" className="flex flex-col items-center text-center gap-3">
+                  <div className="p-3 rounded-lg bg-blue-500/10">
+                    <ShoppingBag className="w-8 h-8 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white">Browse Shop</h3>
+                    <p className="text-sm text-slate-400">Discover new products</p>
+                  </div>
+                </Link>
+              </Card>
+              
+              <Card className="p-6 bg-slate-800/50 border-slate-700/50 hover:border-slate-600/50 transition-all">
+                <Link to="/creators" className="flex flex-col items-center text-center gap-3">
+                  <div className="p-3 rounded-lg bg-purple-500/10">
+                    <Package className="w-8 h-8 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white">Creators</h3>
+                    <p className="text-sm text-slate-400">Find top sellers</p>
+                  </div>
+                </Link>
+              </Card>
+            </div>
+
+            {/* Become a Seller CTA */}
+            <Card className="p-8 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-4 rounded-full bg-green-500/20">
+                    <Store className="w-10 h-10 text-green-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-white">Want to Sell Your Creations?</h3>
+                    <p className="text-slate-400 mt-1">
+                      Join our community of creators. Keep 95% of your earnings with instant payouts via Stripe.
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => navigate('/onboarding', { state: { becomeCreator: true } })}
+                  className="bg-green-600 hover:bg-green-700 gap-2 px-6 py-3"
+                  size="lg"
+                >
+                  <Store className="w-5 h-5" />
+                  Become a Seller
+                </Button>
+              </div>
+            </Card>
+
+            {/* Profile Settings for customers */}
+            <div className="mt-8">
+              <ProfileSettings />
             </div>
           </div>
         </div>
@@ -325,6 +412,36 @@ const Dashboard = () => {
             </TabsList>
             
             <TabsContent value="overview" className="mt-6 space-y-6">
+              {/* Become a Seller Banner - Show if not fully onboarded */}
+              {!sellerStatusLoading && sellerStatus && !sellerStatus.is_fully_onboarded && (
+                <Card className="p-6 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30">
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 rounded-full bg-green-500/20">
+                        <Store className="w-8 h-8 text-green-500" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold">Complete Your Seller Setup</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {!sellerStatus.tos_agreed 
+                            ? "Accept our terms of service to start selling"
+                            : !sellerStatus.profile_completed
+                            ? "Add your business details to continue"
+                            : "Connect Stripe to receive payments"}
+                        </p>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={() => navigate('/onboarding', { state: { becomeCreator: true } })}
+                      className="bg-green-600 hover:bg-green-700 gap-2"
+                    >
+                      <Store className="w-4 h-4" />
+                      {sellerStatus.tos_agreed ? 'Continue Setup' : 'Become a Seller'}
+                    </Button>
+                  </div>
+                </Card>
+              )}
+
               {/* Quick Actions */}
               <div>
                 <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
