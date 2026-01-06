@@ -1,12 +1,10 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import { createClient } from '@supabase/supabase-js';
 import { logBotEvent, logError } from '../../utils/logger.js';
 import { requireGuild, isAdmin } from '../middleware/adminCheck.js';
+import { getSupabaseClient } from '../../config/supabaseConfig.js';
 
-// Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL || 'https://cmmeqzkbiiqqfvzkmkzt.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
-const supabase = supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+// Use the shared Supabase client from supabaseConfig
+const supabase = getSupabaseClient();
 
 export const data = new SlashCommandBuilder()
   .setName('link-account')

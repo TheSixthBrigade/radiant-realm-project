@@ -1,24 +1,10 @@
 import { Events } from 'discord.js';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseClient } from '../../config/supabaseConfig.js';
 import { logBotEvent, logError } from '../../utils/logger.js';
 
-// Lazy-initialize Supabase client (env vars loaded after import)
-let supabase = null;
-
+// Use the shared Supabase client from supabaseConfig
 function getSupabase() {
-  if (supabase) return supabase;
-  
-  const supabaseUrl = process.env.SUPABASE_URL || 'https://cmmeqzkbiiqqfvzkmkzt.supabase.co';
-  const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
-  
-  console.log('[GuildEvents] Supabase URL:', supabaseUrl);
-  console.log('[GuildEvents] Supabase Key exists:', !!supabaseKey);
-  
-  if (supabaseKey) {
-    supabase = createClient(supabaseUrl, supabaseKey);
-  }
-  
-  return supabase;
+  return getSupabaseClient();
 }
 
 /**

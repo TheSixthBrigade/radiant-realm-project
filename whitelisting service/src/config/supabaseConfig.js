@@ -10,12 +10,8 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = 'https://cmmeqzkbiiqqfvzkmkzt.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNtbWVxemtiaWlxcWZ2emtta3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MDcyNjQsImV4cCI6MjA3NDQ4MzI2NH0.iFnZXQmCkindqhm1sevUrIWdC2z-IjrI_duZE2RxjWg';
 
-// Service key can be passed via env var if needed for admin operations
-// Otherwise we use anon key with a special RLS policy
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-
-// Create Supabase client
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY);
+// Create Supabase client with anon key (no .env needed!)
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Cache for config values
 let configCache = null;

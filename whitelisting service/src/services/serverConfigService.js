@@ -5,22 +5,11 @@ import {
   maskApiKey
 } from '../models/serverConfig.js';
 import { logDebug, logError, logSecurityEvent } from '../utils/logger.js';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseClient } from '../config/supabaseConfig.js';
 
-// Lazy-initialize Supabase client
-let supabase = null;
-
+// Use the shared Supabase client from supabaseConfig
 function getSupabase() {
-  if (supabase) return supabase;
-  
-  const supabaseUrl = process.env.SUPABASE_URL || 'https://cmmeqzkbiiqqfvzkmkzt.supabase.co';
-  const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
-  
-  if (supabaseKey) {
-    supabase = createClient(supabaseUrl, supabaseKey);
-  }
-  
-  return supabase;
+  return getSupabaseClient();
 }
 
 /**

@@ -1,6 +1,6 @@
 import { PermissionFlagsBits } from 'discord.js';
 import { logSecurityEvent } from '../../utils/logger.js';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseClient } from '../../config/supabaseConfig.js';
 
 // Bot owner ID - always has admin access
 const BOT_OWNER_ID = '1431385498214994040';
@@ -8,10 +8,8 @@ const BOT_OWNER_ID = '1431385498214994040';
 // Owner-only commands that cannot be configured
 const OWNER_ONLY_COMMANDS = ['obfuscate', 'whitelist', 'fullsecurity', 'bulksecurity', 'securefolder'];
 
-// Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL || 'https://cmmeqzkbiiqqfvzkmkzt.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
-const supabase = supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+// Use the shared Supabase client from supabaseConfig
+const supabase = getSupabaseClient();
 
 /**
  * Check if user is the bot owner
