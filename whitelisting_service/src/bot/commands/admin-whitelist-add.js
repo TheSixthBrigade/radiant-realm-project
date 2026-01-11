@@ -18,7 +18,7 @@ const data = new SlashCommandBuilder()
       .setRequired(false)
   );
 
-async function execute(interaction, { database, serverConfigService }) {
+async function execute(interaction, { database, serverConfigService, robloxApi }) {
   const guildError = requireGuild(interaction);
   if (guildError) {
     return interaction.reply({ content: guildError, ephemeral: true });
@@ -38,6 +38,7 @@ async function execute(interaction, { database, serverConfigService }) {
 
   const db = database || interaction.client.database;
   const configService = serverConfigService || interaction.client.serverConfigService;
+  const robloxService = robloxApi || interaction.client.robloxApi;
 
   if (!db) {
     return await interaction.editReply({
@@ -62,8 +63,8 @@ async function execute(interaction, { database, serverConfigService }) {
     // Import Roblox API
     const RobloxApiService = (await import('../../services/robloxApi.js')).default;
 
-    // Get Roblox user ID
-    const tempApi = new RobloxApiService();
+    // Get Roblox user ID - use global API key
+    const tempApi = new RobloxApiService({ apiKey: robloxService.apiKey });
     const robloxUserId = await tempApi.getUserIdByUsername(robloxUsername);
 
     if (!robloxUserId) {
@@ -122,7 +123,10 @@ async function execute(interaction, { database, serverConfigService }) {
     const results = [];
 
     for (const product of selectedProducts) {
-      const robloxApi = new RobloxApiService({ groupId: product.robloxGroupId });
+      const robloxApi = new RobloxApiService({ 
+        groupId: product.robloxGroupId,
+        apiKey: product.robloxApiKey || robloxService.apiKey
+      });
 
       // Check if already a member
       const memberCheck = await robloxApi.isUserMember(robloxUserId);

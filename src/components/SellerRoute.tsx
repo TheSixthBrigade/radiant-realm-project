@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useOnboardingStatus } from '@/hooks/useOnboardingStatus';
-import KineticLoadingScreen from './KineticLoadingScreen';
+import PremiumLoadingScreen from './PremiumLoadingScreen';
 
 interface SellerRouteProps {
   children: React.ReactNode;
@@ -58,7 +58,7 @@ export function SellerRoute({
 
   // Show loading while checking auth/onboarding status
   if (authLoading || onboardingLoading) {
-    return <KineticLoadingScreen />;
+    return <PremiumLoadingScreen onComplete={() => {}} />;
   }
 
   // Not authenticated

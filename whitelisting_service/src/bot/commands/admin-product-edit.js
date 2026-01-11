@@ -66,6 +66,8 @@ export default {
             { label: 'Product Name', value: 'name', description: 'Change the product name' },
             { label: 'Payhip API Key', value: 'payhip_key', description: 'Change the Payhip API key' },
             { label: 'Roblox Group ID', value: 'group_id', description: 'Change the Roblox group ID' },
+            { label: 'Roblox API Key', value: 'roblox_api_key', description: 'Set/change Roblox Open Cloud API key (groups permission only)' },
+            { label: 'Remove Roblox API Key', value: 'remove_roblox_key', description: 'Remove the Roblox API key' },
             { label: 'Redemption Role', value: 'role', description: 'Set or change the role given on redemption' },
             { label: 'Remove Role', value: 'remove_role', description: 'Remove the redemption role' },
             { label: 'Redemption Message', value: 'message', description: 'Custom message shown after redemption' },
@@ -107,6 +109,27 @@ export default {
           }
         }
 
+        // Handle remove_roblox_key immediately
+        if (selectedField === 'remove_roblox_key') {
+          const result = await serverConfigService.updateProduct(
+            interaction.guildId,
+            selectedProductName,
+            { robloxApiKey: null }
+          );
+
+          if (result.success) {
+            return fieldInteraction.update({
+              content: `Roblox API key removed from **${selectedProductName}**.`,
+              components: []
+            });
+          } else {
+            return fieldInteraction.update({
+              content: `Failed to remove Roblox API key: ${result.error}`,
+              components: []
+            });
+          }
+        }
+
         // Handle remove_message immediately
         if (selectedField === 'remove_message') {
           const result = await serverConfigService.updateProduct(
@@ -133,6 +156,7 @@ export default {
           name: { label: 'New Product Name', placeholder: 'Enter new product name', maxLength: 100, style: TextInputStyle.Short },
           payhip_key: { label: 'New Payhip API Key', placeholder: 'prod_sk_...', style: TextInputStyle.Short },
           group_id: { label: 'New Roblox Group ID', placeholder: 'Enter Roblox group ID (numbers only)', style: TextInputStyle.Short },
+          roblox_api_key: { label: 'Roblox Open Cloud API Key', placeholder: 'Enter your Roblox API key (groups permission only!)', style: TextInputStyle.Short },
           role: { label: 'Role ID', placeholder: 'Right-click role > Copy ID', style: TextInputStyle.Short },
           message: { label: 'Redemption Message', placeholder: 'Message shown to user after successful redemption', maxLength: 1000, style: TextInputStyle.Paragraph }
         };
@@ -172,6 +196,7 @@ export default {
           if (selectedField === 'name') updates.name = newValue;
           if (selectedField === 'payhip_key') updates.payhipApiKey = newValue;
           if (selectedField === 'group_id') updates.robloxGroupId = newValue;
+          if (selectedField === 'roblox_api_key') updates.robloxApiKey = newValue;
           if (selectedField === 'role') {
             // Extract role ID from mention or use as-is
             const roleId = newValue.replace(/<@&|>/g, '').trim();
@@ -208,6 +233,9 @@ export default {
           }
 
           let responseMsg = `Product updated.\n\n**Name:** ${result.product.name}\n**Group ID:** ${result.product.robloxGroupId}`;
+          if (result.product.hasRobloxApiKey) {
+            responseMsg += `\n**Roblox API Key:** ✅ Set (encrypted)`;
+          }
           if (result.product.roleId) {
             responseMsg += `\n**Role:** <@&${result.product.roleId}>`;
           }

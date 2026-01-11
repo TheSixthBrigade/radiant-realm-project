@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { SEO, ProductSchema, BreadcrumbSchema } from "@/components/SEO";
+import { buildCheckoutUrl } from "@/lib/affiliateTracking";
 import type { Product } from "@/hooks/useProducts";
 
 const ProductDetail = () => {
@@ -62,14 +63,14 @@ const ProductDetail = () => {
           display_name: string;
           avatar_url?: string;
           is_creator: boolean;
-          stripe_account_id?: string;
-          stripe_onboarding_status?: string;
+          stripe_connect_account_id?: string;
+          stripe_connect_status?: string;
         } | null = null;
         if (productData.creator_id) {
           try {
             const { data: creatorData } = await supabase
               .from('profiles')
-              .select('display_name, avatar_url, is_creator, stripe_account_id, stripe_onboarding_status')
+              .select('display_name, avatar_url, is_creator, stripe_connect_account_id, stripe_connect_status')
               .eq('user_id', productData.creator_id)
               .single();
             creator = creatorData;
@@ -306,7 +307,7 @@ const ProductDetail = () => {
     }
 
     // Check if seller has Stripe connected
-    const hasStripe = product?.creator?.stripe_account_id && (product?.creator?.stripe_onboarding_status === 'connected' || product?.creator?.stripe_onboarding_status === 'complete');
+    const hasStripe = product?.creator?.stripe_connect_account_id && (product?.creator?.stripe_connect_status === 'connected' || product?.creator?.stripe_connect_status === 'complete');
     
     if (!hasStripe) {
       toast({
@@ -317,8 +318,8 @@ const ProductDetail = () => {
       return;
     }
 
-    // Navigate to checkout page with product ID
-    navigate(`/checkout?product_id=${product.id}`);
+    // Navigate to checkout page with product ID and affiliate ref using robust utility
+    navigate(buildCheckoutUrl(product.id));
   };
 
   return (
@@ -488,11 +489,11 @@ const ProductDetail = () => {
                 <Button 
                   className="w-full text-lg py-3"
                   onClick={handleBuyNow}
-                  disabled={!product?.creator?.stripe_account_id || (product?.creator?.stripe_onboarding_status !== 'connected' && product?.creator?.stripe_onboarding_status !== 'complete')}
-                  title={(!product?.creator?.stripe_account_id || (product?.creator?.stripe_onboarding_status !== 'connected' && product?.creator?.stripe_onboarding_status !== 'complete')) ? "Seller hasn't connected Stripe yet" : ""}
+                  disabled={!product?.creator?.stripe_connect_account_id || (product?.creator?.stripe_connect_status !== 'connected' && product?.creator?.stripe_connect_status !== 'complete')}
+                  title={(!product?.creator?.stripe_connect_account_id || (product?.creator?.stripe_connect_status !== 'connected' && product?.creator?.stripe_connect_status !== 'complete')) ? "Seller hasn't connected Stripe yet" : ""}
                 >
                   <ShoppingCart className="w-5 h-5 mr-2" />
-                  {(product?.creator?.stripe_account_id && (product?.creator?.stripe_onboarding_status === 'connected' || product?.creator?.stripe_onboarding_status === 'complete')) ? 'Buy Now' : 'Unavailable'}
+                  {(product?.creator?.stripe_connect_account_id && (product?.creator?.stripe_connect_status === 'connected' || product?.creator?.stripe_connect_status === 'complete')) ? 'Buy Now' : 'Unavailable'}
                 </Button>
                 <Button 
                   variant="outline" 

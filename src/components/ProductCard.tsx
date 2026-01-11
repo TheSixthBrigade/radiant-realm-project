@@ -8,6 +8,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
+import { buildCheckoutUrl } from "@/lib/affiliateTracking";
 
 interface ProductCardProps {
   id: string;
@@ -80,19 +81,20 @@ const ProductCard = ({
 
       const { data: creatorData } = await supabase
         .from('profiles')
-        .select('paypal_email, paypal_onboarding_status, stripe_account_id, stripe_onboarding_status')
+        .select('paypal_email, paypal_onboarding_status, stripe_connect_account_id, stripe_connect_status')
         .eq('user_id', productData.creator_id)
         .single();
 
       const hasPayPal = creatorData?.paypal_email && creatorData?.paypal_onboarding_status === 'completed';
-      const hasStripe = creatorData?.stripe_account_id && (creatorData?.stripe_onboarding_status === 'connected' || creatorData?.stripe_onboarding_status === 'complete');
+      const hasStripe = creatorData?.stripe_connect_account_id && (creatorData?.stripe_connect_status === 'connected' || creatorData?.stripe_connect_status === 'complete');
       
       if (!hasPayPal && !hasStripe) {
         toast.error("Seller does not have a connected payment method.");
         return;
       }
 
-      window.location.href = `/checkout?product_id=${id}`;
+      // Navigate to checkout page with product ID and affiliate ref using robust utility
+      window.location.href = buildCheckoutUrl(id);
     } catch (error) {
       toast.error("Unable to process purchase. Please try again.");
     } finally {

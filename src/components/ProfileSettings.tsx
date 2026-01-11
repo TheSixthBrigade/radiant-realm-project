@@ -76,7 +76,7 @@ const ProfileSettings = () => {
 
       if (profile) {
         // Check payment method status
-        const hasStripe = profile.stripe_account_id && (profile.stripe_onboarding_status === 'connected' || profile.stripe_onboarding_status === 'complete');
+        const hasStripe = profile.stripe_connect_account_id && (profile.stripe_connect_status === 'connected' || profile.stripe_connect_status === 'complete');
         const canSell = hasStripe;
         
         setPaymentStatus({

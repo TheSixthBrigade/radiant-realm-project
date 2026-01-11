@@ -18,10 +18,13 @@ const data = new SlashCommandBuilder()
   );
 
 async function execute(interaction, { serverConfigService, keyManager, robloxApi }) {
+  // Defer reply immediately to prevent timeout
   try {
     await interaction.deferReply({ ephemeral: true });
   } catch (deferError) {
-    logError(deferError, { context: 'RedeemCommand.deferReply' });
+    // If defer fails, the interaction has already timed out (3 seconds)
+    // Log it but don't try to respond
+    logError(deferError, { context: 'RedeemCommand.deferReply', user_id: interaction.user.id });
     return;
   }
 
@@ -101,12 +104,15 @@ async function execute(interaction, { serverConfigService, keyManager, robloxApi
     logBotEvent('REDEEM_COMMAND_STARTED', {
       user_id: discordUserId,
       roblox_username: robloxUsername,
-      product_name: selectedProduct.name
+      product_name: selectedProduct.name,
+      product_roblox_group_id: selectedProduct.robloxGroupId,
+      product_has_payhip_key: !!selectedProduct.payhipApiKey
     });
 
     const redemptionData = {
       key,
       discordUserId,
+      discordUsername: interaction.user.username,
       robloxUsername,
       ipAddress: null,
       userAgent: 'Discord Bot'
@@ -118,9 +124,16 @@ async function execute(interaction, { serverConfigService, keyManager, robloxApi
       source: 'discord_command'
     };
 
+    console.log('[Redeem] Calling redeemKey with productCredentials:', {
+      payhipApiKey: selectedProduct.payhipApiKey ? '[SET]' : '[NOT SET]',
+      robloxGroupId: selectedProduct.robloxGroupId,
+      robloxApiKey: selectedProduct.robloxApiKey ? '[SET]' : '[NOT SET]'
+    });
+
     const result = await keyMgr.redeemKey(redemptionData, context, {
       payhipApiKey: selectedProduct.payhipApiKey,
-      robloxGroupId: selectedProduct.robloxGroupId
+      robloxGroupId: selectedProduct.robloxGroupId,
+      robloxApiKey: selectedProduct.robloxApiKey || null
     });
 
     if (result.success) {

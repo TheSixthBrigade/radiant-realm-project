@@ -12,14 +12,11 @@ CREATE TABLE IF NOT EXISTS public.commission_overrides (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
   UNIQUE(store_id)
 );
-
 -- Add index for performance
 CREATE INDEX IF NOT EXISTS idx_commission_overrides_store_id ON public.commission_overrides(store_id);
 CREATE INDEX IF NOT EXISTS idx_commission_overrides_expires_at ON public.commission_overrides(expires_at) WHERE expires_at IS NOT NULL;
-
 -- Enable RLS
 ALTER TABLE public.commission_overrides ENABLE ROW LEVEL SECURITY;
-
 -- RLS Policies
 CREATE POLICY "Admins can manage commission overrides" ON public.commission_overrides
   FOR ALL USING (
@@ -29,7 +26,6 @@ CREATE POLICY "Admins can manage commission overrides" ON public.commission_over
       AND user_roles.role = 'admin'
     )
   );
-
 CREATE POLICY "Store owners can view their commission rate" ON public.commission_overrides
   FOR SELECT USING (
     EXISTS (
@@ -38,7 +34,6 @@ CREATE POLICY "Store owners can view their commission rate" ON public.commission
       AND stores.user_id = auth.uid()
     )
   );
-
 -- Function to get active commission rate for a store
 CREATE OR REPLACE FUNCTION get_store_commission_rate(store_id_param UUID)
 RETURNS DECIMAL AS $$
@@ -72,7 +67,6 @@ BEGIN
   RETURN 5.00;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to clean up expired commission overrides
 CREATE OR REPLACE FUNCTION cleanup_expired_commission_overrides()
 RETURNS void AS $$
@@ -83,7 +77,6 @@ BEGIN
   AND expires_at < NOW();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Add comment
 COMMENT ON TABLE public.commission_overrides IS 'Custom commission rates for specific stores, can be temporary or permanent';
 COMMENT ON FUNCTION get_store_commission_rate IS 'Returns the active commission rate for a store (custom or default 5%)';

@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS follows (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(follower_id, following_id)
 );
-
 -- Create announcements table for admin messages
 CREATE TABLE IF NOT EXISTS announcements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -18,34 +17,27 @@ CREATE TABLE IF NOT EXISTS announcements (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
 -- Add indexes for performance
 CREATE INDEX IF NOT EXISTS idx_follows_follower ON follows(follower_id);
 CREATE INDEX IF NOT EXISTS idx_follows_following ON follows(following_id);
 CREATE INDEX IF NOT EXISTS idx_announcements_active ON announcements(is_active, created_at DESC);
-
 -- Enable RLS
 ALTER TABLE follows ENABLE ROW LEVEL SECURITY;
 ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
-
 -- Policies for follows
 CREATE POLICY "Users can view all follows"
   ON follows FOR SELECT
   USING (true);
-
 CREATE POLICY "Users can follow others"
   ON follows FOR INSERT
   WITH CHECK (auth.uid() = follower_id);
-
 CREATE POLICY "Users can unfollow"
   ON follows FOR DELETE
   USING (auth.uid() = follower_id);
-
 -- Policies for announcements
 CREATE POLICY "Everyone can view active announcements"
   ON announcements FOR SELECT
   USING (is_active = true);
-
 CREATE POLICY "Admins can manage announcements"
   ON announcements FOR ALL
   USING (
@@ -55,7 +47,6 @@ CREATE POLICY "Admins can manage announcements"
       AND user_roles.role = 'admin'
     )
   );
-
 -- Helper function to check if following
 CREATE OR REPLACE FUNCTION is_following(follower_id_param UUID, following_id_param UUID)
 RETURNS BOOLEAN AS $$
@@ -67,7 +58,6 @@ BEGIN
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Helper function to follow a creator
 CREATE OR REPLACE FUNCTION follow_creator(follower_id_param UUID, following_id_param UUID)
 RETURNS VOID AS $$
@@ -77,7 +67,6 @@ BEGIN
   ON CONFLICT (follower_id, following_id) DO NOTHING;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Helper function to unfollow a creator
 CREATE OR REPLACE FUNCTION unfollow_creator(follower_id_param UUID, following_id_param UUID)
 RETURNS VOID AS $$
@@ -87,7 +76,6 @@ BEGIN
   AND following_id = following_id_param;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Helper function to get followed creators
 CREATE OR REPLACE FUNCTION get_followed_creators(user_id_param UUID)
 RETURNS TABLE (following_id UUID) AS $$
@@ -98,7 +86,6 @@ BEGIN
   WHERE f.follower_id = user_id_param;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Function to get feed items (followed creators' products + announcements)
 CREATE OR REPLACE FUNCTION get_user_feed(user_id_param UUID, limit_param INT DEFAULT 20)
 RETURNS TABLE (

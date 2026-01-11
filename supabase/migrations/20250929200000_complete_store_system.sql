@@ -18,7 +18,6 @@ CREATE TABLE IF NOT EXISTS public.stores (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
-
 -- Create store members table (for team stores)
 CREATE TABLE IF NOT EXISTS public.store_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -33,7 +32,6 @@ CREATE TABLE IF NOT EXISTS public.store_members (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
   UNIQUE(store_id, user_id)
 );
-
 -- Create affiliates table
 CREATE TABLE IF NOT EXISTS public.affiliates (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -47,7 +45,6 @@ CREATE TABLE IF NOT EXISTS public.affiliates (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
   UNIQUE(store_id, user_id)
 );
-
 -- Create affiliate sales tracking
 CREATE TABLE IF NOT EXISTS public.affiliate_sales (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -60,7 +57,6 @@ CREATE TABLE IF NOT EXISTS public.affiliate_sales (
   stripe_session_id TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
-
 -- Create store invitations table
 CREATE TABLE IF NOT EXISTS public.store_invitations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -73,16 +69,13 @@ CREATE TABLE IF NOT EXISTS public.store_invitations (
   accepted_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
-
 -- Update products table to include store_id
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS store_id UUID REFERENCES stores(id);
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS affiliate_enabled BOOLEAN DEFAULT true;
-
 -- Update profiles table for store association
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS primary_store_id UUID REFERENCES stores(id);
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS stripe_connect_status TEXT DEFAULT 'not_connected';
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS paypal_email TEXT;
-
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_stores_owner_id ON public.stores(owner_id);
 CREATE INDEX IF NOT EXISTS idx_stores_slug ON public.stores(store_slug);
@@ -94,21 +87,17 @@ CREATE INDEX IF NOT EXISTS idx_affiliates_code ON public.affiliates(affiliate_co
 CREATE INDEX IF NOT EXISTS idx_affiliate_sales_affiliate_id ON public.affiliate_sales(affiliate_id);
 CREATE INDEX IF NOT EXISTS idx_store_invitations_token ON public.store_invitations(invitation_token);
 CREATE INDEX IF NOT EXISTS idx_products_store_id ON public.products(store_id);
-
 -- Enable RLS
 ALTER TABLE public.stores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.store_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.affiliates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.affiliate_sales ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.store_invitations ENABLE ROW LEVEL SECURITY;
-
 -- RLS Policies for stores
 CREATE POLICY "Public stores are viewable by everyone" ON public.stores
   FOR SELECT USING (is_public = true);
-
 CREATE POLICY "Store owners can view their stores" ON public.stores
   FOR SELECT USING (auth.uid() = owner_id);
-
 CREATE POLICY "Store members can view their stores" ON public.stores
   FOR SELECT USING (
     EXISTS (
@@ -118,10 +107,8 @@ CREATE POLICY "Store members can view their stores" ON public.stores
       AND store_members.status = 'accepted'
     )
   );
-
 CREATE POLICY "Store owners can manage their stores" ON public.stores
   FOR ALL USING (auth.uid() = owner_id);
-
 -- Admin policy for thecheesemanatyou@gmail.com
 CREATE POLICY "Admin can manage all stores" ON public.stores
   FOR ALL USING (
@@ -131,7 +118,6 @@ CREATE POLICY "Admin can manage all stores" ON public.stores
       AND auth.users.email = 'thecheesemanatyou@gmail.com'
     )
   );
-
 -- RLS Policies for store_members
 CREATE POLICY "Store members can view store membership" ON public.store_members
   FOR SELECT USING (
@@ -142,7 +128,6 @@ CREATE POLICY "Store members can view store membership" ON public.store_members
       AND stores.owner_id = auth.uid()
     )
   );
-
 CREATE POLICY "Store owners can manage members" ON public.store_members
   FOR ALL USING (
     EXISTS (
@@ -151,11 +136,9 @@ CREATE POLICY "Store owners can manage members" ON public.store_members
       AND stores.owner_id = auth.uid()
     )
   );
-
 -- RLS Policies for affiliates
 CREATE POLICY "Users can view their affiliate accounts" ON public.affiliates
   FOR SELECT USING (auth.uid() = user_id);
-
 CREATE POLICY "Store owners can manage affiliates" ON public.affiliates
   FOR ALL USING (
     EXISTS (
@@ -164,7 +147,6 @@ CREATE POLICY "Store owners can manage affiliates" ON public.affiliates
       AND stores.owner_id = auth.uid()
     )
   );
-
 -- RLS Policies for affiliate_sales
 CREATE POLICY "Affiliates can view their sales" ON public.affiliate_sales
   FOR SELECT USING (
@@ -174,7 +156,6 @@ CREATE POLICY "Affiliates can view their sales" ON public.affiliate_sales
       AND affiliates.user_id = auth.uid()
     )
   );
-
 CREATE POLICY "Store owners can view affiliate sales" ON public.affiliate_sales
   FOR SELECT USING (
     EXISTS (
@@ -184,7 +165,6 @@ CREATE POLICY "Store owners can view affiliate sales" ON public.affiliate_sales
       AND stores.owner_id = auth.uid()
     )
   );
-
 -- RLS Policies for store_invitations
 CREATE POLICY "Store owners can manage invitations" ON public.store_invitations
   FOR ALL USING (
@@ -194,7 +174,6 @@ CREATE POLICY "Store owners can manage invitations" ON public.store_invitations
       AND stores.owner_id = auth.uid()
     )
   );
-
 -- Function to generate unique store slug
 CREATE OR REPLACE FUNCTION generate_store_slug(store_name TEXT)
 RETURNS TEXT AS $$
@@ -223,7 +202,6 @@ BEGIN
   RETURN final_slug;
 END;
 $$ LANGUAGE plpgsql;
-
 -- Function to generate unique affiliate code
 CREATE OR REPLACE FUNCTION generate_affiliate_code()
 RETURNS TEXT AS $$
@@ -237,7 +215,6 @@ BEGIN
   RETURN code;
 END;
 $$ LANGUAGE plpgsql;
-
 -- Function to create default store when user becomes creator
 CREATE OR REPLACE FUNCTION create_user_store()
 RETURNS TRIGGER AS $$
@@ -289,14 +266,12 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
-
 -- Create trigger for store creation
 DROP TRIGGER IF EXISTS create_user_store_trigger ON public.profiles;
 CREATE TRIGGER create_user_store_trigger
   AFTER UPDATE ON public.profiles
   FOR EACH ROW
   EXECUTE FUNCTION create_user_store();
-
 -- Function to handle affiliate link clicks and sales
 CREATE OR REPLACE FUNCTION track_affiliate_sale(
   p_affiliate_code TEXT,

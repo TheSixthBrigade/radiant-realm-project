@@ -57,11 +57,11 @@ const AddProductContent = () => {
       try {
         const { data } = await supabase
           .from('profiles')
-          .select('stripe_account_id, stripe_onboarding_status')
+          .select('stripe_connect_account_id, stripe_connect_status')
           .eq('user_id', user?.id)
           .single();
         
-        const hasStripe = data?.stripe_account_id && (data?.stripe_onboarding_status === 'connected' || data?.stripe_onboarding_status === 'complete');
+        const hasStripe = data?.stripe_connect_account_id && (data?.stripe_connect_status === 'connected' || data?.stripe_connect_status === 'complete');
         
         setStripeConnected(hasStripe);
       } catch (error) {

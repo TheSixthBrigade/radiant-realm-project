@@ -14,7 +14,6 @@ CREATE TABLE public.stores (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
-
 -- Create store_products junction table 
 CREATE TABLE public.store_products (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -24,10 +23,8 @@ CREATE TABLE public.store_products (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   UNIQUE(store_id, product_id)
 );
-
 -- Update products table to include store_id
 ALTER TABLE public.products ADD COLUMN store_id UUID REFERENCES public.stores(id) ON DELETE SET NULL;
-
 -- Create payment_transactions table for tracking payments
 CREATE TABLE public.payment_transactions (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -42,34 +39,28 @@ CREATE TABLE public.payment_transactions (
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
-
 -- Enable RLS on all new tables
 ALTER TABLE public.stores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.store_products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payment_transactions ENABLE ROW LEVEL SECURITY;
-
 -- Create RLS policies for stores
 CREATE POLICY "Stores are viewable by everyone" 
 ON public.stores 
 FOR SELECT 
 USING (true);
-
 CREATE POLICY "Users can create their own store" 
 ON public.stores 
 FOR INSERT 
 WITH CHECK (auth.uid() = user_id);
-
 CREATE POLICY "Users can update their own store" 
 ON public.stores 
 FOR UPDATE 
 USING (auth.uid() = user_id);
-
 -- Create RLS policies for store_products
 CREATE POLICY "Store products are viewable by everyone" 
 ON public.store_products 
 FOR SELECT 
 USING (true);
-
 CREATE POLICY "Store owners can manage their products" 
 ON public.store_products 
 FOR ALL 
@@ -78,24 +69,20 @@ USING (EXISTS (
   WHERE stores.id = store_products.store_id 
   AND stores.user_id = auth.uid()
 ));
-
 -- Create RLS policies for payment_transactions
 CREATE POLICY "Users can view their own transactions" 
 ON public.payment_transactions 
 FOR SELECT 
 USING (auth.uid() = buyer_id OR auth.uid() = seller_id);
-
 CREATE POLICY "System can insert transactions" 
 ON public.payment_transactions 
 FOR INSERT 
 WITH CHECK (true);
-
 -- Add trigger for updating store timestamps
 CREATE TRIGGER update_stores_updated_at
 BEFORE UPDATE ON public.stores
 FOR EACH ROW
 EXECUTE FUNCTION public.update_updated_at_column();
-
 -- Create function to update store stats
 CREATE OR REPLACE FUNCTION public.update_store_stats()
 RETURNS TRIGGER AS $$
@@ -110,7 +97,6 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SET search_path = public;
-
 -- Create trigger to update store stats on successful payment
 CREATE TRIGGER update_store_stats_trigger
 AFTER INSERT ON public.payment_transactions

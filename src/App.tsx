@@ -8,37 +8,60 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { ThemeProvider as StyleThemeProvider } from "@/contexts/ThemeContext";
 import PageTransitionLoader from "@/components/PageTransitionLoader";
+import { lazy, Suspense } from "react";
+
+// Eager load critical pages
 import Index from "./pages/Index";
-import Shop from "./pages/Shop";
-import ProductDetail from "./pages/ProductDetail";
-import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
-import Creators from "./pages/Creators";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import AddProduct from "./pages/AddProduct";
-import CreateStore from "./pages/CreateStore";
-import StorePage from "./pages/StorePage";
-import StoreManagement from "./pages/StoreManagement";
-import AdminPanel from "./pages/AdminPanel";
-import PaymentSuccess from "./pages/PaymentSuccess";
-import PaymentFailure from "./pages/PaymentFailure";
-import Checkout from "./pages/Checkout";
-import Downloads from "./pages/Downloads";
-import UserSite from "./pages/UserSite";
-import Developer from "./pages/Developer";
-import DeveloperObfuscator from "./pages/DeveloperObfuscator";
-import DeveloperWhitelist from "./pages/DeveloperWhitelist";
-import DeveloperDocs from "./pages/DeveloperDocs";
-import DeveloperAPI from "./pages/DeveloperAPI";
-import DeveloperBotDashboard from "./pages/DeveloperBotDashboard";
-import StoreAnalytics from "./pages/StoreAnalytics";
-import TermsOfService from "./pages/TermsOfService";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+// Lazy load non-critical pages for better initial load
+const Shop = lazy(() => import("./pages/Shop"));
+const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Creators = lazy(() => import("./pages/Creators"));
+const About = lazy(() => import("./pages/About"));
+const Contact = lazy(() => import("./pages/Contact"));
+const AddProduct = lazy(() => import("./pages/AddProduct"));
+const CreateStore = lazy(() => import("./pages/CreateStore"));
+const StorePage = lazy(() => import("./pages/StorePage"));
+const StoreManagement = lazy(() => import("./pages/StoreManagement"));
+const AdminPanel = lazy(() => import("./pages/AdminPanel"));
+const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
+const PaymentFailure = lazy(() => import("./pages/PaymentFailure"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const Downloads = lazy(() => import("./pages/Downloads"));
+const UserSite = lazy(() => import("./pages/UserSite"));
+const Developer = lazy(() => import("./pages/Developer"));
+const DeveloperObfuscator = lazy(() => import("./pages/DeveloperObfuscator"));
+const DeveloperWhitelist = lazy(() => import("./pages/DeveloperWhitelist"));
+const DeveloperDocs = lazy(() => import("./pages/DeveloperDocs"));
+const DeveloperAPI = lazy(() => import("./pages/DeveloperAPI"));
+const DeveloperBotDashboard = lazy(() => import("./pages/DeveloperBotDashboard"));
+const StoreAnalytics = lazy(() => import("./pages/StoreAnalytics"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-900">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-500"></div>
+  </div>
+);
+
+// Optimized QueryClient with caching
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes - data stays fresh
+      gcTime: 1000 * 60 * 30, // 30 minutes - cache retention (formerly cacheTime)
+      refetchOnWindowFocus: false, // Don't refetch on tab focus
+      retry: 2, // Retry failed requests twice
+      refetchOnMount: false, // Don't refetch if data exists
+    },
+  },
+});
 
 const App = () => {
   return (
@@ -52,39 +75,45 @@ const App = () => {
               <Sonner />
               <BrowserRouter>
                 <PageTransitionLoader />
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/shop" element={<Shop />} />
-                  <Route path="/product/:id" element={<ProductDetail />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/creators" element={<Creators />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/add-product" element={<AddProduct />} />
-                  <Route path="/create-store" element={<CreateStore />} />
-                  <Route path="/store/:storeSlug" element={<StorePage />} />
-                  <Route path="/store-management" element={<StoreManagement />} />
-                  <Route path="/admin" element={<AdminPanel />} />
-                  <Route path="/checkout" element={<Checkout />} />
-                  <Route path="/downloads" element={<Downloads />} />
-                  <Route path="/payment-success" element={<PaymentSuccess />} />
-                  <Route path="/payment-failure" element={<PaymentFailure />} />
-                  <Route path="/site/:slug" element={<UserSite />} />
-                  <Route path="/creator/:slug" element={<UserSite />} />
-                  <Route path="/developer" element={<Developer />} />
-                  <Route path="/developer/obfuscator" element={<DeveloperObfuscator />} />
-                  <Route path="/developer/whitelist" element={<DeveloperWhitelist />} />
-                  <Route path="/developer/docs" element={<DeveloperDocs />} />
-                  <Route path="/developer/api" element={<DeveloperAPI />} />
-                  <Route path="/developer/bot" element={<DeveloperBotDashboard />} />
-                  <Route path="/analytics" element={<StoreAnalytics />} />
-                  <Route path="/onboarding" element={<Onboarding />} />
-                  <Route path="/tos" element={<TermsOfService />} />
-                  <Route path="/privacy" element={<PrivacyPolicy />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                <Suspense fallback={<PageLoader />}>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/shop" element={<Shop />} />
+                    <Route path="/product/:id" element={<ProductDetail />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/creators" element={<Creators />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/contact" element={<Contact />} />
+                    <Route path="/add-product" element={<AddProduct />} />
+                    <Route path="/create-store" element={<CreateStore />} />
+                    <Route path="/store/:storeSlug" element={<StorePage />} />
+                    <Route path="/store-management" element={<StoreManagement />} />
+                    <Route path="/admin" element={<AdminPanel />} />
+                    <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/downloads" element={<Downloads />} />
+                    <Route path="/payment-success" element={<PaymentSuccess />} />
+                    <Route path="/payment-failure" element={<PaymentFailure />} />
+                    <Route path="/site/:slug" element={<UserSite />} />
+                    <Route path="/site/:slug/roadmap/:productId" element={<UserSite />} />
+                    <Route path="/site/:slug/:pageType" element={<UserSite />} />
+                    <Route path="/creator/:slug" element={<UserSite />} />
+                    <Route path="/creator/:slug/roadmap/:productId" element={<UserSite />} />
+                    <Route path="/creator/:slug/:pageType" element={<UserSite />} />
+                    <Route path="/developer" element={<Developer />} />
+                    <Route path="/developer/obfuscator" element={<DeveloperObfuscator />} />
+                    <Route path="/developer/whitelist" element={<DeveloperWhitelist />} />
+                    <Route path="/developer/docs" element={<DeveloperDocs />} />
+                    <Route path="/developer/api" element={<DeveloperAPI />} />
+                    <Route path="/developer/bot" element={<DeveloperBotDashboard />} />
+                    <Route path="/analytics" element={<StoreAnalytics />} />
+                    <Route path="/onboarding" element={<Onboarding />} />
+                    <Route path="/tos" element={<TermsOfService />} />
+                    <Route path="/privacy" element={<PrivacyPolicy />} />
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
               </BrowserRouter>
             </TooltipProvider>
           </CurrencyProvider>

@@ -18,7 +18,7 @@ const data = new SlashCommandBuilder()
       .setRequired(false)
   );
 
-async function execute(interaction, { database, serverConfigService }) {
+async function execute(interaction, { database, serverConfigService, robloxApi }) {
   const guildError = requireGuild(interaction);
   if (guildError) {
     return interaction.reply({ content: guildError, ephemeral: true });
@@ -38,6 +38,7 @@ async function execute(interaction, { database, serverConfigService }) {
 
   const db = database || interaction.client.database;
   const configService = serverConfigService || interaction.client.serverConfigService;
+  const robloxService = robloxApi || interaction.client.robloxApi;
 
   if (!db) {
     return await interaction.editReply({
@@ -90,7 +91,7 @@ async function execute(interaction, { database, serverConfigService }) {
 
     // If single redemption, process directly
     if (redemptions.length === 1) {
-      await processSingleRemoval(interaction, db, products, redemptions[0]);
+      await processSingleRemoval(interaction, db, products, redemptions[0], robloxService);
       return;
     }
 
@@ -146,7 +147,7 @@ async function execute(interaction, { database, serverConfigService }) {
       // Process removals
       const results = [];
       for (const redemption of toRemove) {
-        const result = await removeRedemption(db, products, redemption);
+        const result = await removeRedemption(db, products, redemption, robloxService);
         results.push(result);
       }
 
@@ -181,7 +182,7 @@ async function execute(interaction, { database, serverConfigService }) {
   }
 }
 
-async function processSingleRemoval(interaction, db, products, redemption) {
+async function processSingleRemoval(interaction, db, products, redemption, robloxService) {
   const configService = interaction.client.serverConfigService;
 
   if (products.length === 0) {
@@ -239,7 +240,7 @@ async function processSingleRemoval(interaction, db, products, redemption) {
         components: []
       });
 
-      const kickResults = await kickFromGroups(redemption.roblox_user_id, selectedGroupIds);
+      const kickResults = await kickFromGroups(redemption.roblox_user_id, selectedGroupIds, products, robloxService);
       const deleteResult = await db.deleteRedemption(redemption.id, {
         isAdmin: true,
         discordUserId: interaction.user.id
@@ -265,7 +266,7 @@ async function processSingleRemoval(interaction, db, products, redemption) {
   } else {
     // Single product
     const product = products[0];
-    const kickResults = await kickFromGroups(redemption.roblox_user_id, [product.robloxGroupId]);
+    const kickResults = await kickFromGroups(redemption.roblox_user_id, [product.robloxGroupId], products, robloxService);
     const deleteResult = await db.deleteRedemption(redemption.id, {
       isAdmin: true,
       discordUserId: interaction.user.id
@@ -284,7 +285,7 @@ async function processSingleRemoval(interaction, db, products, redemption) {
   }
 }
 
-async function removeRedemption(db, products, redemption) {
+async function removeRedemption(db, products, redemption, robloxService) {
   const result = {
     redemption,
     kickedGroups: [],
@@ -297,7 +298,10 @@ async function removeRedemption(db, products, redemption) {
   for (const product of products) {
     try {
       const RobloxApiService = (await import('../../services/robloxApi.js')).default;
-      const robloxApi = new RobloxApiService({ groupId: product.robloxGroupId });
+      const robloxApi = new RobloxApiService({ 
+        groupId: product.robloxGroupId,
+        apiKey: product.robloxApiKey || robloxService.apiKey
+      });
       const kickResult = await robloxApi.kickMember(redemption.roblox_user_id);
 
       if (kickResult.success) {
@@ -325,13 +329,18 @@ async function removeRedemption(db, products, redemption) {
   return result;
 }
 
-async function kickFromGroups(robloxUserId, groupIds) {
+async function kickFromGroups(robloxUserId, groupIds, products, robloxService) {
   const results = [];
   const RobloxApiService = (await import('../../services/robloxApi.js')).default;
 
   for (const groupId of groupIds) {
     try {
-      const robloxApi = new RobloxApiService({ groupId });
+      // Find product for this group to get product-specific API key
+      const product = products.find(p => p.robloxGroupId === groupId);
+      const robloxApi = new RobloxApiService({ 
+        groupId,
+        apiKey: product?.robloxApiKey || robloxService.apiKey
+      });
       const result = await robloxApi.kickMember(robloxUserId);
       results.push({
         groupId,

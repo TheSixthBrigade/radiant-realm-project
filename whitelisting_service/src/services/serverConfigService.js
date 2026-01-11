@@ -115,6 +115,12 @@ class ServerConfigService {
 
       // Create and add product
       const product = createProduct(validation.sanitized);
+      
+      // Add robloxApiKey if provided
+      if (productInput.robloxApiKey) {
+        product.robloxApiKey = productInput.robloxApiKey.trim();
+      }
+      
       config.products.push(product);
       config.updatedAt = new Date().toISOString();
 
@@ -124,7 +130,8 @@ class ServerConfigService {
       logSecurityEvent('PRODUCT_ADDED', 'LOW', {
         guild_id: guildId,
         product_name: product.name,
-        group_id: product.robloxGroupId
+        group_id: product.robloxGroupId,
+        has_roblox_key: !!product.robloxApiKey
       });
 
       return {
@@ -133,7 +140,8 @@ class ServerConfigService {
           name: product.name,
           robloxGroupId: product.robloxGroupId,
           payhipApiKey: maskApiKey(product.payhipApiKey),
-          roleId: product.roleId || null
+          roleId: product.roleId || null,
+          hasRobloxApiKey: !!product.robloxApiKey
         }
       };
     } catch (error) {
@@ -263,6 +271,23 @@ class ServerConfigService {
         product.roleId = updates.roleId ? String(updates.roleId).trim() : null;
       }
 
+      // Handle robloxApiKey update (can be set to null to remove)
+      if ('robloxApiKey' in updates) {
+        if (updates.robloxApiKey) {
+          const trimmedKey = String(updates.robloxApiKey).trim();
+          // Basic validation - Roblox API keys are typically long alphanumeric strings
+          if (trimmedKey.length < 20) {
+            return {
+              success: false,
+              error: 'Invalid Roblox API key. The key appears too short.'
+            };
+          }
+          product.robloxApiKey = trimmedKey;
+        } else {
+          product.robloxApiKey = null;
+        }
+      }
+
       // Handle redemptionMessage update (can be set to null to remove)
       if ('redemptionMessage' in updates) {
         product.redemptionMessage = updates.redemptionMessage ? String(updates.redemptionMessage).trim() : null;
@@ -286,7 +311,8 @@ class ServerConfigService {
           robloxGroupId: product.robloxGroupId,
           payhipApiKey: maskApiKey(product.payhipApiKey),
           roleId: product.roleId || null,
-          redemptionMessage: product.redemptionMessage || null
+          redemptionMessage: product.redemptionMessage || null,
+          hasRobloxApiKey: !!product.robloxApiKey
         }
       };
     } catch (error) {
@@ -385,6 +411,26 @@ class ServerConfigService {
             guildId, 
             productCount: products.length 
           });
+        }
+
+        // Update Roblox API keys separately using the encryption function
+        for (const p of products) {
+          if (p.robloxApiKey) {
+            try {
+              // Use raw SQL to call the encryption function
+              const { error: keyError } = await sb.rpc('encrypt_and_store_roblox_key', {
+                p_product_name: p.name,
+                p_server_id: serverId,
+                p_api_key: p.robloxApiKey
+              });
+              
+              if (keyError) {
+                logError(keyError, { context: 'SyncProductsToSupabase.encryptKey', guildId, product: p.name });
+              }
+            } catch (encryptError) {
+              logError(encryptError, { context: 'SyncProductsToSupabase.encryptKey', guildId, product: p.name });
+            }
+          }
         }
       }
     } catch (error) {

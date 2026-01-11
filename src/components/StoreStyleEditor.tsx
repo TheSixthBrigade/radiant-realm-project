@@ -184,6 +184,7 @@ export const StoreStyleEditor = ({ isOpen, onClose, settings, onSettingsChange, 
           {/* Background Section */}
           <div>
             <h3 className="text-lg font-semibold mb-4">Background</h3>
+            <p className="text-xs text-gray-500 mb-4">This background applies to the home/store page. Other pages (Roadmap, Community, About, TOS) have their own background settings in their editors.</p>
             
             <div className="space-y-4">
               <div>
@@ -368,6 +369,111 @@ export const StoreStyleEditor = ({ isOpen, onClose, settings, onSettingsChange, 
                     className="w-full mt-1"
                   />
                 </div>
+              )}
+            </div>
+          </div>
+
+          {/* Global Default Background */}
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Global Default Background</h3>
+            <p className="text-xs text-gray-500 mb-4">Set a default background that pages can inherit if they don't have their own background set.</p>
+            
+            <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Enable Global Background</Label>
+                <Switch
+                  checked={settings.global_background_enabled === true}
+                  onCheckedChange={(checked) => onSettingsChange({ ...settings, global_background_enabled: checked })}
+                />
+              </div>
+
+              {settings.global_background_enabled && (
+                <>
+                  <div>
+                    <Label>Global Background Type</Label>
+                    <Select 
+                      value={settings.global_background_type || 'gradient'} 
+                      onValueChange={(value) => onSettingsChange({ ...settings, global_background_type: value })}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="solid">Solid Color</SelectItem>
+                        <SelectItem value="gradient">Gradient</SelectItem>
+                        <SelectItem value="image">Image</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {settings.global_background_type === 'solid' && (
+                    <div>
+                      <Label>Background Color</Label>
+                      <div className="flex gap-2 mt-1">
+                        <Input
+                          type="color"
+                          value={settings.global_background_color || '#0f172a'}
+                          onChange={(e) => onSettingsChange({ ...settings, global_background_color: e.target.value })}
+                          className="w-16 h-10 p-1"
+                        />
+                        <Input
+                          value={settings.global_background_color || '#0f172a'}
+                          onChange={(e) => onSettingsChange({ ...settings, global_background_color: e.target.value })}
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {settings.global_background_type === 'gradient' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>Start Color</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input
+                            type="color"
+                            value={settings.global_gradient_start || '#0f172a'}
+                            onChange={(e) => onSettingsChange({ ...settings, global_gradient_start: e.target.value })}
+                            className="w-16 h-10 p-1"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label>End Color</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input
+                            type="color"
+                            value={settings.global_gradient_end || '#1e1b4b'}
+                            onChange={(e) => onSettingsChange({ ...settings, global_gradient_end: e.target.value })}
+                            className="w-16 h-10 p-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {settings.global_background_type === 'image' && (
+                    <>
+                      <ImageUploadZone
+                        label="Global Background Image"
+                        value={settings.global_background_image || ''}
+                        onChange={(url) => onSettingsChange({ ...settings, global_background_image: url })}
+                      />
+                      <div>
+                        <Label>Overlay Opacity: {((settings.global_background_overlay || 0.5) * 100).toFixed(0)}%</Label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.1"
+                          value={settings.global_background_overlay || 0.5}
+                          onChange={(e) => onSettingsChange({ ...settings, global_background_overlay: parseFloat(e.target.value) })}
+                          className="w-full mt-1"
+                        />
+                      </div>
+                    </>
+                  )}
+                </>
               )}
             </div>
           </div>

@@ -25,6 +25,12 @@ export default {
         .setDescription('Roblox group ID')
         .setRequired(true)
     )
+    .addStringOption(option =>
+      option
+        .setName('roblox_api_key')
+        .setDescription('Roblox Open Cloud API key (groups permission only!) - optional')
+        .setRequired(false)
+    )
     .addRoleOption(option =>
       option
         .setName('role')
@@ -51,6 +57,7 @@ export default {
       const name = interaction.options.getString('name');
       const payhipApiKey = interaction.options.getString('payhip_key');
       const robloxGroupId = interaction.options.getString('group_id');
+      const robloxApiKey = interaction.options.getString('roblox_api_key');
       const role = interaction.options.getRole('role');
       const roleId = role ? role.id : null;
 
@@ -58,13 +65,15 @@ export default {
         guild_id: interaction.guildId,
         product_name: name,
         group_id: robloxGroupId,
-        role_id: roleId
+        role_id: roleId,
+        has_roblox_key: !!robloxApiKey
       });
 
       const result = await serverConfigService.addProduct(interaction.guildId, {
         name,
         payhipApiKey,
         robloxGroupId,
+        robloxApiKey,
         roleId
       });
 
@@ -75,9 +84,14 @@ export default {
       }
 
       let response = `Product added.\n\n**Name:** ${result.product.name}\n**Group ID:** ${result.product.robloxGroupId}\n**Payhip Key:** ${result.product.payhipApiKey}`;
+      if (result.product.hasRobloxApiKey) {
+        response += `\n**Roblox API Key:** ✅ Set (encrypted)`;
+      }
       if (result.product.roleId) {
         response += `\n**Role:** <@&${result.product.roleId}>`;
       }
+      
+      response += `\n\n💡 **Tip:** Get your Roblox API key at https://create.roblox.com/credentials\n⚠️ Only give **"groups"** permission when creating the key!`;
 
       return interaction.editReply({
         content: response

@@ -7,7 +7,6 @@ CREATE TYPE public.creator_type AS ENUM (
   'team',
   'studio'
 );
-
 -- Add new fields to profiles table
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS creator_type creator_type DEFAULT 'independent';
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS profile_completed BOOLEAN DEFAULT false;
@@ -15,7 +14,6 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS business_name TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS website_url TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS social_links JSONB DEFAULT '{}';
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS verification_status TEXT DEFAULT 'pending';
-
 -- Create creator onboarding table
 CREATE TABLE IF NOT EXISTS public.creator_onboarding (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -27,21 +25,17 @@ CREATE TABLE IF NOT EXISTS public.creator_onboarding (
   completed_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
-
 -- Enable RLS
 ALTER TABLE public.creator_onboarding ENABLE ROW LEVEL SECURITY;
-
 -- Create policies for creator_onboarding
 CREATE POLICY "Users can view their own onboarding" 
 ON public.creator_onboarding 
 FOR SELECT 
 USING (auth.uid() = user_id);
-
 CREATE POLICY "Users can update their own onboarding" 
 ON public.creator_onboarding 
 FOR ALL 
 USING (auth.uid() = user_id);
-
 -- Function to create onboarding record when user becomes creator
 CREATE OR REPLACE FUNCTION public.create_creator_onboarding()
 RETURNS TRIGGER AS $
@@ -50,11 +44,10 @@ BEGIN
     INSERT INTO public.creator_onboarding (user_id)
     VALUES (NEW.user_id)
     ON CONFLICT (user_id) DO NOTHING;
-  END IF;
-  RETURN NEW;
+END IF;
+RETURN NEW;
 END;
 $ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
-
 -- Create trigger for creator onboarding
 DROP TRIGGER IF EXISTS create_creator_onboarding_trigger ON public.profiles;
 CREATE TRIGGER create_creator_onboarding_trigger

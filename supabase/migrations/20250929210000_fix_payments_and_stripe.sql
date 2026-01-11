@@ -4,7 +4,6 @@
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS paypal_email TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS stripe_connect_account_id TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS stripe_connect_status TEXT DEFAULT 'not_connected';
-
 -- Add payment method validation function
 CREATE OR REPLACE FUNCTION public.has_payment_method(user_id UUID)
 RETURNS BOOLEAN AS $
@@ -15,15 +14,13 @@ BEGIN
   INTO profile_record
   FROM profiles
   WHERE profiles.user_id = has_payment_method.user_id;
-  
-  -- User has payment method if they have PayPal email OR connected Stripe account
+-- User has payment method if they have PayPal email OR connected Stripe account
   RETURN (
     (profile_record.paypal_email IS NOT NULL AND profile_record.paypal_email != '') OR
     (profile_record.stripe_connect_account_id IS NOT NULL AND profile_record.stripe_connect_status = 'connected')
   );
 END;
 $ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
-
 -- Create function to get creator payment info
 CREATE OR REPLACE FUNCTION public.get_creator_payment_info(creator_user_id UUID)
 RETURNS TABLE (
@@ -45,15 +42,12 @@ BEGIN
   WHERE p.user_id = creator_user_id;
 END;
 $ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
-
 -- Update payment_transactions table to include more payment methods
 ALTER TABLE public.payment_transactions ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT 'stripe';
 ALTER TABLE public.payment_transactions ADD COLUMN IF NOT EXISTS paypal_transaction_id TEXT;
-
 -- Create index for payment method lookups
 CREATE INDEX IF NOT EXISTS idx_profiles_paypal_email ON public.profiles(paypal_email) WHERE paypal_email IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_profiles_stripe_connect ON public.profiles(stripe_connect_account_id) WHERE stripe_connect_account_id IS NOT NULL;
-
 -- Add RLS policy for admin access to all profiles (for thecheesemanatyou@gmail.com)
 CREATE POLICY "Admin can view all profiles" ON public.profiles
   FOR SELECT USING (
@@ -63,7 +57,6 @@ CREATE POLICY "Admin can view all profiles" ON public.profiles
       AND auth.users.email = 'thecheesemanatyou@gmail.com'
     )
   );
-
 CREATE POLICY "Admin can update all profiles" ON public.profiles
   FOR UPDATE USING (
     EXISTS (

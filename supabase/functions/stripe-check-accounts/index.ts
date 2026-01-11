@@ -27,8 +27,8 @@ serve(async (req) => {
     // Get all profiles with Stripe accounts
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('user_id, display_name, stripe_account_id, stripe_onboarding_status')
-      .not('stripe_account_id', 'is', null)
+      .select('user_id, display_name, stripe_connect_account_id, stripe_connect_status')
+      .not('stripe_connect_account_id', 'is', null)
 
     if (profilesError) {
       throw new Error(`Database error: ${profilesError.message}`)
@@ -39,10 +39,10 @@ serve(async (req) => {
     for (const profile of profiles || []) {
       try {
         // Get account details from Stripe
-        const account = await stripe.accounts.retrieve(profile.stripe_account_id)
+        const account = await stripe.accounts.retrieve(profile.stripe_connect_account_id)
         
         const isConnected = account.charges_enabled && account.payouts_enabled
-        const currentStatus = profile.stripe_onboarding_status
+        const currentStatus = profile.stripe_connect_status
         const newStatus = isConnected ? 'connected' : 'pending'
         const shouldUpdate = currentStatus !== newStatus && currentStatus !== 'complete'
 
@@ -59,7 +59,7 @@ serve(async (req) => {
           const { error: updateError } = await supabase
             .from('profiles')
             .update({
-              stripe_onboarding_status: newStatus
+              stripe_connect_status: newStatus
             })
             .eq('user_id', profile.user_id)
 
@@ -73,7 +73,7 @@ serve(async (req) => {
         results.push({
           user_id: profile.user_id,
           display_name: profile.display_name,
-          account_id: profile.stripe_account_id,
+          account_id: profile.stripe_connect_account_id,
           old_status: currentStatus,
           new_status: newStatus,
           updated: shouldUpdate,
@@ -82,11 +82,11 @@ serve(async (req) => {
         })
 
       } catch (stripeError) {
-        console.error(`Error checking account ${profile.stripe_account_id}:`, stripeError.message)
+        console.error(`Error checking account ${profile.stripe_connect_account_id}:`, stripeError.message)
         results.push({
           user_id: profile.user_id,
           display_name: profile.display_name,
-          account_id: profile.stripe_account_id,
+          account_id: profile.stripe_connect_account_id,
           error: stripeError.message
         })
       }

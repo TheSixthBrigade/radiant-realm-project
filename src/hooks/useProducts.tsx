@@ -76,8 +76,17 @@ export const useProducts = () => {
         creator: product.creator_id ? creatorsMap.get(product.creator_id) : undefined,
       }));
 
-      console.log('Products with creators:', productsWithCreators);
-      setProducts(productsWithCreators);
+      // Filter out products without valid images (must have image_url that's not empty/placeholder)
+      const productsWithImages = productsWithCreators.filter(product => {
+        const hasValidImage = product.image_url && 
+          product.image_url.trim() !== '' && 
+          product.image_url !== '/placeholder.svg' &&
+          !product.image_url.includes('placeholder');
+        return hasValidImage;
+      });
+
+      console.log('Products with images:', productsWithImages.length, 'of', productsWithCreators.length);
+      setProducts(productsWithImages);
     } catch (err) {
       console.error('Error in fetchProducts:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');

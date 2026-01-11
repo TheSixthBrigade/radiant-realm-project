@@ -13,10 +13,21 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+    detectSessionInUrl: true,
   },
   global: {
     headers: {
       apikey: SUPABASE_PUBLISHABLE_KEY,
     },
+  },
+  // Realtime optimizations
+  realtime: {
+    params: {
+      eventsPerSecond: 10, // Limit realtime events
+    },
+  },
+  // Database query optimizations
+  db: {
+    schema: 'public',
   },
 });

@@ -4,28 +4,40 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/Navigation";
 import { 
-  TrendingUp, TrendingDown, DollarSign, Users, ShoppingCart, Eye,
-  ArrowUpRight, ArrowDownRight, Download, Star, Clock, Zap, Activity, BarChart3,
+  TrendingUp, TrendingDown, DollarSign, ShoppingCart,
+  ArrowUpRight, ArrowDownRight, Download, Star, Zap, BarChart3,
   Package, RefreshCw
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-// Animated Wave Chart Component - Stripe Style
-const AnimatedWaveChart = ({ 
-  data, 
+// Format currency for axis labels
+const formatAxisValue = (value: number): string => {
+  if (value >= 1000) return `$${(value / 1000).toFixed(1)}k`;
+  if (value >= 1) return `$${value.toFixed(0)}`;
+  return `$${value.toFixed(2)}`;
+};
+
+// Simple smooth curve using straight lines through points
+// No fancy interpolation - dots will be exactly on the line
+
+// Revenue Chart Component with Hover Tooltip
+const RevenueChart = ({ 
+  data,
+  labels,
   color = "#22c55e", 
   height = 200,
-  showGradient = true,
-  animate = true 
+  showGradient = true
 }: { 
-  data: number[], 
+  data: number[],
+  labels?: string[],
   color?: string, 
   height?: number,
-  showGradient?: boolean,
-  animate?: boolean 
+  showGradient?: boolean
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; value: number; label: string } | null>(null);
+  const pointsRef = useRef<{ x: number; y: number; value: number; label: string }[]>([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -33,8 +45,10 @@ const AnimatedWaveChart = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let time = 0;
-    const padding = 40;
+    const leftPadding = 60;
+    const rightPadding = 20;
+    const topPadding = 20;
+    const bottomPadding = 30;
 
     const draw = () => {
       const width = canvas.width / 2;
@@ -44,95 +58,97 @@ const AnimatedWaveChart = ({
       ctx.save();
       ctx.scale(2, 2);
 
-      // Calculate points
       const maxVal = Math.max(...data, 1);
-      const minVal = Math.min(...data, 0);
-      const range = maxVal - minVal || 1;
+      const minVal = 0;
       
-      const points: { x: number, y: number }[] = data.map((val, i) => ({
-        x: padding + (i / (data.length - 1)) * (width - padding * 2),
-        y: h - padding - ((val - minVal) / range) * (h - padding * 2)
-      }));
-
-      // Draw grid lines
-      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-      ctx.lineWidth = 1;
-      for (let i = 0; i <= 4; i++) {
-        const y = padding + (i / 4) * (h - padding * 2);
+      const tickCount = 5;
+      const rawStep = maxVal / (tickCount - 1) || 1;
+      const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+      const niceStep = Math.ceil(rawStep / magnitude) * magnitude || 1;
+      const niceMax = Math.ceil(maxVal / niceStep) * niceStep || 1;
+      
+      ctx.font = '11px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      
+      for (let i = 0; i <= tickCount - 1; i++) {
+        const value = (niceMax / (tickCount - 1)) * (tickCount - 1 - i);
+        const y = topPadding + (i / (tickCount - 1)) * (h - topPadding - bottomPadding);
+        
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(padding, y);
-        ctx.lineTo(width - padding, y);
+        ctx.moveTo(leftPadding, y);
+        ctx.lineTo(width - rightPadding, y);
         ctx.stroke();
+        
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.8)';
+        ctx.fillText(formatAxisValue(value), leftPadding - 10, y);
       }
+      
+      const chartWidth = width - leftPadding - rightPadding;
+      const chartHeight = h - topPadding - bottomPadding;
+      
+      const points: { x: number, y: number, value: number, label: string }[] = data.map((val, i) => ({
+        x: leftPadding + (i / Math.max(data.length - 1, 1)) * chartWidth,
+        y: topPadding + chartHeight - ((val - minVal) / niceMax) * chartHeight,
+        value: val,
+        label: labels?.[i] || `Day ${i + 1}`
+      }));
+      
+      pointsRef.current = points;
 
-      // Create smooth curve with animation
       if (points.length > 1) {
-        ctx.beginPath();
-        ctx.moveTo(points[0].x, points[0].y);
-
-        for (let i = 0; i < points.length - 1; i++) {
-          const xc = (points[i].x + points[i + 1].x) / 2;
-          const yc = (points[i].y + points[i + 1].y) / 2;
-          const waveOffset = animate ? Math.sin(time * 2 + i * 0.5) * 2 : 0;
-          ctx.quadraticCurveTo(points[i].x, points[i].y + waveOffset, xc, yc + waveOffset);
-        }
-        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
-
-        // Gradient fill
         if (showGradient) {
-          const gradient = ctx.createLinearGradient(0, 0, 0, h);
-          gradient.addColorStop(0, color + '40');
-          gradient.addColorStop(0.5, color + '20');
-          gradient.addColorStop(1, color + '00');
-          
-          ctx.lineTo(points[points.length - 1].x, h - padding);
-          ctx.lineTo(points[0].x, h - padding);
+          ctx.beginPath();
+          ctx.moveTo(points[0].x, points[0].y);
+          for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+          }
+          ctx.lineTo(points[points.length - 1].x, h - bottomPadding);
+          ctx.lineTo(points[0].x, h - bottomPadding);
           ctx.closePath();
+          
+          const gradient = ctx.createLinearGradient(0, topPadding, 0, h - bottomPadding);
+          gradient.addColorStop(0, color + '30');
+          gradient.addColorStop(0.5, color + '15');
+          gradient.addColorStop(1, color + '00');
           ctx.fillStyle = gradient;
           ctx.fill();
         }
 
-        // Draw the line
         ctx.beginPath();
         ctx.moveTo(points[0].x, points[0].y);
-        for (let i = 0; i < points.length - 1; i++) {
-          const xc = (points[i].x + points[i + 1].x) / 2;
-          const yc = (points[i].y + points[i + 1].y) / 2;
-          const waveOffset = animate ? Math.sin(time * 2 + i * 0.5) * 2 : 0;
-          ctx.quadraticCurveTo(points[i].x, points[i].y + waveOffset, xc, yc + waveOffset);
+        for (let i = 1; i < points.length; i++) {
+          ctx.lineTo(points[i].x, points[i].y);
         }
-        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
         
         ctx.strokeStyle = color;
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 2.5;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.stroke();
 
-        // Glow effect
         ctx.shadowColor = color;
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = 10;
         ctx.stroke();
         ctx.shadowBlur = 0;
 
-        // Draw points
-        points.forEach((point, i) => {
-          const waveOffset = animate ? Math.sin(time * 2 + i * 0.5) * 2 : 0;
-          ctx.beginPath();
-          ctx.arc(point.x, point.y + waveOffset, 4, 0, Math.PI * 2);
-          ctx.fillStyle = '#0f172a';
-          ctx.fill();
-          ctx.strokeStyle = color;
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        });
+        for (let i = 0; i < points.length; i++) {
+          const showPoint = data.length <= 15 || i % Math.ceil(data.length / 15) === 0 || i === data.length - 1;
+          if (showPoint) {
+            ctx.beginPath();
+            ctx.arc(points[i].x, points[i].y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#0f172a';
+            ctx.fill();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+        }
       }
 
       ctx.restore();
-      time += 0.02;
-      if (animate) {
-        animationRef.current = requestAnimationFrame(draw);
-      }
     };
 
     const resize = () => {
@@ -144,15 +160,46 @@ const AnimatedWaveChart = ({
     resize();
     window.addEventListener('resize', resize);
 
-    if (animate) {
-      draw();
-    }
-
     return () => {
       window.removeEventListener('resize', resize);
-      cancelAnimationFrame(animationRef.current);
     };
-  }, [data, color, height, showGradient, animate]);
+  }, [data, labels, color, height, showGradient]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas || pointsRef.current.length === 0) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const scaleX = canvas.width / rect.width / 2;
+    const scaledX = mouseX * scaleX;
+
+    let closest = pointsRef.current[0];
+    let minDist = Math.abs(scaledX - closest.x);
+
+    for (const point of pointsRef.current) {
+      const dist = Math.abs(scaledX - point.x);
+      if (dist < minDist) {
+        minDist = dist;
+        closest = point;
+      }
+    }
+
+    if (minDist < 30) {
+      setTooltip({
+        x: closest.x / scaleX,
+        y: closest.y / scaleX,
+        value: closest.value,
+        label: closest.label
+      });
+    } else {
+      setTooltip(null);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setTooltip(null);
+  };
 
   if (data.length === 0) {
     return (
@@ -163,11 +210,28 @@ const AnimatedWaveChart = ({
   }
 
   return (
-    <canvas 
-      ref={canvasRef} 
-      className="w-full cursor-crosshair"
-      style={{ height: `${height}px` }}
-    />
+    <div ref={containerRef} className="relative">
+      <canvas 
+        ref={canvasRef} 
+        className="w-full cursor-crosshair"
+        style={{ height: `${height}px` }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      />
+      {tooltip && (
+        <div 
+          className="absolute pointer-events-none z-10 px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 shadow-xl"
+          style={{ 
+            left: tooltip.x, 
+            top: tooltip.y - 50,
+            transform: 'translateX(-50%)'
+          }}
+        >
+          <p className="text-xs text-slate-400">{tooltip.label}</p>
+          <p className="text-sm font-bold text-green-400">${tooltip.value.toFixed(2)}</p>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -222,7 +286,6 @@ const formatTimeAgo = (date: Date): string => {
   return `${days} day${days > 1 ? 's' : ''} ago`;
 };
 
-
 interface Sale {
   id: string;
   product_id: string;
@@ -245,13 +308,13 @@ interface DailyRevenue {
   revenue: number;
 }
 
+
 const StoreAnalytics = () => {
   const { user } = useAuth();
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
-  // Real data state
   const [products, setProducts] = useState<Product[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [dailyRevenue, setDailyRevenue] = useState<DailyRevenue[]>([]);
@@ -260,14 +323,12 @@ const StoreAnalytics = () => {
   const [totalDownloads, setTotalDownloads] = useState(0);
   const [previousPeriodRevenue, setPreviousPeriodRevenue] = useState(0);
 
-  // Fetch real data from Supabase
   const fetchAnalytics = async () => {
     if (!user) return;
     
     try {
       setRefreshing(true);
       
-      // Get time range dates
       const now = new Date();
       const daysBack = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : timeRange === '90d' ? 90 : 365;
       const startDate = new Date(now);
@@ -276,7 +337,6 @@ const StoreAnalytics = () => {
       const previousStartDate = new Date(startDate);
       previousStartDate.setDate(previousStartDate.getDate() - daysBack);
 
-      // Fetch products
       const { data: productsData, error: productsError } = await supabase
         .from('products')
         .select('id, title, price, downloads, rating, created_at')
@@ -289,7 +349,6 @@ const StoreAnalytics = () => {
       const productIds = productsData?.map(p => p.id) || [];
       
       if (productIds.length > 0) {
-        // Fetch sales for current period
         const { data: salesData, error: salesError } = await supabase
           .from('sales')
           .select('id, product_id, amount, created_at')
@@ -299,19 +358,16 @@ const StoreAnalytics = () => {
 
         if (salesError) throw salesError;
         
-        // Add product titles to sales
-        const salesWithProducts = (salesData || []).map(sale => ({
+        const salesWithProducts = (salesData || []).map((sale: any) => ({
           ...sale,
           product: productsData?.find(p => p.id === sale.product_id)
         }));
         setSales(salesWithProducts);
 
-        // Calculate totals
-        const revenue = salesData?.reduce((sum, sale) => sum + Number(sale.amount), 0) || 0;
+        const revenue = salesData?.reduce((sum: number, sale: any) => sum + Number(sale.amount), 0) || 0;
         setTotalRevenue(revenue);
         setTotalOrders(salesData?.length || 0);
 
-        // Fetch previous period sales for comparison
         const { data: prevSalesData } = await supabase
           .from('sales')
           .select('amount')
@@ -319,13 +375,11 @@ const StoreAnalytics = () => {
           .gte('created_at', previousStartDate.toISOString())
           .lt('created_at', startDate.toISOString());
 
-        const prevRevenue = prevSalesData?.reduce((sum, sale) => sum + Number(sale.amount), 0) || 0;
+        const prevRevenue = prevSalesData?.reduce((sum: number, sale: any) => sum + Number(sale.amount), 0) || 0;
         setPreviousPeriodRevenue(prevRevenue);
 
-        // Calculate daily revenue for chart
         const dailyMap = new Map<string, number>();
         
-        // Initialize all days with 0
         for (let i = 0; i < daysBack; i++) {
           const date = new Date(now);
           date.setDate(date.getDate() - i);
@@ -333,14 +387,12 @@ const StoreAnalytics = () => {
           dailyMap.set(dateStr, 0);
         }
         
-        // Fill in actual revenue
-        salesData?.forEach(sale => {
+        salesData?.forEach((sale: any) => {
           const dateStr = new Date(sale.created_at).toISOString().split('T')[0];
           const current = dailyMap.get(dateStr) || 0;
           dailyMap.set(dateStr, current + Number(sale.amount));
         });
 
-        // Convert to array sorted by date
         const dailyArray = Array.from(dailyMap.entries())
           .map(([date, revenue]) => ({ date, revenue }))
           .sort((a, b) => a.date.localeCompare(b.date));
@@ -354,7 +406,6 @@ const StoreAnalytics = () => {
         setDailyRevenue([]);
       }
 
-      // Calculate total downloads
       const downloads = productsData?.reduce((sum, p) => sum + p.downloads, 0) || 0;
       setTotalDownloads(downloads);
 
@@ -370,24 +421,14 @@ const StoreAnalytics = () => {
     fetchAnalytics();
   }, [user, timeRange]);
 
-  // Set up real-time subscription for new sales
   useEffect(() => {
     if (!user) return;
 
     const channel = supabase
       .channel('analytics-sales')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'sales'
-        },
-        () => {
-          // Refresh data when new sale comes in
-          fetchAnalytics();
-        }
-      )
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sales' }, () => {
+        fetchAnalytics();
+      })
       .subscribe();
 
     return () => {
@@ -395,26 +436,19 @@ const StoreAnalytics = () => {
     };
   }, [user]);
 
-  // Calculate metrics
   const revenueChange = previousPeriodRevenue > 0 
     ? ((totalRevenue - previousPeriodRevenue) / previousPeriodRevenue) * 100 
     : totalRevenue > 0 ? 100 : 0;
 
   const conversionRate = totalDownloads > 0 ? (totalOrders / totalDownloads) * 100 : 0;
-  
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-
   const bestSeller = products.length > 0 ? products[0] : null;
-  
   const avgRating = products.length > 0 
     ? products.reduce((sum, p) => sum + p.rating, 0) / products.length 
     : 0;
 
-  // Get product revenue
   const getProductRevenue = (productId: string) => {
-    return sales
-      .filter(s => s.product_id === productId)
-      .reduce((sum, s) => sum + Number(s.amount), 0);
+    return sales.filter(s => s.product_id === productId).reduce((sum, s) => sum + Number(s.amount), 0);
   };
 
   const getProductSales = (productId: string) => {
@@ -435,12 +469,12 @@ const StoreAnalytics = () => {
     );
   }
 
+
   return (
     <div className="min-h-screen bg-slate-950">
       <Navigation />
       
       <div className="container mx-auto px-4 sm:px-6 pt-24 pb-12">
-        {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -454,16 +488,13 @@ const StoreAnalytics = () => {
           </div>
           
           <div className="flex items-center gap-3">
-            {/* Time Range Selector */}
             <div className="flex rounded-lg bg-slate-800/50 border border-slate-700/50 p-1">
               {(['7d', '30d', '90d', '1y'] as const).map((range) => (
                 <button
                   key={range}
                   onClick={() => setTimeRange(range)}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    timeRange === range
-                      ? 'bg-green-500 text-white'
-                      : 'text-slate-400 hover:text-white'
+                    timeRange === range ? 'bg-green-500 text-white' : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : range === '90d' ? '90 Days' : '1 Year'}
@@ -484,9 +515,7 @@ const StoreAnalytics = () => {
           </div>
         </div>
 
-        {/* Main Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {/* Revenue Card */}
           <div className="p-6 rounded-xl bg-slate-900/50 border border-slate-800/50 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
@@ -504,7 +533,6 @@ const StoreAnalytics = () => {
             <Sparkline data={dailyRevenue.slice(-10).map(d => d.revenue)} color="#22c55e" />
           </div>
 
-          {/* Orders Card */}
           <div className="p-6 rounded-xl bg-slate-900/50 border border-slate-800/50 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
@@ -516,7 +544,6 @@ const StoreAnalytics = () => {
             <p className="text-xs text-slate-500 mt-2">Avg: ${avgOrderValue.toFixed(2)}/order</p>
           </div>
 
-          {/* Downloads Card */}
           <div className="p-6 rounded-xl bg-slate-900/50 border border-slate-800/50 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
@@ -528,7 +555,6 @@ const StoreAnalytics = () => {
             <p className="text-xs text-slate-500 mt-2">Across {products.length} products</p>
           </div>
 
-          {/* Products Card */}
           <div className="p-6 rounded-xl bg-slate-900/50 border border-slate-800/50 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
@@ -541,9 +567,8 @@ const StoreAnalytics = () => {
           </div>
         </div>
 
-        {/* Main Charts */}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Revenue Chart - Large */}
           <div className="lg:col-span-2 p-6 rounded-xl bg-slate-900/50 border border-slate-800/50 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -557,11 +582,14 @@ const StoreAnalytics = () => {
                 </div>
               </div>
             </div>
-            <AnimatedWaveChart 
-              data={dailyRevenue.map(d => d.revenue)} 
+            <RevenueChart 
+              data={dailyRevenue.map(d => d.revenue)}
+              labels={dailyRevenue.map(d => {
+                const date = new Date(d.date);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              })}
               color="#22c55e" 
               height={280}
-              animate={true}
             />
             <div className="flex justify-between mt-4 text-xs text-slate-500">
               <span>{timeRange === '7d' ? '7 days ago' : timeRange === '30d' ? '30 days ago' : timeRange === '90d' ? '90 days ago' : '1 year ago'}</span>
@@ -569,7 +597,6 @@ const StoreAnalytics = () => {
             </div>
           </div>
 
-          {/* Top Products */}
           <div className="p-6 rounded-xl bg-slate-900/50 border border-slate-800/50 backdrop-blur-sm">
             <h3 className="text-lg font-semibold text-white mb-4">Top Products</h3>
             <div className="space-y-4">
@@ -600,9 +627,7 @@ const StoreAnalytics = () => {
           </div>
         </div>
 
-        {/* Recent Activity & Insights */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Recent Orders */}
           <div className="lg:col-span-2 p-6 rounded-xl bg-slate-900/50 border border-slate-800/50 backdrop-blur-sm">
             <h3 className="text-lg font-semibold text-white mb-4">Recent Orders</h3>
             <div className="space-y-3">
@@ -633,7 +658,7 @@ const StoreAnalytics = () => {
             </div>
           </div>
 
-          {/* Quick Insights */}
+
           <div className="p-6 rounded-xl bg-slate-900/50 border border-slate-800/50 backdrop-blur-sm">
             <h3 className="text-lg font-semibold text-white mb-4">Quick Insights</h3>
             <div className="space-y-4">

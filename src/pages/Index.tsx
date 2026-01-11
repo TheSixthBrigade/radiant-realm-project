@@ -305,7 +305,7 @@ const Index = () => {
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {[
-              { icon: TrendingUp, title: '95% Revenue', desc: 'Only 5% platform fee', delay: '0ms' },
+              { icon: TrendingUp, title: 'Keep More', desc: 'Only 5% platform fee', delay: '0ms' },
               { icon: Zap, title: 'Instant Payouts', desc: 'Via Stripe Connect', delay: '100ms' },
               { icon: Shield, title: 'Protected', desc: 'Built-in whitelisting', delay: '200ms' },
               { icon: Users, title: 'Community', desc: 'Growing every day', delay: '300ms' }

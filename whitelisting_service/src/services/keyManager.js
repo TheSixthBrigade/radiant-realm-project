@@ -118,8 +118,22 @@ class KeyManagerService {
       }
       if (productCredentials.robloxGroupId) {
         // Create a new RobloxApi instance with the product's group ID
+        // Use product-specific API key if available, otherwise use the global API key from the main robloxApi instance
+        const globalApiKey = this.robloxApi.apiKey;
+        const apiKeyToUse = productCredentials.robloxApiKey || globalApiKey;
+        
+        logDebug('Creating RobloxApi for product', {
+          groupId: productCredentials.robloxGroupId,
+          hasProductKey: !!productCredentials.robloxApiKey,
+          hasGlobalKey: !!globalApiKey,
+          apiKeyPrefix: apiKeyToUse ? apiKeyToUse.substring(0, 20) + '...' : 'NONE'
+        });
+        
         const RobloxApiService = (await import('./robloxApi.js')).default;
-        robloxApi = new RobloxApiService({ groupId: productCredentials.robloxGroupId });
+        robloxApi = new RobloxApiService({ 
+          groupId: productCredentials.robloxGroupId,
+          apiKey: apiKeyToUse
+        });
       }
     }
     

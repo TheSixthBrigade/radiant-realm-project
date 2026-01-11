@@ -128,6 +128,7 @@ const StatSkeleton = () => (
 
 // Cache key for localStorage
 const CACHE_KEY = 'bot_dashboard_cache';
+const DISCORD_LINK_KEY = 'discord_linked';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 interface CachedData {
@@ -154,18 +155,43 @@ const setCachedData = (userId: string, servers: DiscordServer[]) => {
   } catch { /* ignore */ }
 };
 
+// Get Discord link status from cache
+const getCachedDiscordLink = (userId: string): { linked: boolean; username: string | null } | null => {
+  try {
+    const cached = localStorage.getItem(`${DISCORD_LINK_KEY}_${userId}`);
+    if (!cached) return null;
+    return JSON.parse(cached);
+  } catch { return null; }
+};
+
+// Cache Discord link status
+const setCachedDiscordLink = (userId: string, linked: boolean, username: string | null) => {
+  try {
+    localStorage.setItem(`${DISCORD_LINK_KEY}_${userId}`, JSON.stringify({ linked, username }));
+  } catch { /* ignore */ }
+};
+
 // Get initial state from cache synchronously
 const getInitialState = (userId: string | undefined) => {
-  if (!userId) return { servers: [], selectedServer: null, hasCache: false };
+  if (!userId) return { servers: [], selectedServer: null, hasCache: false, discordLinked: false, discordUsername: null };
   const cached = getCachedData(userId);
+  const discordCache = getCachedDiscordLink(userId);
   if (cached && cached.servers.length > 0) {
     return { 
       servers: cached.servers, 
       selectedServer: cached.servers[0], 
-      hasCache: true 
+      hasCache: true,
+      discordLinked: discordCache?.linked || false,
+      discordUsername: discordCache?.username || null
     };
   }
-  return { servers: [], selectedServer: null, hasCache: false };
+  return { 
+    servers: [], 
+    selectedServer: null, 
+    hasCache: false,
+    discordLinked: discordCache?.linked || false,
+    discordUsername: discordCache?.username || null
+  };
 };
 
 const DeveloperBotDashboard = () => {
@@ -186,8 +212,8 @@ const DeveloperBotDashboard = () => {
   const [whitelistedUsers, setWhitelistedUsers] = useState<WhitelistedUser[]>([]);
   const [loadingWhitelist, setLoadingWhitelist] = useState(false);
   const [permissions, setPermissions] = useState<CommandPermission[]>([]);
-  const [discordLinked, setDiscordLinked] = useState(false);
-  const [discordUsername, setDiscordUsername] = useState<string | null>(null);
+  const [discordLinked, setDiscordLinked] = useState(initialState.discordLinked);
+  const [discordUsername, setDiscordUsername] = useState<string | null>(initialState.discordUsername);
   const [needsRelink, setNeedsRelink] = useState(false);
   const [newProduct, setNewProduct] = useState({
     name: '',
@@ -275,6 +301,7 @@ const DeveloperBotDashboard = () => {
 
         setDiscordLinked(true);
         setDiscordUsername(discordUser.username);
+        if (user) setCachedDiscordLink(user.id, true, discordUser.username);
 
         toast.success(`Discord linked as ${discordUser.username}!`);
 
@@ -309,6 +336,7 @@ const DeveloperBotDashboard = () => {
       if (profile?.discord_id) {
         setDiscordLinked(true);
         setDiscordUsername(profile.discord_username);
+        if (user) setCachedDiscordLink(user.id, true, profile.discord_username);
       }
     };
     
@@ -335,12 +363,14 @@ const DeveloperBotDashboard = () => {
       if (!profile?.discord_id) {
         // User hasn't linked Discord yet - they need to do initial OAuth
         setDiscordLinked(false);
+        if (user) setCachedDiscordLink(user.id, false, null);
         setIsLoading(false);
         return;
       }
       
       setDiscordLinked(true);
       setDiscordUsername(profile.discord_username);
+      if (user) setCachedDiscordLink(user.id, true, profile.discord_username);
       
       // Use the new bot-based endpoint to get servers
       // This uses the BOT token to check permissions, not user's OAuth token
@@ -363,6 +393,7 @@ const DeveloperBotDashboard = () => {
         if (errorData.needsLink) {
           // User needs to link Discord (first time)
           setDiscordLinked(false);
+          if (user) setCachedDiscordLink(user.id, false, null);
         }
         console.error('[Bot Dashboard] Bot-servers error:', errorData);
         setServers([]);
@@ -828,7 +859,9 @@ const DeveloperBotDashboard = () => {
 
   const refreshServers = async () => {
     if (!user || isRefreshing) return;
-    await loadAllServers(true); // Background refresh
+    // Clear cache to force fresh data
+    localStorage.removeItem(`${CACHE_KEY}_${user.id}`);
+    await loadAllServers(false); // Full refresh, not background
     toast.success('Refreshed!');
   };
 
@@ -847,6 +880,8 @@ const DeveloperBotDashboard = () => {
       sessionStorage.removeItem('discord_oauth_code');
       localStorage.removeItem(`discord_admin_guilds_${user.id}`);
       localStorage.removeItem(`discord_admin_guilds_time_${user.id}`);
+      localStorage.removeItem(`${DISCORD_LINK_KEY}_${user.id}`);
+      localStorage.removeItem(`${CACHE_KEY}_${user.id}`);
       
       toast.info('Redirecting to Discord...');
       

@@ -138,6 +138,48 @@ export const useCreatorStats = () => {
 
   useEffect(() => {
     fetchCreatorData();
+
+    // Set up realtime subscriptions for live updates
+    if (!user) return;
+
+    // Subscribe to sales changes
+    const salesChannel = supabase
+      .channel('sales-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sales'
+        },
+        () => {
+          console.log('Sales changed, refetching...');
+          fetchCreatorData();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to products changes (for download count updates)
+    const productsChannel = supabase
+      .channel('products-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'products'
+        },
+        () => {
+          console.log('Products changed, refetching...');
+          fetchCreatorData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(salesChannel);
+      supabase.removeChannel(productsChannel);
+    };
   }, [user]);
 
   const formatTimeAgo = (date: Date): string => {

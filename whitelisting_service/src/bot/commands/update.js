@@ -82,8 +82,12 @@ async function execute(interaction, { serverConfigService, robloxApi, database }
     for (const product of productsWithRoles) {
       try {
         // Create a Roblox API instance for this product's group
+        // Use product-specific API key if available, otherwise use global API key from robloxService
         const RobloxApiService = (await import('../../services/robloxApi.js')).default;
-        const productRobloxApi = new RobloxApiService({ groupId: product.robloxGroupId });
+        const productRobloxApi = new RobloxApiService({ 
+          groupId: product.robloxGroupId,
+          apiKey: product.robloxApiKey || robloxService.apiKey
+        });
 
         const memberCheck = await productRobloxApi.isUserMember(robloxUserId);
         

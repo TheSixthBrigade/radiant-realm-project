@@ -2,11 +2,31 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Download, FileText, Calendar, ExternalLink } from "lucide-react";
+import { Download, FileText, Calendar, ExternalLink, Clock } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeStyle } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
+
+// Format time remaining until expiration
+const formatTimeRemaining = (expiresAt: Date): string => {
+  const now = new Date();
+  const diff = expiresAt.getTime() - now.getTime();
+  
+  if (diff <= 0) return 'Expired';
+  
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (hours > 24) {
+    const days = Math.floor(hours / 24);
+    return `in ${days}d ${hours % 24}h`;
+  }
+  if (hours > 0) {
+    return `in ${hours}h ${minutes}m`;
+  }
+  return `in ${minutes}m`;
+};
 
 interface PurchasedProduct {
   id: string;
@@ -16,6 +36,8 @@ interface PurchasedProduct {
   price: number;
   purchased_at: string;
   download_count: number;
+  expires_at: Date;
+  is_expired: boolean;
 }
 
 const Downloads = () => {
@@ -59,20 +81,30 @@ const Downloads = () => {
         }
 
         // Transform to PurchasedProduct format - show ALL purchases regardless of status
+        const DOWNLOAD_EXPIRY_HOURS = 48; // Downloads expire after 48 hours
+        
         const allProducts = transactions
           .filter(t => {
             console.log('Transaction status:', t.status, 'Product:', t.product);
             return t.product && t.product.id; // Only need product to exist
           })
-          .map(t => ({
-            id: t.product.id,
-            title: t.product.title,
-            image_url: t.product.image_url || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&h=300&fit=crop",
-            file_urls: t.product.file_urls || [],
-            price: t.amount,
-            purchased_at: t.created_at,
-            download_count: 0
-          }));
+          .map(t => {
+            const purchasedAt = new Date(t.created_at);
+            const expiresAt = new Date(purchasedAt.getTime() + DOWNLOAD_EXPIRY_HOURS * 60 * 60 * 1000);
+            const isExpired = new Date() > expiresAt;
+            
+            return {
+              id: t.product.id,
+              title: t.product.title,
+              image_url: t.product.image_url || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&h=300&fit=crop",
+              file_urls: t.product.file_urls || [],
+              price: t.amount,
+              purchased_at: t.created_at,
+              download_count: 0,
+              expires_at: expiresAt,
+              is_expired: isExpired
+            };
+          });
 
         // Remove duplicates - keep only the most recent purchase of each product
         const uniqueProducts = allProducts.reduce((acc, current) => {
@@ -87,8 +119,11 @@ const Downloads = () => {
           return acc;
         }, [] as PurchasedProduct[]);
 
-        console.log('Unique purchased products to display:', uniqueProducts);
-        setPurchases(uniqueProducts);
+        // Filter out expired downloads (older than 48 hours)
+        const activeDownloads = uniqueProducts.filter(p => !p.is_expired);
+        
+        console.log('Active downloads (not expired):', activeDownloads.length, 'of', uniqueProducts.length);
+        setPurchases(activeDownloads);
       } catch (error) {
         console.error('Error fetching purchases:', error);
       } finally {
@@ -165,7 +200,7 @@ const Downloads = () => {
       {/* Background Effects - Cyberpunk Theme Only */}
       {isCyberpunk && (
         <>
-          {/* Kinetic Systems Tactical Grid Pattern */}
+          {/* Premium Systems Tactical Grid Pattern */}
           <div className="fixed inset-0 pointer-events-none">
             <div 
               className="absolute inset-0" 
@@ -176,7 +211,7 @@ const Downloads = () => {
             />
           </div>
           
-          {/* Kinetic Systems Glowing Orbs */}
+          {/* Premium Systems Glowing Orbs */}
           <div className="fixed inset-0 pointer-events-none overflow-hidden">
             <div className="absolute top-20 left-20 w-[500px] h-[500px] rounded-full blur-3xl" style={{ background: 'rgba(33, 150, 243, 0.05)' }} />
             <div className="absolute bottom-20 right-20 w-[500px] h-[500px] rounded-full blur-3xl" style={{ background: 'rgba(33, 150, 243, 0.05)' }} />
@@ -265,8 +300,8 @@ const Downloads = () => {
                               Purchased {new Date(purchase.purchased_at).toLocaleDateString()}
                             </div>
                             <div className="flex items-center gap-1">
-                              <Download className="w-4 h-4" />
-                              {purchase.download_count} downloads
+                              <Clock className="w-4 h-4" />
+                              Expires {formatTimeRemaining(purchase.expires_at)}
                             </div>
                           </div>
                         </div>

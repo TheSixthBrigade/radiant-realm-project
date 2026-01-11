@@ -5,12 +5,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { X, Plus, ChevronRight, Settings, Home, Image, Grid, Layout as LayoutIcon, Type, Palette, ChevronDown, ChevronUp, Trash2, GripVertical } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { X, Plus, ChevronRight, Settings, Home, Image, Grid, Layout as LayoutIcon, Type, Palette, ChevronDown, ChevronUp, Trash2, GripVertical, Sparkles, FileText, Users, Heart, Target, Navigation } from "lucide-react";
 import { ProductPickerModal } from "./ProductPickerModal";
 import { CollectionManager } from "./CollectionManager";
 import { ImageUploadZone } from "./ImageUploadZone";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState as useStateHook } from "react";
+import { useEffect } from "react";
+import { RoadmapSettings, ROADMAP_THEMES } from "@/lib/roadmapThemes";
+import { PageManager, StorePage } from "./PageManager";
+import { CommunitySettings, DEFAULT_COMMUNITY_SETTINGS } from "@/lib/communitySettings";
+import { AboutPageSettings, TosPageSettings, DEFAULT_ABOUT_SETTINGS, DEFAULT_TOS_SETTINGS } from "@/lib/pageSettings";
+import { HeaderConfig, DEFAULT_HEADER_CONFIG, NAV_ICONS } from "./SiteHeader";
 
 interface PageBuilderSidebarProps {
   isOpen: boolean;
@@ -25,6 +31,34 @@ interface PageBuilderSidebarProps {
   onSave: () => void;
   settings?: any;
   onSettingsChange?: (settings: any) => void;
+  // Roadmap-specific props
+  isRoadmapMode?: boolean;
+  roadmapSettings?: RoadmapSettings;
+  onRoadmapSettingsChange?: (settings: RoadmapSettings) => void;
+  // Community-specific props
+  isCommunityMode?: boolean;
+  communitySettings?: CommunitySettings;
+  onCommunitySettingsChange?: (settings: CommunitySettings) => void;
+  // About page props
+  isAboutMode?: boolean;
+  aboutSettings?: AboutPageSettings;
+  onAboutSettingsChange?: (settings: AboutPageSettings) => void;
+  // TOS page props
+  isTosMode?: boolean;
+  tosSettings?: TosPageSettings;
+  onTosSettingsChange?: (settings: TosPageSettings) => void;
+  // Site Header props
+  headerConfig?: HeaderConfig;
+  onHeaderConfigChange?: (config: HeaderConfig) => void;
+  // Page manager props
+  pages?: StorePage[];
+  currentPageId?: string;
+  onPageChange?: (pageId: string) => void;
+  onAddPage?: (type: StorePage['type']) => void;
+  onDeletePage?: (pageId: string) => void;
+  onUpdatePage?: (page: StorePage) => void;
+  onReorderPages?: (pages: StorePage[]) => void;
+  subscriptionTier?: string;
 }
 
 export const PageBuilderSidebar = ({ 
@@ -39,9 +73,37 @@ export const PageBuilderSidebar = ({
   saving,
   onSave,
   settings = {},
-  onSettingsChange = () => {}
+  onSettingsChange = () => {},
+  // Roadmap-specific props
+  isRoadmapMode = false,
+  roadmapSettings,
+  onRoadmapSettingsChange = () => {},
+  // Community-specific props
+  isCommunityMode = false,
+  communitySettings,
+  onCommunitySettingsChange = () => {},
+  // About page props
+  isAboutMode = false,
+  aboutSettings,
+  onAboutSettingsChange = () => {},
+  // TOS page props
+  isTosMode = false,
+  tosSettings,
+  onTosSettingsChange = () => {},
+  // Site Header props
+  headerConfig,
+  onHeaderConfigChange = () => {},
+  // Page manager props
+  pages = [],
+  currentPageId = 'home',
+  onPageChange = () => {},
+  onAddPage = () => {},
+  onDeletePage = () => {},
+  onUpdatePage = () => {},
+  onReorderPages = () => {},
+  subscriptionTier = 'free'
 }: PageBuilderSidebarProps) => {
-  const [editingSection, setEditingSection] = useState<any>(null);
+  const [_editingSection, setEditingSection] = useState<any>(null);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [expandedSubsection, setExpandedSubsection] = useState<string | null>(null);
   const [expandedSubsections, setExpandedSubsections] = useState<Record<string, boolean>>({});
@@ -398,12 +460,11 @@ export const PageBuilderSidebar = ({
               />
             </div>
             <div>
-              <Label className="text-xs text-gray-300">Background Image URL</Label>
-              <Input
+              <Label className="text-xs text-gray-300 mb-2 block">Background Image</Label>
+              <ImageUploadZone
+                label="Upload Hero Background"
                 value={section.settings?.backgroundImage || ''}
-                onChange={(e) => onUpdateSection({ ...section, settings: { ...section.settings, backgroundImage: e.target.value }})}
-                placeholder="https://example.com/hero-bg.jpg"
-                className="bg-gray-900 border-gray-700 text-white"
+                onChange={(url) => onUpdateSection({ ...section, settings: { ...section.settings, backgroundImage: url }})}
               />
             </div>
             <div>
@@ -1198,12 +1259,11 @@ export const PageBuilderSidebar = ({
               />
             </div>
             <div>
-              <Label className="text-xs text-gray-300">Image URL</Label>
-              <Input
+              <Label className="text-xs text-gray-300 mb-2 block">Image</Label>
+              <ImageUploadZone
+                label="Upload About Image"
                 value={section.settings?.image || ''}
-                onChange={(e) => onUpdateSection({ ...section, settings: { ...section.settings, image: e.target.value }})}
-                placeholder="https://example.com/about.jpg"
-                className="bg-gray-900 border-gray-700 text-white"
+                onChange={(url) => onUpdateSection({ ...section, settings: { ...section.settings, image: url }})}
               />
             </div>
           </>
@@ -1609,23 +1669,1870 @@ export const PageBuilderSidebar = ({
     <div className="fixed left-0 top-0 h-full w-80 bg-gray-900 text-white shadow-2xl z-50 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="p-4 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
-        <h2 className="font-bold text-lg">Customize Page</h2>
+        <div>
+          <h2 className="font-bold text-lg">
+            {isRoadmapMode ? 'Roadmap Settings' : isCommunityMode ? 'Community Settings' : isAboutMode ? 'About Page Settings' : isTosMode ? 'Terms of Service Settings' : 'Customize Page'}
+          </h2>
+          {(isRoadmapMode || isCommunityMode || isAboutMode || isTosMode) && <p className="text-xs text-gray-400 mt-1">Live preview as you edit</p>}
+        </div>
         <button onClick={onClose} className="p-1 hover:bg-gray-800 rounded">
           <X className="w-5 h-5" />
         </button>
       </div>
 
-      {/* Page Info */}
-      <div className="p-4 border-b border-gray-700 flex-shrink-0">
-        <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
-          <Home className="w-4 h-4" />
-          <span>HOME PAGE</span>
+      {/* Page Manager - Switch between pages - show on ALL pages including roadmap */}
+      {pages.length > 0 && (
+        <div className="p-4 border-b border-gray-700 flex-shrink-0">
+          <PageManager
+            pages={pages}
+            currentPageId={currentPageId}
+            onPageChange={onPageChange}
+            onAddPage={onAddPage}
+            onDeletePage={onDeletePage}
+            onUpdatePage={onUpdatePage}
+            onReorderPages={onReorderPages}
+            isOwner={true}
+            subscriptionTier={subscriptionTier}
+          />
         </div>
-        <h3 className="text-lg font-semibold">Home page</h3>
-      </div>
+      )}
 
-      {/* Sections List - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      {/* Site Navigation Settings - Available on all pages */}
+      {headerConfig && (
+        <div className="border-b border-gray-700 flex-shrink-0">
+          <button
+            onClick={() => toggleSubsection('site-navigation')}
+            className="w-full flex items-center justify-between p-4 hover:bg-gray-800 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Navigation className="w-4 h-4 text-cyan-400" />
+              <span className="text-sm font-medium text-white">Site Navigation</span>
+            </div>
+            <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedSubsections['site-navigation'] ? 'rotate-90' : ''}`} />
+          </button>
+          {expandedSubsections['site-navigation'] && (
+            <div className="p-4 pt-0 space-y-4">
+              {/* Nav Style */}
+              <div>
+                <Label className="text-xs text-gray-300">Navigation Style</Label>
+                <Select
+                  value={headerConfig.navStyle || 'pills'}
+                  onValueChange={(value: any) => onHeaderConfigChange({ ...headerConfig, navStyle: value })}
+                >
+                  <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Default</SelectItem>
+                    <SelectItem value="pills">Pills</SelectItem>
+                    <SelectItem value="underline">Underline</SelectItem>
+                    <SelectItem value="buttons">Buttons</SelectItem>
+                    <SelectItem value="gradient">Gradient</SelectItem>
+                    <SelectItem value="ghost">Ghost</SelectItem>
+                    <SelectItem value="outlined">Outlined</SelectItem>
+                    <SelectItem value="floating">Floating</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Header Layout */}
+              <div>
+                <Label className="text-xs text-gray-300">Header Layout</Label>
+                <Select
+                  value={headerConfig.headerLayout || 'full'}
+                  onValueChange={(value: any) => onHeaderConfigChange({ ...headerConfig, headerLayout: value })}
+                >
+                  <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="full">Full Header</SelectItem>
+                    <SelectItem value="floating-nav">Floating Nav Only</SelectItem>
+                    <SelectItem value="minimal">Minimal</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Nav Position */}
+              <div>
+                <Label className="text-xs text-gray-300">Nav Position</Label>
+                <Select
+                  value={headerConfig.navPosition || 'center'}
+                  onValueChange={(value: any) => onHeaderConfigChange({ ...headerConfig, navPosition: value })}
+                >
+                  <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="left">Left</SelectItem>
+                    <SelectItem value="center">Center</SelectItem>
+                    <SelectItem value="right">Right</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Colors */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs text-gray-300">Accent Color</Label>
+                  <Input
+                    type="color"
+                    value={headerConfig.accentColor || '#14b8a6'}
+                    onChange={(e) => onHeaderConfigChange({ ...headerConfig, accentColor: e.target.value })}
+                    className="bg-gray-900 border-gray-700 h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Text Color</Label>
+                  <Input
+                    type="color"
+                    value={headerConfig.textColor || '#ffffff'}
+                    onChange={(e) => onHeaderConfigChange({ ...headerConfig, textColor: e.target.value })}
+                    className="bg-gray-900 border-gray-700 h-10 mt-1"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs text-gray-300">Background</Label>
+                  <Input
+                    type="color"
+                    value={headerConfig.backgroundColor || '#0f172a'}
+                    onChange={(e) => onHeaderConfigChange({ ...headerConfig, backgroundColor: e.target.value })}
+                    className="bg-gray-900 border-gray-700 h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Nav Background</Label>
+                  <Input
+                    type="color"
+                    value={headerConfig.navBackgroundColor || '#1e293b'}
+                    onChange={(e) => onHeaderConfigChange({ ...headerConfig, navBackgroundColor: e.target.value })}
+                    className="bg-gray-900 border-gray-700 h-10 mt-1"
+                  />
+                </div>
+              </div>
+
+              {/* Pill Border Radius */}
+              <div>
+                <Label className="text-xs text-gray-300">Button Roundness: {headerConfig.pillBorderRadius || 24}px</Label>
+                <Slider
+                  value={[headerConfig.pillBorderRadius || 24]}
+                  onValueChange={([value]) => onHeaderConfigChange({ ...headerConfig, pillBorderRadius: value })}
+                  max={32}
+                  min={0}
+                  step={2}
+                  className="mt-2"
+                />
+              </div>
+
+              {/* Toggles */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-300">Show Icons</Label>
+                  <Switch
+                    checked={headerConfig.showIcons !== false}
+                    onCheckedChange={(checked) => onHeaderConfigChange({ ...headerConfig, showIcons: checked })}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-300">Sticky Header</Label>
+                  <Switch
+                    checked={headerConfig.isSticky !== false}
+                    onCheckedChange={(checked) => onHeaderConfigChange({ ...headerConfig, isSticky: checked })}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-300">Transparent</Label>
+                  <Switch
+                    checked={headerConfig.isTransparent === true}
+                    onCheckedChange={(checked) => onHeaderConfigChange({ ...headerConfig, isTransparent: checked })}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-300">Hide Logo</Label>
+                  <Switch
+                    checked={headerConfig.hideLogo === true}
+                    onCheckedChange={(checked) => onHeaderConfigChange({ ...headerConfig, hideLogo: checked })}
+                  />
+                </div>
+              </div>
+
+              {/* Spacing */}
+              <div>
+                <Label className="text-xs text-gray-300">Nav Spacing</Label>
+                <Select
+                  value={headerConfig.navSpacing || 'normal'}
+                  onValueChange={(value: any) => onHeaderConfigChange({ ...headerConfig, navSpacing: value })}
+                >
+                  <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="compact">Compact</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="relaxed">Relaxed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Header Padding */}
+              <div>
+                <Label className="text-xs text-gray-300">Header Padding</Label>
+                <Select
+                  value={headerConfig.headerPadding || 'medium'}
+                  onValueChange={(value: any) => onHeaderConfigChange({ ...headerConfig, headerPadding: value })}
+                >
+                  <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="small">Small</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="large">Large</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Scroll Effect */}
+              <div>
+                <Label className="text-xs text-gray-300">Scroll Effect</Label>
+                <Select
+                  value={headerConfig.scrollEffect || 'none'}
+                  onValueChange={(value: any) => onHeaderConfigChange({ ...headerConfig, scrollEffect: value })}
+                >
+                  <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="fade-in">Fade In</SelectItem>
+                    <SelectItem value="blur-in">Blur In</SelectItem>
+                    <SelectItem value="slide-down">Slide Down</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Roadmap Settings Content */}
+      {isRoadmapMode && roadmapSettings ? (
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {/* Theme & Presets */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setExpandedSection(expandedSection === 'theme' ? null : 'theme')}
+              className="w-full flex items-center justify-between p-3 hover:bg-gray-800 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Palette className="w-4 h-4 text-blue-400" />
+                <span className="font-medium text-sm">Theme & Presets</span>
+              </div>
+              {expandedSection === 'theme' ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </button>
+            {expandedSection === 'theme' && (
+              <div className="p-3 bg-gray-800/50 space-y-3">
+                <div>
+                  <Label className="text-xs text-gray-300">Theme Preset</Label>
+                  <Select 
+                    value={roadmapSettings.theme} 
+                    onValueChange={(value) => onRoadmapSettingsChange({ ...roadmapSettings, theme: value })}
+                  >
+                    <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(ROADMAP_THEMES).map(([key, theme]) => (
+                        <SelectItem key={key} value={key}>{theme.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-300">Use Custom Colors</Label>
+                  <Switch
+                    checked={roadmapSettings.useCustomColors}
+                    onCheckedChange={(checked) => onRoadmapSettingsChange({ ...roadmapSettings, useCustomColors: checked })}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Visual Effects */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setExpandedSection(expandedSection === 'effects' ? null : 'effects')}
+              className="w-full flex items-center justify-between p-3 hover:bg-gray-800 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-yellow-400" />
+                <span className="font-medium text-sm">Visual Effects</span>
+              </div>
+              {expandedSection === 'effects' ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </button>
+            {expandedSection === 'effects' && (
+              <div className="p-3 bg-gray-800/50 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-300">Card Glow Effect</Label>
+                  <Switch
+                    checked={roadmapSettings.cardGlow}
+                    onCheckedChange={(checked) => onRoadmapSettingsChange({ ...roadmapSettings, cardGlow: checked })}
+                  />
+                </div>
+
+                {roadmapSettings.cardGlow && (
+                  <div>
+                    <Label className="text-xs text-gray-300">Glow Intensity ({roadmapSettings.glowIntensity}%)</Label>
+                    <Slider
+                      value={[roadmapSettings.glowIntensity]}
+                      onValueChange={([value]) => onRoadmapSettingsChange({ ...roadmapSettings, glowIntensity: value })}
+                      max={100}
+                      min={0}
+                      step={5}
+                      className="mt-2"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <Label className="text-xs text-gray-300">Version Card Opacity ({roadmapSettings.cardOpacity}%)</Label>
+                  <Slider
+                    value={[roadmapSettings.cardOpacity]}
+                    onValueChange={([value]) => onRoadmapSettingsChange({ ...roadmapSettings, cardOpacity: value })}
+                    max={100}
+                    min={0}
+                    step={5}
+                    className="mt-2"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs text-gray-300">Task Card Opacity ({roadmapSettings.taskCardOpacity ?? 40}%)</Label>
+                  <Slider
+                    value={[roadmapSettings.taskCardOpacity ?? 40]}
+                    onValueChange={([value]) => onRoadmapSettingsChange({ ...roadmapSettings, taskCardOpacity: value })}
+                    max={100}
+                    min={0}
+                    step={5}
+                    className="mt-2"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs text-gray-300">Task Card Size</Label>
+                  <Select 
+                    value={roadmapSettings.taskCardPadding || 'p-3'} 
+                    onValueChange={(value) => onRoadmapSettingsChange({ ...roadmapSettings, taskCardPadding: value })}
+                  >
+                    <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="p-2">Compact</SelectItem>
+                      <SelectItem value="p-3">Normal</SelectItem>
+                      <SelectItem value="p-4">Medium</SelectItem>
+                      <SelectItem value="p-5">Large</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs text-gray-300">Card Border Radius ({roadmapSettings.cardBorderRadius}px)</Label>
+                  <Slider
+                    value={[roadmapSettings.cardBorderRadius]}
+                    onValueChange={([value]) => onRoadmapSettingsChange({ ...roadmapSettings, cardBorderRadius: value })}
+                    max={32}
+                    min={0}
+                    step={2}
+                    className="mt-2"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs text-gray-300">Card Style</Label>
+                  <Select 
+                    value={roadmapSettings.cardStyle || 'full'} 
+                    onValueChange={(value) => onRoadmapSettingsChange({ ...roadmapSettings, cardStyle: value })}
+                  >
+                    <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="full">Full Border</SelectItem>
+                      <SelectItem value="left-accent">Left Accent (Kinetic)</SelectItem>
+                      <SelectItem value="minimal">Minimal (No Border)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500 mt-1">Left Accent gives a clean Kinetic-style look</p>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-300">Floating Orbs</Label>
+                  <Switch
+                    checked={roadmapSettings.showFloatingOrbs}
+                    onCheckedChange={(checked) => onRoadmapSettingsChange({ ...roadmapSettings, showFloatingOrbs: checked })}
+                  />
+                </div>
+
+                {roadmapSettings.showFloatingOrbs && (
+                  <>
+                    <div>
+                      <Label className="text-xs text-gray-300">Orb Count ({roadmapSettings.orbCount})</Label>
+                      <Slider
+                        value={[roadmapSettings.orbCount]}
+                        onValueChange={([value]) => onRoadmapSettingsChange({ ...roadmapSettings, orbCount: value })}
+                        max={6}
+                        min={1}
+                        step={1}
+                        className="mt-2"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-300">Orb Color</Label>
+                      <Input
+                        type="color"
+                        value={roadmapSettings.orbColor}
+                        onChange={(e) => onRoadmapSettingsChange({ ...roadmapSettings, orbColor: e.target.value })}
+                        className="bg-gray-900 border-gray-700 h-8 mt-1"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Layout & Typography */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setExpandedSection(expandedSection === 'layout' ? null : 'layout')}
+              className="w-full flex items-center justify-between p-3 hover:bg-gray-800 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <LayoutIcon className="w-4 h-4 text-green-400" />
+                <span className="font-medium text-sm">Layout & Typography</span>
+              </div>
+              {expandedSection === 'layout' ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </button>
+            {expandedSection === 'layout' && (
+              <div className="p-3 bg-gray-800/50 space-y-3">
+                <div>
+                  <Label className="text-xs text-gray-300">Roadmap Width</Label>
+                  <Select 
+                    value={roadmapSettings.roadmapWidth} 
+                    onValueChange={(value) => onRoadmapSettingsChange({ ...roadmapSettings, roadmapWidth: value })}
+                  >
+                    <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="max-w-4xl">Narrow</SelectItem>
+                      <SelectItem value="max-w-6xl">Medium</SelectItem>
+                      <SelectItem value="max-w-7xl">Wide</SelectItem>
+                      <SelectItem value="max-w-full">Full Width</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label className="text-xs text-gray-300">Section Spacing</Label>
+                  <Select 
+                    value={roadmapSettings.sectionSpacing} 
+                    onValueChange={(value) => onRoadmapSettingsChange({ ...roadmapSettings, sectionSpacing: value })}
+                  >
+                    <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="compact">Compact</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="relaxed">Relaxed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs text-gray-300">Main Title Size</Label>
+                  <Select 
+                    value={roadmapSettings.mainTitleSize} 
+                    onValueChange={(value) => onRoadmapSettingsChange({ ...roadmapSettings, mainTitleSize: value })}
+                  >
+                    <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="text-4xl md:text-5xl">Small</SelectItem>
+                      <SelectItem value="text-5xl md:text-6xl">Medium</SelectItem>
+                      <SelectItem value="text-6xl md:text-7xl">Large</SelectItem>
+                      <SelectItem value="text-7xl md:text-8xl">Extra Large</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs text-gray-300">Version Title Size</Label>
+                  <Select 
+                    value={roadmapSettings.versionTitleSize || 'text-3xl md:text-4xl'} 
+                    onValueChange={(value) => onRoadmapSettingsChange({ ...roadmapSettings, versionTitleSize: value })}
+                  >
+                    <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="text-xl md:text-2xl">Small</SelectItem>
+                      <SelectItem value="text-2xl md:text-3xl">Medium</SelectItem>
+                      <SelectItem value="text-3xl md:text-4xl">Large</SelectItem>
+                      <SelectItem value="text-4xl md:text-5xl">Extra Large</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs text-gray-300">Task Title Size</Label>
+                  <Select 
+                    value={roadmapSettings.taskTitleSize || 'text-xl'} 
+                    onValueChange={(value) => onRoadmapSettingsChange({ ...roadmapSettings, taskTitleSize: value })}
+                  >
+                    <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="text-base">Small</SelectItem>
+                      <SelectItem value="text-lg">Medium</SelectItem>
+                      <SelectItem value="text-xl">Large</SelectItem>
+                      <SelectItem value="text-2xl">Extra Large</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs text-gray-300">Card Padding</Label>
+                  <Select 
+                    value={roadmapSettings.cardPadding || 'p-10'} 
+                    onValueChange={(value) => onRoadmapSettingsChange({ ...roadmapSettings, cardPadding: value })}
+                  >
+                    <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="p-4">Compact</SelectItem>
+                      <SelectItem value="p-6">Small</SelectItem>
+                      <SelectItem value="p-8">Medium</SelectItem>
+                      <SelectItem value="p-10">Large</SelectItem>
+                      <SelectItem value="p-12">Extra Large</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-xs text-gray-300">Border Width ({roadmapSettings.borderWidth || 2}px)</Label>
+                  <Slider
+                    value={[roadmapSettings.borderWidth || 2]}
+                    onValueChange={([value]) => onRoadmapSettingsChange({ ...roadmapSettings, borderWidth: value })}
+                    max={6}
+                    min={0}
+                    step={1}
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Custom Colors (when enabled) */}
+          {roadmapSettings.useCustomColors && (
+            <div className="border border-gray-700 rounded-lg overflow-hidden">
+              <button
+                onClick={() => setExpandedSection(expandedSection === 'colors' ? null : 'colors')}
+                className="w-full flex items-center justify-between p-3 hover:bg-gray-800 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Palette className="w-4 h-4 text-pink-400" />
+                  <span className="font-medium text-sm">Custom Colors</span>
+                </div>
+                {expandedSection === 'colors' ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+              </button>
+              {expandedSection === 'colors' && (
+                <div className="p-3 bg-gray-800/50 space-y-3">
+                  <div>
+                    <Label className="text-xs text-gray-300">Accent Color</Label>
+                    <Input
+                      type="color"
+                      value={roadmapSettings.customAccentColor || '#22c55e'}
+                      onChange={(e) => onRoadmapSettingsChange({ ...roadmapSettings, customAccentColor: e.target.value })}
+                      className="bg-gray-900 border-gray-700 h-8 mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-300">Card Background</Label>
+                    <Input
+                      type="color"
+                      value={roadmapSettings.customCardBackground?.replace(/rgba?\([^)]+\)/, '#1e293b') || '#1e293b'}
+                      onChange={(e) => onRoadmapSettingsChange({ ...roadmapSettings, customCardBackground: e.target.value })}
+                      className="bg-gray-900 border-gray-700 h-8 mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-300">Card Border</Label>
+                    <Input
+                      type="color"
+                      value={roadmapSettings.customCardBorder?.replace(/rgba?\([^)]+\)/, '#38bdf8') || '#38bdf8'}
+                      onChange={(e) => onRoadmapSettingsChange({ ...roadmapSettings, customCardBorder: e.target.value })}
+                      className="bg-gray-900 border-gray-700 h-8 mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-300">Primary Text</Label>
+                    <Input
+                      type="color"
+                      value={roadmapSettings.customTextPrimary || '#f1f5f9'}
+                      onChange={(e) => onRoadmapSettingsChange({ ...roadmapSettings, customTextPrimary: e.target.value })}
+                      className="bg-gray-900 border-gray-700 h-8 mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-300">Secondary Text</Label>
+                    <Input
+                      type="color"
+                      value={roadmapSettings.customTextSecondary || '#94a3b8'}
+                      onChange={(e) => onRoadmapSettingsChange({ ...roadmapSettings, customTextSecondary: e.target.value })}
+                      className="bg-gray-900 border-gray-700 h-8 mt-1"
+                    />
+                  </div>
+                  <div className="pt-2 border-t border-gray-700">
+                    <Label className="text-xs text-gray-400 mb-2 block">Status Colors</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs text-gray-300">Backlog</Label>
+                        <Input
+                          type="color"
+                          value={roadmapSettings.customStatusBacklog || '#64748b'}
+                          onChange={(e) => onRoadmapSettingsChange({ ...roadmapSettings, customStatusBacklog: e.target.value })}
+                          className="bg-gray-900 border-gray-700 h-8 mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-300">In Progress</Label>
+                        <Input
+                          type="color"
+                          value={roadmapSettings.customStatusInProgress || '#3b82f6'}
+                          onChange={(e) => onRoadmapSettingsChange({ ...roadmapSettings, customStatusInProgress: e.target.value })}
+                          className="bg-gray-900 border-gray-700 h-8 mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-300">QA/Testing</Label>
+                        <Input
+                          type="color"
+                          value={roadmapSettings.customStatusQa || '#a855f7'}
+                          onChange={(e) => onRoadmapSettingsChange({ ...roadmapSettings, customStatusQa: e.target.value })}
+                          className="bg-gray-900 border-gray-700 h-8 mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-300">Completed</Label>
+                        <Input
+                          type="color"
+                          value={roadmapSettings.customStatusCompleted || '#22c55e'}
+                          onChange={(e) => onRoadmapSettingsChange({ ...roadmapSettings, customStatusCompleted: e.target.value })}
+                          className="bg-gray-900 border-gray-700 h-8 mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Status Colors - Always visible */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setExpandedSection(expandedSection === 'statusColors' ? null : 'statusColors')}
+              className="w-full flex items-center justify-between p-3 hover:bg-gray-800 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Palette className="w-4 h-4 text-emerald-400" />
+                <span className="font-medium text-sm">Status Colors</span>
+              </div>
+              {expandedSection === 'statusColors' ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </button>
+            {expandedSection === 'statusColors' && (
+              <div className="p-3 bg-gray-800/50 space-y-3">
+                <p className="text-xs text-gray-400">Customize the colors for each task status</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs text-gray-300">Backlog</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: roadmapSettings.customStatusBacklog || '#64748b' }} />
+                      <Input
+                        type="color"
+                        value={roadmapSettings.customStatusBacklog || '#64748b'}
+                        onChange={(e) => onRoadmapSettingsChange({ ...roadmapSettings, customStatusBacklog: e.target.value, useCustomColors: true })}
+                        className="bg-gray-900 border-gray-700 h-8 flex-1"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-300">In Progress</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: roadmapSettings.customStatusInProgress || '#3b82f6' }} />
+                      <Input
+                        type="color"
+                        value={roadmapSettings.customStatusInProgress || '#3b82f6'}
+                        onChange={(e) => onRoadmapSettingsChange({ ...roadmapSettings, customStatusInProgress: e.target.value, useCustomColors: true })}
+                        className="bg-gray-900 border-gray-700 h-8 flex-1"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-300">QA / Testing</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: roadmapSettings.customStatusQa || '#a855f7' }} />
+                      <Input
+                        type="color"
+                        value={roadmapSettings.customStatusQa || '#a855f7'}
+                        onChange={(e) => onRoadmapSettingsChange({ ...roadmapSettings, customStatusQa: e.target.value, useCustomColors: true })}
+                        className="bg-gray-900 border-gray-700 h-8 flex-1"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-300">Completed</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: roadmapSettings.customStatusCompleted || '#22c55e' }} />
+                      <Input
+                        type="color"
+                        value={roadmapSettings.customStatusCompleted || '#22c55e'}
+                        onChange={(e) => onRoadmapSettingsChange({ ...roadmapSettings, customStatusCompleted: e.target.value, useCustomColors: true })}
+                        className="bg-gray-900 border-gray-700 h-8 flex-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Background Settings */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setExpandedSection(expandedSection === 'background' ? null : 'background')}
+              className="w-full flex items-center justify-between p-3 hover:bg-gray-800 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Image className="w-4 h-4 text-purple-400" />
+                <span className="font-medium text-sm">Background</span>
+              </div>
+              {expandedSection === 'background' ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </button>
+            {expandedSection === 'background' && (
+              <div className="p-3 bg-gray-800/50 space-y-3">
+                <div>
+                  <Label className="text-xs text-gray-300">Background Type</Label>
+                  <Select 
+                    value={roadmapSettings.backgroundType || 'gradient'} 
+                    onValueChange={(value) => onRoadmapSettingsChange({ ...roadmapSettings, backgroundType: value })}
+                  >
+                    <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="solid">Solid Color</SelectItem>
+                      <SelectItem value="gradient">Gradient</SelectItem>
+                      <SelectItem value="image">Image</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {roadmapSettings.backgroundType === 'solid' && (
+                  <div>
+                    <Label className="text-xs text-gray-300">Background Color</Label>
+                    <Input
+                      type="color"
+                      value={roadmapSettings.customBackgroundColor || '#0f172a'}
+                      onChange={(e) => onRoadmapSettingsChange({ ...roadmapSettings, customBackgroundColor: e.target.value })}
+                      className="bg-gray-900 border-gray-700 h-8 mt-1"
+                    />
+                  </div>
+                )}
+
+                {roadmapSettings.backgroundType === 'gradient' && (
+                  <>
+                    <div>
+                      <Label className="text-xs text-gray-300">Gradient Start</Label>
+                      <Input
+                        type="color"
+                        value={roadmapSettings.customBackgroundGradientStart || '#0f172a'}
+                        onChange={(e) => onRoadmapSettingsChange({ ...roadmapSettings, customBackgroundGradientStart: e.target.value })}
+                        className="bg-gray-900 border-gray-700 h-8 mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-300">Gradient End</Label>
+                      <Input
+                        type="color"
+                        value={roadmapSettings.customBackgroundGradientEnd || '#1e293b'}
+                        onChange={(e) => onRoadmapSettingsChange({ ...roadmapSettings, customBackgroundGradientEnd: e.target.value })}
+                        className="bg-gray-900 border-gray-700 h-8 mt-1"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {roadmapSettings.backgroundType === 'image' && (
+                  <>
+                    <div>
+                      <Label className="text-xs text-gray-300 mb-2 block">Background Image</Label>
+                      <ImageUploadZone
+                        label="Upload Background Image"
+                        value={roadmapSettings.backgroundImage || ''}
+                        onChange={(url) => onRoadmapSettingsChange({ ...roadmapSettings, backgroundImage: url })}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-300">Overlay Opacity ({roadmapSettings.backgroundOverlayOpacity || 70}%)</Label>
+                      <Slider
+                        value={[roadmapSettings.backgroundOverlayOpacity || 70]}
+                        onValueChange={([value]) => onRoadmapSettingsChange({ ...roadmapSettings, backgroundOverlayOpacity: value })}
+                        max={100}
+                        min={0}
+                        step={5}
+                        className="mt-2"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Content Settings */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setExpandedSection(expandedSection === 'content' ? null : 'content')}
+              className="w-full flex items-center justify-between p-3 hover:bg-gray-800 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Type className="w-4 h-4 text-cyan-400" />
+                <span className="font-medium text-sm">Content Settings</span>
+              </div>
+              {expandedSection === 'content' ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </button>
+            {expandedSection === 'content' && (
+              <div className="p-3 bg-gray-800/50 space-y-3">
+                <div>
+                  <Label className="text-xs text-gray-300">Page Title</Label>
+                  <Input
+                    type="text"
+                    value={roadmapSettings.title || 'Development Roadmap'}
+                    onChange={(e) => onRoadmapSettingsChange({ ...roadmapSettings, title: e.target.value })}
+                    className="bg-gray-900 border-gray-700 text-white mt-1 h-8 text-xs"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Subtitle</Label>
+                  <Input
+                    type="text"
+                    value={roadmapSettings.subtitle || ''}
+                    onChange={(e) => onRoadmapSettingsChange({ ...roadmapSettings, subtitle: e.target.value })}
+                    placeholder="Track our progress..."
+                    className="bg-gray-900 border-gray-700 text-white mt-1 h-8 text-xs"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-300">Show Header</Label>
+                  <Switch
+                    checked={roadmapSettings.showHeader !== false}
+                    onCheckedChange={(checked) => onRoadmapSettingsChange({ ...roadmapSettings, showHeader: checked })}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-300">Show Logo</Label>
+                  <Switch
+                    checked={roadmapSettings.showLogo !== false}
+                    onCheckedChange={(checked) => onRoadmapSettingsChange({ ...roadmapSettings, showLogo: checked })}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-300">Show Suggestions</Label>
+                  <Switch
+                    checked={roadmapSettings.showSuggestions !== false}
+                    onCheckedChange={(checked) => onRoadmapSettingsChange({ ...roadmapSettings, showSuggestions: checked })}
+                  />
+                </div>
+                {roadmapSettings.showSuggestions !== false && (
+                  <div>
+                    <Label className="text-xs text-gray-300">Suggestions Limit ({roadmapSettings.suggestionsLimit || 5})</Label>
+                    <Slider
+                      value={[roadmapSettings.suggestionsLimit || 5]}
+                      onValueChange={([value]) => onRoadmapSettingsChange({ ...roadmapSettings, suggestionsLimit: value })}
+                      max={20}
+                      min={1}
+                      step={1}
+                      className="mt-2"
+                    />
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-300">Default Expanded</Label>
+                  <Switch
+                    checked={roadmapSettings.defaultExpanded !== false}
+                    onCheckedChange={(checked) => onRoadmapSettingsChange({ ...roadmapSettings, defaultExpanded: checked })}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Hero/Banner Settings */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setExpandedSection(expandedSection === 'hero' ? null : 'hero')}
+              className="w-full flex items-center justify-between p-3 hover:bg-gray-800 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Image className="w-4 h-4 text-orange-400" />
+                <span className="font-medium text-sm">Hero Banner</span>
+              </div>
+              {expandedSection === 'hero' ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </button>
+            {expandedSection === 'hero' && (
+              <div className="p-3 bg-gray-800/50 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-300">Show Hero Banner</Label>
+                  <Switch
+                    checked={roadmapSettings.showHero === true}
+                    onCheckedChange={(checked) => onRoadmapSettingsChange({ ...roadmapSettings, showHero: checked })}
+                  />
+                </div>
+                {roadmapSettings.showHero && (
+                  <>
+                    <div>
+                      <Label className="text-xs text-gray-300 mb-2 block">Hero Image</Label>
+                      <ImageUploadZone
+                        label="Upload Hero Image"
+                        value={roadmapSettings.heroImage || ''}
+                        onChange={(url) => onRoadmapSettingsChange({ ...roadmapSettings, heroImage: url })}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-300">Hero Height</Label>
+                      <Select 
+                        value={roadmapSettings.heroHeight || 'medium'} 
+                        onValueChange={(value) => onRoadmapSettingsChange({ ...roadmapSettings, heroHeight: value })}
+                      >
+                        <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1 h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="small">Small (200px)</SelectItem>
+                          <SelectItem value="medium">Medium (300px)</SelectItem>
+                          <SelectItem value="large">Large (400px)</SelectItem>
+                          <SelectItem value="xlarge">Extra Large (500px)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-300">Overlay Opacity ({roadmapSettings.heroOverlayOpacity || 50}%)</Label>
+                      <Slider
+                        value={[roadmapSettings.heroOverlayOpacity || 50]}
+                        onValueChange={([value]) => onRoadmapSettingsChange({ ...roadmapSettings, heroOverlayOpacity: value })}
+                        max={100}
+                        min={0}
+                        step={5}
+                        className="mt-2"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : isCommunityMode ? (
+        /* Community Settings Content */
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {/* Theme & Colors Section */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggleSubsection('community-colors')}
+              className="w-full flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Palette className="w-4 h-4 text-teal-400" />
+                <span className="text-sm font-medium text-white">Colors & Theme</span>
+              </div>
+              <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedSubsections['community-colors'] ? 'rotate-90' : ''}`} />
+            </button>
+            {expandedSubsections['community-colors'] && communitySettings && (
+              <div className="p-3 space-y-3 bg-gray-800/50">
+                <div>
+                  <Label className="text-xs text-gray-300">Accent Color</Label>
+                  <Input
+                    type="color"
+                    value={communitySettings.accentColor || '#14b8a6'}
+                    onChange={(e) => onCommunitySettingsChange({ ...communitySettings, accentColor: e.target.value })}
+                    className="bg-gray-900 border-gray-700 h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Primary Text Color</Label>
+                  <Input
+                    type="color"
+                    value={communitySettings.textPrimaryColor || '#ffffff'}
+                    onChange={(e) => onCommunitySettingsChange({ ...communitySettings, textPrimaryColor: e.target.value })}
+                    className="bg-gray-900 border-gray-700 h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Secondary Text Color</Label>
+                  <Input
+                    type="color"
+                    value={communitySettings.textSecondaryColor || '#9ca3af'}
+                    onChange={(e) => onCommunitySettingsChange({ ...communitySettings, textSecondaryColor: e.target.value })}
+                    className="bg-gray-900 border-gray-700 h-10 mt-1"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Background Section */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggleSubsection('community-background')}
+              className="w-full flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Image className="w-4 h-4 text-teal-400" />
+                <span className="text-sm font-medium text-white">Background</span>
+              </div>
+              <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedSubsections['community-background'] ? 'rotate-90' : ''}`} />
+            </button>
+            {expandedSubsections['community-background'] && communitySettings && (
+              <div className="p-3 space-y-3 bg-gray-800/50">
+                <div>
+                  <Label className="text-xs text-gray-300">Background Type</Label>
+                  <Select
+                    value={communitySettings.backgroundType || 'gradient'}
+                    onValueChange={(value: 'solid' | 'gradient' | 'image') => onCommunitySettingsChange({ ...communitySettings, backgroundType: value })}
+                  >
+                    <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="solid">Solid Color</SelectItem>
+                      <SelectItem value="gradient">Gradient</SelectItem>
+                      <SelectItem value="image">Image</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {communitySettings.backgroundType === 'solid' && (
+                  <div>
+                    <Label className="text-xs text-gray-300">Background Color</Label>
+                    <Input
+                      type="color"
+                      value={communitySettings.backgroundColor || '#0f172a'}
+                      onChange={(e) => onCommunitySettingsChange({ ...communitySettings, backgroundColor: e.target.value })}
+                      className="bg-gray-900 border-gray-700 h-10 mt-1"
+                    />
+                  </div>
+                )}
+                
+                {communitySettings.backgroundType === 'gradient' && (
+                  <>
+                    <div>
+                      <Label className="text-xs text-gray-300">Gradient Start</Label>
+                      <Input
+                        type="color"
+                        value={communitySettings.backgroundGradientStart || '#0f172a'}
+                        onChange={(e) => onCommunitySettingsChange({ ...communitySettings, backgroundGradientStart: e.target.value })}
+                        className="bg-gray-900 border-gray-700 h-10 mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-300">Gradient End</Label>
+                      <Input
+                        type="color"
+                        value={communitySettings.backgroundGradientEnd || '#1e1b4b'}
+                        onChange={(e) => onCommunitySettingsChange({ ...communitySettings, backgroundGradientEnd: e.target.value })}
+                        className="bg-gray-900 border-gray-700 h-10 mt-1"
+                      />
+                    </div>
+                  </>
+                )}
+                
+                {communitySettings.backgroundType === 'image' && (
+                  <>
+                    <div>
+                      <Label className="text-xs text-gray-300 mb-2 block">Background Image</Label>
+                      <ImageUploadZone
+                        label="Upload Background Image"
+                        value={communitySettings.backgroundImage || ''}
+                        onChange={(url) => onCommunitySettingsChange({ ...communitySettings, backgroundImage: url })}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-300">Overlay Opacity: {communitySettings.backgroundOverlayOpacity ?? 50}%</Label>
+                      <Slider
+                        value={[communitySettings.backgroundOverlayOpacity ?? 50]}
+                        onValueChange={([value]) => onCommunitySettingsChange({ ...communitySettings, backgroundOverlayOpacity: value })}
+                        max={100}
+                        min={0}
+                        step={5}
+                        className="mt-2"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Card Styling Section */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggleSubsection('community-cards')}
+              className="w-full flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Grid className="w-4 h-4 text-teal-400" />
+                <span className="text-sm font-medium text-white">Card Styling</span>
+              </div>
+              <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedSubsections['community-cards'] ? 'rotate-90' : ''}`} />
+            </button>
+            {expandedSubsections['community-cards'] && communitySettings && (
+              <div className="p-3 space-y-3 bg-gray-800/50">
+                <div>
+                  <Label className="text-xs text-gray-300">Card Background Color</Label>
+                  <Input
+                    type="color"
+                    value={communitySettings.cardBackgroundColor?.replace(/rgba?\([^)]+\)/, '#1e293b') || '#1e293b'}
+                    onChange={(e) => {
+                      const hex = e.target.value;
+                      const r = parseInt(hex.slice(1, 3), 16);
+                      const g = parseInt(hex.slice(3, 5), 16);
+                      const b = parseInt(hex.slice(5, 7), 16);
+                      const opacity = (communitySettings.cardOpacity ?? 40) / 100;
+                      onCommunitySettingsChange({ ...communitySettings, cardBackgroundColor: `rgba(${r}, ${g}, ${b}, ${opacity})` });
+                    }}
+                    className="bg-gray-900 border-gray-700 h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Card Opacity: {communitySettings.cardOpacity ?? 40}%</Label>
+                  <Slider
+                    value={[communitySettings.cardOpacity ?? 40]}
+                    onValueChange={([value]) => onCommunitySettingsChange({ ...communitySettings, cardOpacity: value })}
+                    max={100}
+                    min={0}
+                    step={5}
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Card Border Color</Label>
+                  <Input
+                    type="color"
+                    value={communitySettings.cardBorderColor?.replace(/rgba?\([^)]+\)/, '#374151') || '#374151'}
+                    onChange={(e) => {
+                      const hex = e.target.value;
+                      const r = parseInt(hex.slice(1, 3), 16);
+                      const g = parseInt(hex.slice(3, 5), 16);
+                      const b = parseInt(hex.slice(5, 7), 16);
+                      onCommunitySettingsChange({ ...communitySettings, cardBorderColor: `rgba(${r}, ${g}, ${b}, 0.15)` });
+                    }}
+                    className="bg-gray-900 border-gray-700 h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Card Border Radius: {communitySettings.cardBorderRadius ?? 12}px</Label>
+                  <Slider
+                    value={[communitySettings.cardBorderRadius ?? 12]}
+                    onValueChange={([value]) => onCommunitySettingsChange({ ...communitySettings, cardBorderRadius: value })}
+                    max={32}
+                    min={0}
+                    step={2}
+                    className="mt-2"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-300">Card Glow Effect</Label>
+                  <Switch
+                    checked={communitySettings.cardGlow ?? false}
+                    onCheckedChange={(checked) => onCommunitySettingsChange({ ...communitySettings, cardGlow: checked })}
+                  />
+                </div>
+                {communitySettings.cardGlow && (
+                  <div>
+                    <Label className="text-xs text-gray-300">Glow Intensity: {communitySettings.glowIntensity ?? 50}%</Label>
+                    <Slider
+                      value={[communitySettings.glowIntensity ?? 50]}
+                      onValueChange={([value]) => onCommunitySettingsChange({ ...communitySettings, glowIntensity: value })}
+                      max={100}
+                      min={10}
+                      step={5}
+                      className="mt-2"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Header & Content Section */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggleSubsection('community-content')}
+              className="w-full flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Type className="w-4 h-4 text-teal-400" />
+                <span className="text-sm font-medium text-white">Header & Content</span>
+              </div>
+              <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedSubsections['community-content'] ? 'rotate-90' : ''}`} />
+            </button>
+            {expandedSubsections['community-content'] && communitySettings && (
+              <div className="p-3 space-y-3 bg-gray-800/50">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-300">Show Header</Label>
+                  <Switch
+                    checked={communitySettings.showHeader !== false}
+                    onCheckedChange={(checked) => onCommunitySettingsChange({ ...communitySettings, showHeader: checked })}
+                  />
+                </div>
+                {communitySettings.showHeader !== false && (
+                  <>
+                    <div>
+                      <Label className="text-xs text-gray-300">Forum Title</Label>
+                      <Input
+                        value={communitySettings.title || 'Community Forum'}
+                        onChange={(e) => onCommunitySettingsChange({ ...communitySettings, title: e.target.value })}
+                        placeholder="Community Forum"
+                        className="bg-gray-900 border-gray-700 text-white mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-300">Subtitle</Label>
+                      <Input
+                        value={communitySettings.subtitle || 'Join the conversation with the community'}
+                        onChange={(e) => onCommunitySettingsChange({ ...communitySettings, subtitle: e.target.value })}
+                        placeholder="Join the conversation..."
+                        className="bg-gray-900 border-gray-700 text-white mt-1"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : isAboutMode ? (
+        /* About Page Settings Content */
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {/* Header Section */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggleSubsection('about-header')}
+              className="w-full flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Type className="w-4 h-4 text-teal-400" />
+                <span className="text-sm font-medium text-white">Header</span>
+              </div>
+              <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedSubsections['about-header'] ? 'rotate-90' : ''}`} />
+            </button>
+            {expandedSubsections['about-header'] && aboutSettings && (
+              <div className="p-3 space-y-3 bg-gray-800/50">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-300">Show Header</Label>
+                  <Switch
+                    checked={aboutSettings.showHeader !== false}
+                    onCheckedChange={(checked) => onAboutSettingsChange({ ...aboutSettings, showHeader: checked })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Page Title</Label>
+                  <Input
+                    value={aboutSettings.title || 'About Us'}
+                    onChange={(e) => onAboutSettingsChange({ ...aboutSettings, title: e.target.value })}
+                    className="bg-gray-900 border-gray-700 text-white mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Subtitle</Label>
+                  <Input
+                    value={aboutSettings.subtitle || ''}
+                    onChange={(e) => onAboutSettingsChange({ ...aboutSettings, subtitle: e.target.value })}
+                    className="bg-gray-900 border-gray-700 text-white mt-1"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Content Section */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggleSubsection('about-content')}
+              className="w-full flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Heart className="w-4 h-4 text-teal-400" />
+                <span className="text-sm font-medium text-white">About Content</span>
+              </div>
+              <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedSubsections['about-content'] ? 'rotate-90' : ''}`} />
+            </button>
+            {expandedSubsections['about-content'] && aboutSettings && (
+              <div className="p-3 space-y-3 bg-gray-800/50">
+                <div>
+                  <Label className="text-xs text-gray-300">Main Content</Label>
+                  <Textarea
+                    value={aboutSettings.content || ''}
+                    onChange={(e) => onAboutSettingsChange({ ...aboutSettings, content: e.target.value })}
+                    placeholder="Tell visitors about your store..."
+                    className="bg-gray-900 border-gray-700 text-white mt-1 min-h-[120px]"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Mission Section */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggleSubsection('about-mission')}
+              className="w-full flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4 text-teal-400" />
+                <span className="text-sm font-medium text-white">Mission Section</span>
+              </div>
+              <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedSubsections['about-mission'] ? 'rotate-90' : ''}`} />
+            </button>
+            {expandedSubsections['about-mission'] && aboutSettings && (
+              <div className="p-3 space-y-3 bg-gray-800/50">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-300">Show Mission</Label>
+                  <Switch
+                    checked={aboutSettings.showMission !== false}
+                    onCheckedChange={(checked) => onAboutSettingsChange({ ...aboutSettings, showMission: checked })}
+                  />
+                </div>
+                {aboutSettings.showMission !== false && (
+                  <>
+                    <div>
+                      <Label className="text-xs text-gray-300">Mission Title</Label>
+                      <Input
+                        value={aboutSettings.missionTitle || 'Our Mission'}
+                        onChange={(e) => onAboutSettingsChange({ ...aboutSettings, missionTitle: e.target.value })}
+                        className="bg-gray-900 border-gray-700 text-white mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-300">Mission Content</Label>
+                      <Textarea
+                        value={aboutSettings.missionContent || ''}
+                        onChange={(e) => onAboutSettingsChange({ ...aboutSettings, missionContent: e.target.value })}
+                        className="bg-gray-900 border-gray-700 text-white mt-1 min-h-[80px]"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Colors Section */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggleSubsection('about-cards')}
+              className="w-full flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <LayoutIcon className="w-4 h-4 text-teal-400" />
+                <span className="text-sm font-medium text-white">Card Styling</span>
+              </div>
+              <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedSubsections['about-cards'] ? 'rotate-90' : ''}`} />
+            </button>
+            {expandedSubsections['about-cards'] && aboutSettings && (
+              <div className="p-3 space-y-3 bg-gray-800/50">
+                <div>
+                  <Label className="text-xs text-gray-300">Card Background Color</Label>
+                  <Input
+                    type="color"
+                    value={aboutSettings.cardBackgroundColor?.replace(/rgba?\([^)]+\)/, '#1e293b') || '#1e293b'}
+                    onChange={(e) => {
+                      const opacity = aboutSettings.cardOpacity ?? 60;
+                      const hex = e.target.value;
+                      const r = parseInt(hex.slice(1, 3), 16);
+                      const g = parseInt(hex.slice(3, 5), 16);
+                      const b = parseInt(hex.slice(5, 7), 16);
+                      onAboutSettingsChange({ 
+                        ...aboutSettings, 
+                        cardBackgroundColor: `rgba(${r}, ${g}, ${b}, ${opacity / 100})` 
+                      });
+                    }}
+                    className="bg-gray-900 border-gray-700 h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Card Opacity: {aboutSettings.cardOpacity ?? 60}%</Label>
+                  <Slider
+                    value={[aboutSettings.cardOpacity ?? 60]}
+                    onValueChange={([value]) => {
+                      const currentBg = aboutSettings.cardBackgroundColor || 'rgba(30, 41, 59, 0.6)';
+                      const match = currentBg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                      if (match) {
+                        const [, r, g, b] = match;
+                        onAboutSettingsChange({ 
+                          ...aboutSettings, 
+                          cardOpacity: value,
+                          cardBackgroundColor: `rgba(${r}, ${g}, ${b}, ${value / 100})` 
+                        });
+                      } else {
+                        onAboutSettingsChange({ ...aboutSettings, cardOpacity: value });
+                      }
+                    }}
+                    max={100}
+                    min={0}
+                    step={5}
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Card Border Radius: {aboutSettings.cardBorderRadius ?? 16}px</Label>
+                  <Slider
+                    value={[aboutSettings.cardBorderRadius ?? 16]}
+                    onValueChange={([value]) => onAboutSettingsChange({ ...aboutSettings, cardBorderRadius: value })}
+                    max={32}
+                    min={0}
+                    step={2}
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Colors Section */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggleSubsection('about-colors')}
+              className="w-full flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Palette className="w-4 h-4 text-teal-400" />
+                <span className="text-sm font-medium text-white">Colors & Background</span>
+              </div>
+              <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedSubsections['about-colors'] ? 'rotate-90' : ''}`} />
+            </button>
+            {expandedSubsections['about-colors'] && aboutSettings && (
+              <div className="p-3 space-y-3 bg-gray-800/50">
+                <div>
+                  <Label className="text-xs text-gray-300">Accent Color</Label>
+                  <Input
+                    type="color"
+                    value={aboutSettings.accentColor || '#14b8a6'}
+                    onChange={(e) => onAboutSettingsChange({ ...aboutSettings, accentColor: e.target.value })}
+                    className="bg-gray-900 border-gray-700 h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Text Color</Label>
+                  <Input
+                    type="color"
+                    value={aboutSettings.textPrimaryColor || '#ffffff'}
+                    onChange={(e) => onAboutSettingsChange({ ...aboutSettings, textPrimaryColor: e.target.value })}
+                    className="bg-gray-900 border-gray-700 h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Background Type</Label>
+                  <Select
+                    value={aboutSettings.backgroundType || 'gradient'}
+                    onValueChange={(value: 'solid' | 'gradient' | 'image') => onAboutSettingsChange({ ...aboutSettings, backgroundType: value })}
+                  >
+                    <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="solid">Solid Color</SelectItem>
+                      <SelectItem value="gradient">Gradient</SelectItem>
+                      <SelectItem value="image">Image</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {aboutSettings.backgroundType === 'gradient' && (
+                  <>
+                    <div>
+                      <Label className="text-xs text-gray-300">Gradient Start</Label>
+                      <Input
+                        type="color"
+                        value={aboutSettings.backgroundGradientStart || '#0f172a'}
+                        onChange={(e) => onAboutSettingsChange({ ...aboutSettings, backgroundGradientStart: e.target.value })}
+                        className="bg-gray-900 border-gray-700 h-10 mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-300">Gradient End</Label>
+                      <Input
+                        type="color"
+                        value={aboutSettings.backgroundGradientEnd || '#1e1b4b'}
+                        onChange={(e) => onAboutSettingsChange({ ...aboutSettings, backgroundGradientEnd: e.target.value })}
+                        className="bg-gray-900 border-gray-700 h-10 mt-1"
+                      />
+                    </div>
+                  </>
+                )}
+                {aboutSettings.backgroundType === 'solid' && (
+                  <div>
+                    <Label className="text-xs text-gray-300">Background Color</Label>
+                    <Input
+                      type="color"
+                      value={aboutSettings.backgroundColor || '#0f172a'}
+                      onChange={(e) => onAboutSettingsChange({ ...aboutSettings, backgroundColor: e.target.value })}
+                      className="bg-gray-900 border-gray-700 h-10 mt-1"
+                    />
+                  </div>
+                )}
+                {aboutSettings.backgroundType === 'image' && (
+                  <>
+                    <div>
+                      <Label className="text-xs text-gray-300 mb-2 block">Background Image</Label>
+                      <ImageUploadZone
+                        value={aboutSettings.backgroundImage || ''}
+                        onChange={(url) => onAboutSettingsChange({ ...aboutSettings, backgroundImage: url })}
+                        label=""
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-300">Overlay Opacity: {aboutSettings.backgroundOverlayOpacity ?? 50}%</Label>
+                      <Slider
+                        value={[aboutSettings.backgroundOverlayOpacity ?? 50]}
+                        onValueChange={([value]) => onAboutSettingsChange({ ...aboutSettings, backgroundOverlayOpacity: value })}
+                        max={100}
+                        min={0}
+                        step={5}
+                        className="mt-2"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : isTosMode ? (
+        /* TOS Page Settings Content */
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {/* Header Section */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggleSubsection('tos-header')}
+              className="w-full flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-teal-400" />
+                <span className="text-sm font-medium text-white">Header</span>
+              </div>
+              <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedSubsections['tos-header'] ? 'rotate-90' : ''}`} />
+            </button>
+            {expandedSubsections['tos-header'] && tosSettings && (
+              <div className="p-3 space-y-3 bg-gray-800/50">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-300">Show Header</Label>
+                  <Switch
+                    checked={tosSettings.showHeader !== false}
+                    onCheckedChange={(checked) => onTosSettingsChange({ ...tosSettings, showHeader: checked })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Page Title</Label>
+                  <Input
+                    value={tosSettings.title || 'Terms of Service'}
+                    onChange={(e) => onTosSettingsChange({ ...tosSettings, title: e.target.value })}
+                    className="bg-gray-900 border-gray-700 text-white mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Subtitle</Label>
+                  <Input
+                    value={tosSettings.subtitle || ''}
+                    onChange={(e) => onTosSettingsChange({ ...tosSettings, subtitle: e.target.value })}
+                    className="bg-gray-900 border-gray-700 text-white mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Last Updated Date</Label>
+                  <Input
+                    type="date"
+                    value={tosSettings.lastUpdated || ''}
+                    onChange={(e) => onTosSettingsChange({ ...tosSettings, lastUpdated: e.target.value })}
+                    className="bg-gray-900 border-gray-700 text-white mt-1"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Sections */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggleSubsection('tos-sections')}
+              className="w-full flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Type className="w-4 h-4 text-teal-400" />
+                <span className="text-sm font-medium text-white">Content Sections ({tosSettings?.sections?.length || 0})</span>
+              </div>
+              <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedSubsections['tos-sections'] ? 'rotate-90' : ''}`} />
+            </button>
+            {expandedSubsections['tos-sections'] && tosSettings && (
+              <div className="p-3 space-y-3 bg-gray-800/50 max-h-[400px] overflow-y-auto">
+                {(tosSettings.sections || []).map((section, index) => (
+                  <div key={section.id || index} className="p-3 bg-gray-900/50 rounded-lg space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-400">Section {index + 1}</span>
+                      <button
+                        onClick={() => {
+                          const newSections = tosSettings.sections.filter((_, i) => i !== index);
+                          onTosSettingsChange({ ...tosSettings, sections: newSections });
+                        }}
+                        className="text-red-400 hover:text-red-300 text-xs"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <Input
+                      value={section.title}
+                      onChange={(e) => {
+                        const newSections = [...tosSettings.sections];
+                        newSections[index] = { ...section, title: e.target.value };
+                        onTosSettingsChange({ ...tosSettings, sections: newSections });
+                      }}
+                      placeholder="Section Title"
+                      className="bg-gray-800 border-gray-700 text-white text-sm"
+                    />
+                    <Textarea
+                      value={section.content}
+                      onChange={(e) => {
+                        const newSections = [...tosSettings.sections];
+                        newSections[index] = { ...section, content: e.target.value };
+                        onTosSettingsChange({ ...tosSettings, sections: newSections });
+                      }}
+                      placeholder="Section content..."
+                      className="bg-gray-800 border-gray-700 text-white text-sm min-h-[80px]"
+                    />
+                  </div>
+                ))}
+                <Button
+                  onClick={() => {
+                    const newSection = {
+                      id: `section-${Date.now()}`,
+                      title: `${(tosSettings.sections?.length || 0) + 1}. New Section`,
+                      content: ''
+                    };
+                    onTosSettingsChange({ ...tosSettings, sections: [...(tosSettings.sections || []), newSection] });
+                  }}
+                  className="w-full bg-teal-600 hover:bg-teal-700 text-sm"
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Add Section
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Card Styling Section */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggleSubsection('tos-cards')}
+              className="w-full flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <LayoutIcon className="w-4 h-4 text-teal-400" />
+                <span className="text-sm font-medium text-white">Card Styling</span>
+              </div>
+              <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedSubsections['tos-cards'] ? 'rotate-90' : ''}`} />
+            </button>
+            {expandedSubsections['tos-cards'] && tosSettings && (
+              <div className="p-3 space-y-3 bg-gray-800/50">
+                <div>
+                  <Label className="text-xs text-gray-300">Card Background Color</Label>
+                  <Input
+                    type="color"
+                    value={tosSettings.cardBackgroundColor?.replace(/rgba?\([^)]+\)/, '#1e293b') || '#1e293b'}
+                    onChange={(e) => {
+                      const opacity = tosSettings.cardOpacity ?? 60;
+                      const hex = e.target.value;
+                      const r = parseInt(hex.slice(1, 3), 16);
+                      const g = parseInt(hex.slice(3, 5), 16);
+                      const b = parseInt(hex.slice(5, 7), 16);
+                      onTosSettingsChange({ 
+                        ...tosSettings, 
+                        cardBackgroundColor: `rgba(${r}, ${g}, ${b}, ${opacity / 100})` 
+                      });
+                    }}
+                    className="bg-gray-900 border-gray-700 h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Card Opacity: {tosSettings.cardOpacity ?? 60}%</Label>
+                  <Slider
+                    value={[tosSettings.cardOpacity ?? 60]}
+                    onValueChange={([value]) => {
+                      const currentBg = tosSettings.cardBackgroundColor || 'rgba(30, 41, 59, 0.6)';
+                      const match = currentBg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                      if (match) {
+                        const [, r, g, b] = match;
+                        onTosSettingsChange({ 
+                          ...tosSettings, 
+                          cardOpacity: value,
+                          cardBackgroundColor: `rgba(${r}, ${g}, ${b}, ${value / 100})` 
+                        });
+                      } else {
+                        onTosSettingsChange({ ...tosSettings, cardOpacity: value });
+                      }
+                    }}
+                    max={100}
+                    min={0}
+                    step={5}
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Card Border Radius: {tosSettings.cardBorderRadius ?? 16}px</Label>
+                  <Slider
+                    value={[tosSettings.cardBorderRadius ?? 16]}
+                    onValueChange={([value]) => onTosSettingsChange({ ...tosSettings, cardBorderRadius: value })}
+                    max={32}
+                    min={0}
+                    step={2}
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Colors Section */}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggleSubsection('tos-colors')}
+              className="w-full flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-700 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Palette className="w-4 h-4 text-teal-400" />
+                <span className="text-sm font-medium text-white">Colors & Background</span>
+              </div>
+              <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${expandedSubsections['tos-colors'] ? 'rotate-90' : ''}`} />
+            </button>
+            {expandedSubsections['tos-colors'] && tosSettings && (
+              <div className="p-3 space-y-3 bg-gray-800/50">
+                <div>
+                  <Label className="text-xs text-gray-300">Accent Color</Label>
+                  <Input
+                    type="color"
+                    value={tosSettings.accentColor || '#14b8a6'}
+                    onChange={(e) => onTosSettingsChange({ ...tosSettings, accentColor: e.target.value })}
+                    className="bg-gray-900 border-gray-700 h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Text Color</Label>
+                  <Input
+                    type="color"
+                    value={tosSettings.textPrimaryColor || '#ffffff'}
+                    onChange={(e) => onTosSettingsChange({ ...tosSettings, textPrimaryColor: e.target.value })}
+                    className="bg-gray-900 border-gray-700 h-10 mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-300">Background Type</Label>
+                  <Select
+                    value={tosSettings.backgroundType || 'gradient'}
+                    onValueChange={(value: 'solid' | 'gradient' | 'image') => onTosSettingsChange({ ...tosSettings, backgroundType: value })}
+                  >
+                    <SelectTrigger className="bg-gray-900 border-gray-700 text-white mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="solid">Solid Color</SelectItem>
+                      <SelectItem value="gradient">Gradient</SelectItem>
+                      <SelectItem value="image">Image</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {tosSettings.backgroundType === 'gradient' && (
+                  <>
+                    <div>
+                      <Label className="text-xs text-gray-300">Gradient Start</Label>
+                      <Input
+                        type="color"
+                        value={tosSettings.backgroundGradientStart || '#0f172a'}
+                        onChange={(e) => onTosSettingsChange({ ...tosSettings, backgroundGradientStart: e.target.value })}
+                        className="bg-gray-900 border-gray-700 h-10 mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-300">Gradient End</Label>
+                      <Input
+                        type="color"
+                        value={tosSettings.backgroundGradientEnd || '#1e1b4b'}
+                        onChange={(e) => onTosSettingsChange({ ...tosSettings, backgroundGradientEnd: e.target.value })}
+                        className="bg-gray-900 border-gray-700 h-10 mt-1"
+                      />
+                    </div>
+                  </>
+                )}
+                {tosSettings.backgroundType === 'solid' && (
+                  <div>
+                    <Label className="text-xs text-gray-300">Background Color</Label>
+                    <Input
+                      type="color"
+                      value={tosSettings.backgroundColor || '#0f172a'}
+                      onChange={(e) => onTosSettingsChange({ ...tosSettings, backgroundColor: e.target.value })}
+                      className="bg-gray-900 border-gray-700 h-10 mt-1"
+                    />
+                  </div>
+                )}
+                {tosSettings.backgroundType === 'image' && (
+                  <>
+                    <div>
+                      <Label className="text-xs text-gray-300 mb-2 block">Background Image</Label>
+                      <ImageUploadZone
+                        label="Upload Background Image"
+                        value={tosSettings.backgroundImage || ''}
+                        onChange={(url) => onTosSettingsChange({ ...tosSettings, backgroundImage: url })}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-300">Overlay Opacity: {tosSettings.backgroundOverlayOpacity ?? 50}%</Label>
+                      <Slider
+                        value={[tosSettings.backgroundOverlayOpacity ?? 50]}
+                        onValueChange={([value]) => onTosSettingsChange({ ...tosSettings, backgroundOverlayOpacity: value })}
+                        max={100}
+                        min={0}
+                        step={5}
+                        className="mt-2"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Sections List - Scrollable */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {sections.map((section, index) => {
           const Icon = sectionIcons[section.type] || LayoutIcon;
           const isExpanded = expandedSection === section.id;
@@ -1688,6 +3595,8 @@ export const PageBuilderSidebar = ({
           <span className="font-medium">Add section</span>
         </button>
       </div>
+      </>
+      )}
 
       {/* Add Section Modal */}
       {showAddSectionMenu && (

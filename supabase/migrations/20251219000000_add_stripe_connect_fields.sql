@@ -3,22 +3,17 @@
 
 -- Add Stripe Connect account ID field
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS stripe_connect_account_id TEXT;
-
 -- Add Stripe Connect status field  
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS stripe_connect_status TEXT DEFAULT 'not_connected';
-
 -- Add index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_profiles_stripe_connect_account_id 
 ON profiles(stripe_connect_account_id) 
 WHERE stripe_connect_account_id IS NOT NULL;
-
 CREATE INDEX IF NOT EXISTS idx_profiles_stripe_connect_status 
 ON profiles(stripe_connect_status);
-
 -- Add comment to explain the fields
 COMMENT ON COLUMN profiles.stripe_connect_account_id IS 'Stripe Connect account ID for marketplace payments';
 COMMENT ON COLUMN profiles.stripe_connect_status IS 'Stripe Connect onboarding status: not_connected, pending, connected';
-
 -- Update existing profiles with old field names if they exist
 DO $$ 
 BEGIN

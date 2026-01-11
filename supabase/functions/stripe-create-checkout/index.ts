@@ -44,9 +44,9 @@ serve(async (req) => {
   }
 
   try {
-    const { productId, buyerId } = await req.json()
+    const { productId, buyerId, affiliateRef } = await req.json()
 
-    console.log('Creating Stripe checkout for product:', productId, 'buyer:', buyerId)
+    console.log('Creating Stripe checkout for product:', productId, 'buyer:', buyerId, 'affiliate:', affiliateRef)
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -88,11 +88,11 @@ serve(async (req) => {
     }
 
     // Check if seller has Stripe connected
-    if (!seller.stripe_account_id || (seller.stripe_onboarding_status !== 'connected' && seller.stripe_onboarding_status !== 'complete')) {
+    if (!seller.stripe_connect_account_id || (seller.stripe_connect_status !== 'connected' && seller.stripe_connect_status !== 'complete')) {
       throw new Error('Seller has not connected Stripe. Cannot process payment.')
     }
 
-    const destinationAccount = seller.stripe_account_id
+    const destinationAccount = seller.stripe_connect_account_id
     console.log('Using seller Stripe account:', destinationAccount)
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
@@ -114,6 +114,13 @@ serve(async (req) => {
 
     // Create Stripe Checkout Session with destination charges (marketplace split)
     // Customized with Vectabase branding
+    
+    // Validate and truncate image URL if needed (Stripe has URL length limits)
+    let productImages: string[] = [];
+    if (product.image_url && product.image_url.length < 2000 && product.image_url.startsWith('http')) {
+      productImages = [product.image_url];
+    }
+    
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -121,9 +128,9 @@ serve(async (req) => {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: product.title,
-              ...(product.description && { description: product.description }),
-              images: product.image_url ? [product.image_url] : [],
+              name: product.title.substring(0, 100), // Stripe limits name to 100 chars
+              ...(product.description && { description: product.description.substring(0, 500) }), // Limit description
+              ...(productImages.length > 0 && { images: productImages }),
             },
             unit_amount: productPriceCents,
           },
@@ -153,14 +160,16 @@ serve(async (req) => {
         },
         metadata: {
           product_id: productId,
-          buyer_id: buyerId,
+          buyer_id: buyerId || 'guest',
           seller_id: product.creator_id,
+          affiliate_ref: affiliateRef || '',
         },
       },
       metadata: {
         product_id: productId,
-        buyer_id: buyerId,
+        buyer_id: buyerId || 'guest',
         seller_id: product.creator_id,
+        affiliate_ref: affiliateRef || '',
       },
     })
 

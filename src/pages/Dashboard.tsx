@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, TrendingUp, Download, DollarSign, Eye, Store, ShoppingBag, Package } from "lucide-react";
+import { Plus, TrendingUp, Download, DollarSign, Eye, Store, ShoppingBag, Package, ShoppingCart } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import CreatorOnboarding from "@/components/CreatorOnboarding";
 import ProfileSettings from "@/components/ProfileSettings";
@@ -12,6 +12,8 @@ import ProductEditModal from "@/components/ProductEditModal";
 import ProductDeleteConfirmation from "@/components/ProductDeleteConfirmation";
 import DatabaseDebugger from "@/components/DatabaseDebugger";
 import StripeSettings from "@/components/StripeSettings";
+import { AffiliateManager } from "@/components/AffiliateManager";
+import { DiscountCodesManager } from "@/components/DiscountCodesManager";
 import { useCreatorStats } from "@/hooks/useCreatorStats";
 import { useCreatorOnboarding } from "@/hooks/useCreatorOnboarding";
 import { useOnboardingStatus } from "@/hooks/useOnboardingStatus";
@@ -92,17 +94,17 @@ const Dashboard = () => {
 
   const statsCards = [
     {
-      title: "Total Earnings",
+      title: "Total Revenue",
       value: loading ? "..." : `$${creatorStats.totalEarnings.toFixed(2)}`,
       change: creatorStats.totalSales > 0 ? `${creatorStats.totalSales} sales` : "No sales yet",
       icon: DollarSign,
       color: "text-success",
     },
     {
-      title: "Total Downloads",
-      value: loading ? "..." : creatorStats.totalDownloads.toLocaleString(),
-      change: creatorStats.totalDownloads > 0 ? "Active" : "Get started",
-      icon: Download,
+      title: "Total Purchases",
+      value: loading ? "..." : creatorStats.totalSales.toLocaleString(),
+      change: creatorStats.totalSales > 0 ? "Orders completed" : "Get started",
+      icon: ShoppingCart,
       color: "text-primary",
     },
     {
@@ -278,7 +280,7 @@ const Dashboard = () => {
       {/* Background Effects - Cyberpunk Theme Only */}
       {isCyberpunk && (
         <>
-          {/* Kinetic Systems Tactical Grid Pattern */}
+          {/* Premium Systems Tactical Grid Pattern */}
           <div className="fixed inset-0 pointer-events-none">
             <div 
               className="absolute inset-0" 
@@ -289,7 +291,7 @@ const Dashboard = () => {
             />
           </div>
           
-          {/* Kinetic Systems Glowing Orbs */}
+          {/* Premium Systems Glowing Orbs */}
           <div className="fixed inset-0 pointer-events-none overflow-hidden">
             <div className="absolute top-20 left-20 w-[500px] h-[500px] rounded-full blur-3xl" style={{ background: 'rgba(33, 150, 243, 0.05)' }} />
             <div className="absolute bottom-20 right-20 w-[500px] h-[500px] rounded-full blur-3xl" style={{ background: 'rgba(33, 150, 243, 0.05)' }} />
@@ -402,10 +404,12 @@ const Dashboard = () => {
           } : {}}
         >
           <Tabs value={activeTab} onValueChange={setActiveTab} className="p-6">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="products">Products</TabsTrigger>
               <TabsTrigger value="store">Store Builder</TabsTrigger>
+              <TabsTrigger value="affiliates">Affiliates</TabsTrigger>
+              <TabsTrigger value="discounts">Discounts</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
               <TabsTrigger value="debug">Debug</TabsTrigger>
@@ -665,6 +669,14 @@ const Dashboard = () => {
                   </div>
                 </div>
               </Card>
+            </TabsContent>
+            
+            <TabsContent value="affiliates" className="mt-6">
+              <AffiliateManager mode="owner" />
+            </TabsContent>
+            
+            <TabsContent value="discounts" className="mt-6">
+              <DiscountCodesManager />
             </TabsContent>
             
             <TabsContent value="analytics" className="mt-6">

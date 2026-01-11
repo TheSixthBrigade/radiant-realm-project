@@ -103,17 +103,37 @@ class SupabaseDatabaseService {
         .select('*')
         .eq('server_id', server.id);
       
-      return {
-        guildId: server.guild_id,
-        guildName: server.guild_name,
-        products: (products || []).map(p => ({
+      // Decrypt Roblox API keys for products that have them
+      const productsWithKeys = await Promise.all((products || []).map(async (p) => {
+        let robloxApiKey = null;
+        
+        // If product has encrypted key, decrypt it
+        if (p.roblox_api_key_encrypted) {
+          try {
+            const { data: decryptedKey } = await this.supabase.rpc('get_roblox_api_key', {
+              p_product_id: p.id
+            });
+            robloxApiKey = decryptedKey;
+          } catch (decryptError) {
+            this.auditLog('DECRYPT_KEY_ERROR', null, { productId: p.id, error: decryptError.message });
+          }
+        }
+        
+        return {
           id: p.id,
           name: p.name,
           robloxGroupId: p.roblox_group_id,
           payhipApiKey: p.payhip_api_key,
           roleId: p.role_id,
-          redemptionMessage: p.redemption_message
-        }))
+          redemptionMessage: p.redemption_message,
+          robloxApiKey: robloxApiKey
+        };
+      }));
+      
+      return {
+        guildId: server.guild_id,
+        guildName: server.guild_name,
+        products: productsWithKeys
       };
     } catch (error) {
       this.auditLog('GET_SERVER_CONFIG_ERROR', null, { guildId, error: error.message });
@@ -170,17 +190,37 @@ class SupabaseDatabaseService {
           .select('*')
           .eq('server_id', server.id);
         
-        configs[server.guild_id] = {
-          guildId: server.guild_id,
-          guildName: server.guild_name,
-          products: (products || []).map(p => ({
+        // Decrypt Roblox API keys for products that have them
+        const productsWithKeys = await Promise.all((products || []).map(async (p) => {
+          let robloxApiKey = null;
+          
+          // If product has encrypted key, decrypt it
+          if (p.roblox_api_key_encrypted) {
+            try {
+              const { data: decryptedKey } = await this.supabase.rpc('get_roblox_api_key', {
+                p_product_id: p.id
+              });
+              robloxApiKey = decryptedKey;
+            } catch (decryptError) {
+              this.auditLog('DECRYPT_KEY_ERROR', null, { productId: p.id, error: decryptError.message });
+            }
+          }
+          
+          return {
             id: p.id,
             name: p.name,
             robloxGroupId: p.roblox_group_id,
             payhipApiKey: p.payhip_api_key,
             roleId: p.role_id,
-            redemptionMessage: p.redemption_message
-          }))
+            redemptionMessage: p.redemption_message,
+            robloxApiKey: robloxApiKey
+          };
+        }));
+        
+        configs[server.guild_id] = {
+          guildId: server.guild_id,
+          guildName: server.guild_name,
+          products: productsWithKeys
         };
       }
       
@@ -195,36 +235,64 @@ class SupabaseDatabaseService {
 
   async storeRedemption(redemptionData, context = {}) {
     try {
+      console.log('[storeRedemption] Starting with data:', {
+        discordUserId: redemptionData.discordUserId,
+        robloxUsername: redemptionData.robloxUsername,
+        robloxGroupId: redemptionData.robloxGroupId,
+        productGroupId: redemptionData.productGroupId
+      });
+      
       const keyHash = await this.hashKey(redemptionData.key);
       
       // Find the product for this redemption
-      const { data: products } = await this.supabase
+      const groupIdToSearch = redemptionData.robloxGroupId || redemptionData.productGroupId;
+      console.log('[storeRedemption] Searching for product with roblox_group_id:', groupIdToSearch);
+      
+      const { data: products, error: productError } = await this.supabase
         .from('bot_products')
-        .select('id, server_id')
-        .eq('roblox_group_id', redemptionData.robloxGroupId || redemptionData.productGroupId);
+        .select('id, server_id, name, roblox_group_id')
+        .eq('roblox_group_id', groupIdToSearch);
+      
+      if (productError) {
+        console.error('[storeRedemption] Error querying products:', productError);
+        throw new Error(`Failed to query products: ${productError.message}`);
+      }
+      
+      console.log('[storeRedemption] Products found:', products?.length || 0, products);
       
       if (!products || products.length === 0) {
-        throw new Error('Product not found for this redemption');
+        console.error('[storeRedemption] No product found for group ID:', groupIdToSearch);
+        throw new Error(`Product not found for roblox_group_id: ${groupIdToSearch}`);
       }
       
       // Use the first matching product (or specific one if server context provided)
       const product = products[0];
+      console.log('[storeRedemption] Using product:', product.id, product.name);
       
       // Insert whitelisted user
+      const insertData = {
+        product_id: product.id,
+        discord_id: redemptionData.discordUserId,
+        discord_username: redemptionData.discordUsername || null,
+        roblox_username: redemptionData.robloxUsername,
+        roblox_id: redemptionData.robloxUserId?.toString(),
+        license_key: keyHash,
+        redeemed_at: new Date().toISOString()
+      };
+      console.log('[storeRedemption] Inserting whitelist entry:', { ...insertData, license_key: '[REDACTED]' });
+      
       const { data, error } = await this.supabase
         .from('bot_whitelisted_users')
-        .insert({
-          product_id: product.id,
-          discord_id: redemptionData.discordUserId,
-          roblox_username: redemptionData.robloxUsername,
-          roblox_id: redemptionData.robloxUserId?.toString(),
-          license_key: keyHash,
-          redeemed_at: new Date().toISOString()
-        })
+        .insert(insertData)
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('[storeRedemption] Insert error:', error);
+        throw error;
+      }
+      
+      console.log('[storeRedemption] SUCCESS - Whitelist entry created:', data.id);
       
       this.auditLog('REDEMPTION_STORED', redemptionData.discordUserId, {
         roblox_username: redemptionData.robloxUsername,
@@ -233,6 +301,7 @@ class SupabaseDatabaseService {
       
       return { id: data.id, success: true };
     } catch (error) {
+      console.error('[storeRedemption] FAILED:', error.message);
       this.auditLog('REDEMPTION_STORE_ERROR', redemptionData?.discordUserId, { error: error.message });
       throw error;
     }

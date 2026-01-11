@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useOnboardingStatus } from '@/hooks/useOnboardingStatus';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ChevronLeft, CreditCard, ExternalLink, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { ChevronLeft, CreditCard, ExternalLink, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
 
 interface StripeConnectStepProps {
   onComplete: () => void;
@@ -15,7 +16,74 @@ interface StripeConnectStepProps {
 const StripeConnectStep = ({ onComplete, onBack, isSubmitting, setIsSubmitting }: StripeConnectStepProps) => {
   const { status, refetch } = useOnboardingStatus();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+
+  // Check Stripe status when returning from Stripe onboarding
+  useEffect(() => {
+    const stripeReturn = searchParams.get('stripe_return');
+    const stripeRefresh = searchParams.get('stripe_refresh');
+    
+    if (stripeReturn === 'true' || stripeRefresh === 'true') {
+      // Clear the URL params
+      searchParams.delete('stripe_return');
+      searchParams.delete('stripe_refresh');
+      setSearchParams(searchParams, { replace: true });
+      
+      // Check the Stripe account status
+      checkStripeStatus();
+    }
+  }, [searchParams]);
+
+  const checkStripeStatus = async () => {
+    setIsCheckingStatus(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('stripe-check-status');
+      
+      if (error) {
+        console.error('Error checking Stripe status:', error);
+        toast({
+          title: 'Status Check Failed',
+          description: 'Could not verify your Stripe account status. Please try refreshing.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      console.log('Stripe status check result:', data);
+
+      // Refetch the onboarding status to get updated data
+      await refetch();
+
+      if (data?.status === 'complete') {
+        toast({
+          title: 'Stripe Connected!',
+          description: 'Your Stripe account is fully set up and ready to receive payments.',
+        });
+        onComplete();
+      } else if (data?.status === 'pending') {
+        toast({
+          title: 'Almost There!',
+          description: 'Your Stripe account is pending verification. This usually takes a few minutes.',
+        });
+      } else {
+        toast({
+          title: 'Setup Incomplete',
+          description: 'Please complete all required information in Stripe to finish setup.',
+        });
+      }
+    } catch (err) {
+      console.error('Failed to check Stripe status:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to check Stripe status. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCheckingStatus(false);
+    }
+  };
 
   const handleConnectStripe = async () => {
     setIsConnecting(true);
@@ -52,31 +120,8 @@ const StripeConnectStep = ({ onComplete, onBack, isSubmitting, setIsSubmitting }
 
   const handleRefreshStatus = async () => {
     setIsSubmitting(true);
-    try {
-      await refetch();
-      
-      // Check if now complete
-      if (status?.stripe_status === 'complete') {
-        toast({
-          title: 'Stripe Connected!',
-          description: 'Your Stripe account is fully set up.',
-        });
-        onComplete();
-      } else {
-        toast({
-          title: 'Status Updated',
-          description: 'Your Stripe account status has been refreshed.',
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to refresh status. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    await checkStripeStatus();
+    setIsSubmitting(false);
   };
 
   const getStatusDisplay = () => {
@@ -119,12 +164,23 @@ const StripeConnectStep = ({ onComplete, onBack, isSubmitting, setIsSubmitting }
 
   return (
     <div className="space-y-6">
+      {/* Loading state when checking status */}
+      {isCheckingStatus && (
+        <div className="flex flex-col items-center text-center p-6 bg-muted/50 rounded-lg">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <h3 className="text-lg font-semibold mt-4">Checking Your Stripe Account...</h3>
+          <p className="text-muted-foreground mt-2">Please wait while we verify your setup.</p>
+        </div>
+      )}
+
       {/* Status Display */}
-      <div className="flex flex-col items-center text-center p-6 bg-muted/50 rounded-lg">
-        {statusDisplay.icon}
-        <h3 className="text-lg font-semibold mt-4">{statusDisplay.title}</h3>
-        <p className="text-muted-foreground mt-2 max-w-md">{statusDisplay.description}</p>
-      </div>
+      {!isCheckingStatus && (
+        <div className="flex flex-col items-center text-center p-6 bg-muted/50 rounded-lg">
+          {statusDisplay.icon}
+          <h3 className="text-lg font-semibold mt-4">{statusDisplay.title}</h3>
+          <p className="text-muted-foreground mt-2 max-w-md">{statusDisplay.description}</p>
+        </div>
+      )}
 
       {/* Benefits */}
       {statusDisplay.status !== 'complete' && (

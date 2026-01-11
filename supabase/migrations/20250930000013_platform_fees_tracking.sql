@@ -12,14 +12,11 @@ CREATE TABLE IF NOT EXISTS platform_fees_owed (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
-
 -- Create index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_platform_fees_seller 
 ON platform_fees_owed(seller_id, status);
-
 CREATE INDEX IF NOT EXISTS idx_platform_fees_status 
 ON platform_fees_owed(status, created_at);
-
 -- Create view for seller fee summary
 CREATE OR REPLACE VIEW seller_fees_summary AS
 SELECT 
@@ -30,10 +27,8 @@ SELECT
   SUM(amount_owed) as total_fees
 FROM platform_fees_owed
 GROUP BY seller_id;
-
 -- Enable RLS
 ALTER TABLE platform_fees_owed ENABLE ROW LEVEL SECURITY;
-
 -- Policies
 DO $$ 
 BEGIN
@@ -47,7 +42,6 @@ BEGIN
     USING (auth.uid() = seller_id);
   END IF;
 END $$;
-
 DO $$ 
 BEGIN
   IF NOT EXISTS (
@@ -60,6 +54,5 @@ BEGIN
     USING (true); -- You'll want to restrict this to admin users
   END IF;
 END $$;
-
 COMMENT ON TABLE platform_fees_owed IS 
   'Tracks platform fees owed by sellers. Fees are collected periodically (weekly/monthly) to avoid payment holds.';

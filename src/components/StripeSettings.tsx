@@ -55,19 +55,19 @@ export default function StripeSettings() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('stripe_account_id, stripe_onboarding_status')
+        .select('stripe_connect_account_id, stripe_connect_status')
         .eq('user_id', user.id)
         .single();
 
       if (error) throw error;
 
       if (data) {
-        setStripeAccountId(data.stripe_account_id || "");
+        setStripeAccountId(data.stripe_connect_account_id || "");
         // Map onboarding status to our component status
-        const status = data.stripe_onboarding_status;
+        const status = data.stripe_connect_status;
         if (status === 'connected' || status === 'complete') {
           setStripeStatus('connected');
-        } else if (status === 'pending' || data.stripe_account_id) {
+        } else if (status === 'pending' || data.stripe_connect_account_id) {
           setStripeStatus('pending');
         } else {
           setStripeStatus('not_started');
@@ -100,10 +100,11 @@ export default function StripeSettings() {
         throw new Error(data.error || 'Failed to connect Stripe');
       }
       
-      if (!data?.onboardingUrl) throw new Error('Failed to get Stripe onboarding URL');
+      // The function returns 'url' not 'onboardingUrl'
+      if (!data?.url) throw new Error('Failed to get Stripe onboarding URL');
 
       // Redirect to Stripe onboarding
-      window.location.href = data.onboardingUrl;
+      window.location.href = data.url;
       
     } catch (error: any) {
       console.error('Error connecting Stripe:', error);
@@ -118,8 +119,8 @@ export default function StripeSettings() {
       const { error } = await supabase
         .from('profiles')
         .update({
-          stripe_account_id: null,
-          stripe_onboarding_status: 'not_started'
+          stripe_connect_account_id: null,
+          stripe_connect_status: null
         })
         .eq('user_id', user?.id);
 

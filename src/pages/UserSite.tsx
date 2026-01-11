@@ -1,19 +1,46 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ShoppingCart, Star, Download, Edit3 } from 'lucide-react';
+import { ShoppingCart, Star, Download, Edit3, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { PageBuilderSidebar } from '@/components/PageBuilderSidebar';
 import { StoreStyleEditor } from '@/components/StoreStyleEditor';
 import { AnimatedGradientCanvas } from '@/components/AnimatedGradientCanvas';
 import ProductCard from '@/components/ProductCard';
+import { RoadmapSection } from '@/components/RoadmapSection';
+import { PageManager, StorePage } from '@/components/PageManager';
+import { RoadmapPage } from '@/components/RoadmapPage';
+import { RoadmapDashboard } from '@/components/RoadmapDashboard';
+import { CustomRoadmapGallery } from '@/components/CustomRoadmapGallery';
+import { CommunityForums } from '@/components/CommunityForums';
+import { AboutPage } from '@/components/AboutPage';
+import { TosPage } from '@/components/TosPage';
+import { setAffiliateRef, buildCheckoutUrl } from '@/lib/affiliateTracking';
+import { AffiliateManager } from '@/components/AffiliateManager';
+import { SiteHeader, HeaderConfig, DEFAULT_HEADER_CONFIG, NavLink } from '@/components/SiteHeader';
+import { DEFAULT_ROADMAP_SETTINGS } from '@/lib/roadmapThemes';
+import { DEFAULT_COMMUNITY_SETTINGS, CommunitySettings } from '@/lib/communitySettings';
+import { DEFAULT_ABOUT_SETTINGS, DEFAULT_TOS_SETTINGS, AboutPageSettings, TosPageSettings } from '@/lib/pageSettings';
+
+const DEFAULT_PAGES: StorePage[] = [
+  {
+    id: 'home',
+    type: 'home',
+    title: 'Store',
+    slug: '',
+    sections: [],
+    isEnabled: true,
+    order: 0
+  }
+];
 
 const UserSite = () => {
-  const { slug } = useParams();
+  const { slug, pageType, productId: urlProductId } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [website, setWebsite] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
@@ -23,6 +50,28 @@ const UserSite = () => {
   const [editorOpen, setEditorOpen] = useState(false);
   const [styleEditorOpen, setStyleEditorOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [ownerSubscriptionTier, setOwnerSubscriptionTier] = useState<string>('free');
+  
+  // Multi-page support
+  const [storePages, setStorePages] = useState<StorePage[]>(DEFAULT_PAGES);
+  const [currentPageId, setCurrentPageId] = useState<string>('home');
+  const [roadmapSettings, setRoadmapSettings] = useState(DEFAULT_ROADMAP_SETTINGS);
+  const [communitySettings, setCommunitySettings] = useState<CommunitySettings>(DEFAULT_COMMUNITY_SETTINGS);
+  const [aboutSettings, setAboutSettings] = useState<AboutPageSettings>(DEFAULT_ABOUT_SETTINGS);
+  const [tosSettings, setTosSettings] = useState<TosPageSettings>(DEFAULT_TOS_SETTINGS);
+  
+  // Site header configuration
+  const [headerConfig, setHeaderConfig] = useState<HeaderConfig>(DEFAULT_HEADER_CONFIG);
+  
+  // Multi-roadmap support - selected product for roadmap view
+  const [selectedRoadmapProductId, setSelectedRoadmapProductId] = useState<string | null>(null);
+  
+  // Contact form state
+  const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '', message: '' });
+  const [contactSubmitting, setContactSubmitting] = useState(false);
+  const [contactSuccess, setContactSuccess] = useState(false);
+  const [contactError, setContactError] = useState('');
+  
   const [pageSections, setPageSections] = useState<any[]>([
     { id: 'header', type: 'header', order: 0, store_name: '', show_nav: true },
     { id: 'hero', type: 'slideshow', order: 1, heading: 'Welcome to my store', subheading: 'Check out my amazing products', show_button: true, button_text: 'Shop Now', images: [] },
@@ -77,11 +126,73 @@ const UserSite = () => {
     animated_gradient_particles: 50,
     animated_gradient_glow: true,
     animated_gradient_overlay: 0,
+    // Global background settings
+    global_background_enabled: false,
+    global_background_type: "gradient" as string,
+    global_background_color: "#0f172a",
+    global_gradient_start: "#0f172a",
+    global_gradient_end: "#1e1b4b",
+    global_background_image: "",
+    global_background_overlay: 0.5,
   });
 
   useEffect(() => {
     if (slug) fetchWebsite();
   }, [slug, user]);
+
+  // Track affiliate referral clicks
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref');
+    
+    if (refCode) {
+      // Store ref code using robust tracking utility
+      setAffiliateRef(refCode);
+      
+      // Track the click
+      const trackClick = async () => {
+        try {
+          // Increment click count for this affiliate link
+          const { data: link } = await (supabase as any)
+            .from('affiliate_links')
+            .select('id, clicks')
+            .eq('code', refCode)
+            .single();
+          
+          if (link) {
+            await (supabase as any)
+              .from('affiliate_links')
+              .update({ clicks: (link.clicks || 0) + 1 })
+              .eq('id', link.id);
+            console.log('Affiliate click tracked for code:', refCode);
+          }
+        } catch (e) {
+          console.error('Error tracking affiliate click:', e);
+        }
+      };
+      
+      trackClick();
+    }
+  }, []);
+
+  // Handle page routing based on URL param
+  useEffect(() => {
+    // If we have a productId in URL, we're on a roadmap product page
+    if (urlProductId) {
+      setCurrentPageId('roadmap');
+      return;
+    }
+    if (!pageType) {
+      setCurrentPageId('home');
+      return;
+    }
+    const page = storePages.find(p => p.slug === pageType || p.type === pageType);
+    if (page) {
+      setCurrentPageId(page.id);
+    } else {
+      setCurrentPageId('home');
+    }
+  }, [pageType, storePages, urlProductId]);
 
   // Slideshow autoplay effect
   useEffect(() => {
@@ -117,8 +228,22 @@ const UserSite = () => {
       if (user && user.id === profile.user_id) setIsOwner(true);
 
       // Check if seller has verified Stripe
-      const hasStripe = profile.stripe_account_id && (profile.stripe_onboarding_status === 'connected' || profile.stripe_onboarding_status === 'complete');
+      const hasStripe = profile.stripe_connect_account_id && (profile.stripe_connect_status === 'connected' || profile.stripe_connect_status === 'complete');
       setSellerStripeVerified(hasStripe);
+
+      // Fetch subscription tier for roadmap access
+      const { data: subData } = await supabase
+        .from('developer_subscriptions')
+        .select('tier')
+        .eq('developer_id', profile.user_id)
+        .single();
+      
+      // Check if user is john/john-cheetah (for testing) or has paid tier
+      const displayName = profile.display_name?.toLowerCase() || '';
+      const profileSlug = displayName.replace(/\s+/g, '-');
+      const isTestUser = profileSlug === 'john-cheetah' || displayName === 'john-cheetah' || slug === 'john-cheetah' || slug === 'john' || displayName === 'john';
+      const tier = subData?.tier || 'free';
+      setOwnerSubscriptionTier(isTestUser ? 'pro' : tier);
 
       const websiteSettings = (profile as any).website_settings || {};
 
@@ -177,11 +302,52 @@ const UserSite = () => {
         animated_gradient_particles: websiteSettings.animated_gradient_particles || 50,
         animated_gradient_glow: websiteSettings.animated_gradient_glow !== false,
         animated_gradient_overlay: websiteSettings.animated_gradient_overlay || 0,
+        // Global background settings
+        global_background_enabled: websiteSettings.global_background_enabled || false,
+        global_background_type: websiteSettings.global_background_type || "gradient",
+        global_background_color: websiteSettings.global_background_color || "#0f172a",
+        global_gradient_start: websiteSettings.global_gradient_start || "#0f172a",
+        global_gradient_end: websiteSettings.global_gradient_end || "#1e1b4b",
+        global_background_image: websiteSettings.global_background_image || "",
+        global_background_overlay: websiteSettings.global_background_overlay || 0.5,
       });
 
       // Load saved page sections if they exist
       if (websiteSettings.page_sections && Array.isArray(websiteSettings.page_sections)) {
         setPageSections(websiteSettings.page_sections);
+      }
+
+      // Load multi-page settings
+      if (websiteSettings.store_pages && Array.isArray(websiteSettings.store_pages)) {
+        setStorePages(websiteSettings.store_pages);
+      }
+      if (websiteSettings.roadmap_settings) {
+        setRoadmapSettings({ ...DEFAULT_ROADMAP_SETTINGS, ...websiteSettings.roadmap_settings });
+      }
+      if (websiteSettings.community_settings) {
+        setCommunitySettings({ ...DEFAULT_COMMUNITY_SETTINGS, ...websiteSettings.community_settings });
+      }
+      if (websiteSettings.about_settings) {
+        setAboutSettings({ ...DEFAULT_ABOUT_SETTINGS, ...websiteSettings.about_settings });
+      }
+      if (websiteSettings.tos_settings) {
+        setTosSettings({ ...DEFAULT_TOS_SETTINGS, ...websiteSettings.tos_settings });
+      }
+
+      // Load header configuration
+      if (websiteSettings.header_config) {
+        setHeaderConfig({ ...DEFAULT_HEADER_CONFIG, ...websiteSettings.header_config });
+      } else {
+        // Generate default nav links from enabled pages
+        const enabledPages = (websiteSettings.store_pages || DEFAULT_PAGES).filter((p: StorePage) => p.isEnabled);
+        const defaultNavLinks: NavLink[] = enabledPages.map((page: StorePage, index: number) => ({
+          id: `nav-${page.id}`,
+          label: page.title,
+          type: 'page' as const,
+          pageSlug: page.slug,
+          order: index,
+        }));
+        setHeaderConfig({ ...DEFAULT_HEADER_CONFIG, navLinks: defaultNavLinks, siteName: profile.display_name });
       }
 
       const { data: productsData } = await supabase.from('products').select('*').eq('creator_id', profile.user_id).order('created_at', { ascending: false });
@@ -201,7 +367,13 @@ const UserSite = () => {
         .update({
           website_settings: {
             ...editSettings,
-            page_sections: pageSections
+            page_sections: pageSections,
+            store_pages: storePages as any,
+            roadmap_settings: roadmapSettings as any,
+            community_settings: communitySettings as any,
+            about_settings: aboutSettings as any,
+            tos_settings: tosSettings as any,
+            header_config: headerConfig as any
           },
           updated_at: new Date().toISOString()
         })
@@ -223,7 +395,8 @@ const UserSite = () => {
       toast.error("This seller hasn't set up Stripe yet. Purchases are not available.");
       return;
     }
-    window.location.href = `/checkout?product_id=${productId}`;
+    // Navigate to checkout page with product ID and affiliate ref using robust utility
+    window.location.href = buildCheckoutUrl(productId);
   };
 
   if (loading) return <div className='min-h-screen flex items-center justify-center'><div className='animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600'></div></div>;
@@ -315,12 +488,83 @@ const UserSite = () => {
         h1, h2, h3 { font-family: ${editSettings.heading_font}; }
       `}</style>
 
-      {isOwner && !editorOpen && <button onClick={() => setEditorOpen(true)} className='fixed left-0 top-1/2 -translate-y-1/2 bg-green-600 text-white p-3 rounded-r-lg shadow-lg z-50 hover:bg-green-700'><Edit3 className='w-5 h-5' /></button>}
+      {/* Site Header - displays on all pages */}
+      <SiteHeader
+        config={headerConfig}
+        currentPageSlug={pageType || ''}
+        baseUrl={`/site/${slug}`}
+        storeName={website.profiles?.display_name || 'Store'}
+        isOwner={isOwner}
+      />
 
+      {/* Editor button - LEFT side for ALL pages (home and roadmap) */}
+      {isOwner && !editorOpen && (
+        <button onClick={() => setEditorOpen(true)} className='fixed left-0 top-1/2 -translate-y-1/2 bg-green-600 text-white p-3 rounded-r-lg shadow-lg z-50 hover:bg-green-700'>
+          <Edit3 className='w-5 h-5' />
+        </button>
+      )}
+
+      {/* PageBuilderSidebar - LEFT side for both home and roadmap pages */}
       <PageBuilderSidebar
         isOpen={editorOpen}
         onClose={() => setEditorOpen(false)}
-        sections={pageSections}
+        sections={currentPageId === 'roadmap' || pageType === 'roadmap' || currentPageId === 'community' || pageType === 'community' || currentPageId === 'about' || pageType === 'about' || currentPageId === 'tos' || pageType === 'tos' ? [] : pageSections}
+        roadmapSettings={currentPageId === 'roadmap' || pageType === 'roadmap' ? roadmapSettings : undefined}
+        onRoadmapSettingsChange={currentPageId === 'roadmap' || pageType === 'roadmap' ? setRoadmapSettings : undefined}
+        isRoadmapMode={currentPageId === 'roadmap' || pageType === 'roadmap'}
+        isCommunityMode={currentPageId === 'community' || pageType === 'community'}
+        communitySettings={currentPageId === 'community' || pageType === 'community' ? communitySettings : undefined}
+        onCommunitySettingsChange={currentPageId === 'community' || pageType === 'community' ? setCommunitySettings : undefined}
+        isAboutMode={currentPageId === 'about' || pageType === 'about'}
+        aboutSettings={currentPageId === 'about' || pageType === 'about' ? aboutSettings : undefined}
+        onAboutSettingsChange={currentPageId === 'about' || pageType === 'about' ? setAboutSettings : undefined}
+        isTosMode={currentPageId === 'tos' || pageType === 'tos'}
+        tosSettings={currentPageId === 'tos' || pageType === 'tos' ? tosSettings : undefined}
+        onTosSettingsChange={currentPageId === 'tos' || pageType === 'tos' ? setTosSettings : undefined}
+        // Page manager props
+        pages={storePages}
+        currentPageId={currentPageId}
+        onPageChange={(pageId) => {
+          setCurrentPageId(pageId);
+          const page = storePages.find(p => p.id === pageId);
+          if (page) {
+            navigate(`/site/${slug}${page.slug ? `/${page.slug}` : ''}`);
+          }
+        }}
+        onAddPage={(type) => {
+          const PAGE_DEFAULTS: Record<string, { title: string; slug: string }> = {
+            home: { title: 'Marketplace', slug: '' },
+            about: { title: 'About', slug: 'about' },
+            tos: { title: 'Terms of Service', slug: 'tos' },
+            roadmap: { title: 'Roadmap', slug: 'roadmap' },
+            community: { title: 'Community Forums', slug: 'community' },
+          };
+          const defaults = PAGE_DEFAULTS[type] || { title: type, slug: type };
+          const newPage: StorePage = {
+            id: `page-${Date.now()}`,
+            type,
+            title: defaults.title,
+            slug: defaults.slug,
+            sections: [],
+            isEnabled: true,
+            order: storePages.length,
+          };
+          setStorePages([...storePages, newPage]);
+        }}
+        onDeletePage={(pageId) => {
+          setStorePages(storePages.filter(p => p.id !== pageId));
+          if (currentPageId === pageId) {
+            setCurrentPageId('home');
+            navigate(`/site/${slug}`);
+          }
+        }}
+        onUpdatePage={(updatedPage) => {
+          setStorePages(storePages.map(p => p.id === updatedPage.id ? updatedPage : p));
+        }}
+        onReorderPages={(reorderedPages) => {
+          setStorePages(reorderedPages);
+        }}
+        subscriptionTier={ownerSubscriptionTier}
         onAddSection={(type) => {
           const newSection = {
             id: `section-${Date.now()}`,
@@ -348,6 +592,8 @@ const UserSite = () => {
         onOpenStyleEditor={() => {
           setStyleEditorOpen(true);
         }}
+        headerConfig={headerConfig}
+        onHeaderConfigChange={setHeaderConfig}
         saving={saving}
         onSave={handleSave}
       />
@@ -364,7 +610,147 @@ const UserSite = () => {
         saving={saving}
       />
 
-      <div className={isOwner && editorOpen ? 'ml-64 transition-all' : ''}>
+      {/* Check if we're on the roadmap page - render outside editor container */}
+      {currentPageId === 'roadmap' || pageType === 'roadmap' ? (
+        // Check subscription tier - only Pro, Pro+, Enterprise can use roadmap
+        ['pro', 'pro_plus', 'enterprise'].includes(ownerSubscriptionTier) ? (
+          <div className={isOwner && editorOpen ? 'ml-[340px] pl-4 transition-all' : ''}>
+            {/* Check if viewing specific product roadmap or dashboard */}
+            {selectedRoadmapProductId || urlProductId ? (
+              <RoadmapPage 
+                creatorId={website.user_id} 
+                isOwner={isOwner}
+                settings={roadmapSettings}
+                storeName={website.profiles?.display_name}
+                storeLogo={pageSections.find(s => s.type === 'header')?.settings?.logo || pageSections.find(s => s.type === 'header')?.logo_url}
+                productId={selectedRoadmapProductId || urlProductId}
+                storeSlug={slug}
+                globalBackground={{
+                  enabled: editSettings.global_background_enabled,
+                  type: editSettings.global_background_type as 'solid' | 'gradient' | 'image',
+                  color: editSettings.global_background_color,
+                  gradientStart: editSettings.global_gradient_start,
+                  gradientEnd: editSettings.global_gradient_end,
+                  image: editSettings.global_background_image,
+                  overlay: editSettings.global_background_overlay
+                }}
+                onBack={() => {
+                  setSelectedRoadmapProductId(null);
+                  navigate(`/site/${slug}/roadmap`);
+                }}
+              />
+            ) : (
+              <RoadmapDashboard
+                creatorId={website.user_id}
+                isOwner={isOwner}
+                storeName={website.profiles?.display_name}
+                storeLogo={pageSections.find(s => s.type === 'header')?.settings?.logo || pageSections.find(s => s.type === 'header')?.logo_url}
+                storeSlug={slug}
+                onSelectRoadmap={(productId) => {
+                  setSelectedRoadmapProductId(productId);
+                  navigate(`/site/${slug}/roadmap/${productId}`);
+                }}
+              />
+            )}
+          </div>
+        ) : (
+          // Show upgrade prompt for free users
+          <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)' }}>
+            <div className="text-center max-w-lg mx-auto p-8">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h1 className="text-3xl font-bold text-white mb-4">Roadmap is a Pro Feature</h1>
+              <p className="text-gray-400 mb-8">
+                {isOwner 
+                  ? "Upgrade to Pro, Pro+, or Enterprise to unlock the Roadmap feature and share your development progress with your community."
+                  : "This store owner needs to upgrade to Pro to enable the Roadmap feature."
+                }
+              </p>
+              {isOwner && (
+                <Button 
+                  onClick={() => navigate('/dashboard/developer')}
+                  className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-full"
+                >
+                  Upgrade to Pro
+                </Button>
+              )}
+            </div>
+          </div>
+        )
+      ) : (currentPageId === 'about' || pageType === 'about') ? (
+        // About Page
+        <div className={isOwner && editorOpen ? 'ml-[340px] pl-4 transition-all' : ''}>
+          <AboutPage 
+            settings={aboutSettings}
+            storeName={website.profiles?.display_name}
+          />
+        </div>
+      ) : (currentPageId === 'tos' || pageType === 'tos') ? (
+        // Terms of Service Page
+        <div className={isOwner && editorOpen ? 'ml-[340px] pl-4 transition-all' : ''}>
+          <TosPage 
+            settings={tosSettings}
+            storeName={website.profiles?.display_name}
+          />
+        </div>
+      ) : (currentPageId === 'affiliate' || pageType === 'affiliate') ? (
+        // Affiliate Program Page
+        <div className={isOwner && editorOpen ? 'ml-[340px] pl-4 transition-all' : ''}>
+          <div className="min-h-screen py-12 px-4" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)' }}>
+            <div className="max-w-4xl mx-auto">
+              <AffiliateManager 
+                mode="affiliate"
+                storeId={website.user_id}
+                storeUsername={slug}
+              />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className={isOwner && editorOpen ? 'ml-64 transition-all' : ''}>
+          {currentPageId === 'community' || pageType === 'community' ? (
+          // Community Forums Page - Pro feature
+          ['pro', 'pro_plus', 'enterprise'].includes(ownerSubscriptionTier) ? (
+            <div className={isOwner && editorOpen ? 'ml-[340px] pl-4 transition-all' : ''}>
+              <CommunityForums 
+                creatorId={website.user_id}
+                isOwner={isOwner}
+                accentColor={communitySettings.accentColor || "#14b8a6"}
+                settings={communitySettings}
+              />
+            </div>
+          ) : (
+            // Show upgrade prompt for free users
+            <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)' }}>
+              <div className="text-center max-w-lg mx-auto p-8">
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                  </svg>
+                </div>
+                <h1 className="text-3xl font-bold text-white mb-4">Community Forums is a Pro Feature</h1>
+                <p className="text-gray-400 mb-8">
+                  {isOwner 
+                    ? "Upgrade to Pro, Pro+, or Enterprise to unlock Community Forums and engage with your customers."
+                    : "This store owner needs to upgrade to Pro to enable Community Forums."
+                  }
+                </p>
+                {isOwner && (
+                  <Button 
+                    onClick={() => navigate('/dashboard/developer')}
+                    className="px-8 py-3 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-semibold rounded-full"
+                  >
+                    Upgrade to Pro
+                  </Button>
+                )}
+              </div>
+            </div>
+          )
+        ) : (
+        <>
         {pageSections.sort((a, b) => a.order - b.order).map((section) => {
           // Header Section
           if (section.type === 'header') {
@@ -992,31 +1378,124 @@ const UserSite = () => {
             const heading = section.settings?.heading || section.heading || 'Get In Touch';
             const showPhone = section.settings?.show_phone !== false && section.show_phone !== false;
             const buttonText = section.settings?.button_text || section.button_text || 'Send Message';
+            const buttonColor = section.settings?.button_color || '#84cc16';
+            const buttonTextColor = section.settings?.button_text_color || '#000000';
+            const backgroundColor = section.settings?.background_color || 'transparent';
+            const inputBgColor = section.settings?.input_bg_color || '#1f2937';
+            const recipientEmail = section.settings?.recipient_email || '';
+            
+            const handleContactSubmit = async (e: React.FormEvent) => {
+              e.preventDefault();
+              if (!contactForm.name || !contactForm.email || !contactForm.message) {
+                setContactError('Please fill in all required fields');
+                return;
+              }
+              
+              if (!recipientEmail) {
+                setContactError('Contact form not configured. Please set a recipient email.');
+                return;
+              }
+              
+              setContactSubmitting(true);
+              setContactError('');
+              
+              try {
+                // Send email via edge function
+                const { error } = await (supabase as any).functions.invoke('send-contact-email', {
+                  body: {
+                    to: recipientEmail,
+                    from_name: contactForm.name,
+                    from_email: contactForm.email,
+                    phone: contactForm.phone,
+                    message: contactForm.message,
+                    store_name: website?.profiles?.display_name || 'Store'
+                  }
+                });
+                
+                if (error) throw error;
+                
+                setContactSuccess(true);
+                setContactForm({ name: '', email: '', phone: '', message: '' });
+                setTimeout(() => setContactSuccess(false), 5000);
+              } catch (err) {
+                console.error('Contact form error:', err);
+                setContactError('Failed to send message. Please try again.');
+              } finally {
+                setContactSubmitting(false);
+              }
+            };
             
             return (
-              <div key={section.id} className='py-12 px-6'>
+              <div key={section.id} className='py-12 px-6' style={{ backgroundColor }}>
                 <div className='max-w-2xl mx-auto'>
                   <h2 className='text-3xl font-bold mb-8 text-center'>{heading}</h2>
-                  <form className='space-y-4'>
+                  {contactSuccess && (
+                    <div className='mb-6 p-4 bg-green-500/20 border border-green-500 rounded-lg text-green-400 text-center'>
+                      Message sent successfully! We'll get back to you soon.
+                    </div>
+                  )}
+                  {contactError && (
+                    <div className='mb-6 p-4 bg-red-500/20 border border-red-500 rounded-lg text-red-400 text-center'>
+                      {contactError}
+                    </div>
+                  )}
+                  <form className='space-y-4' onSubmit={handleContactSubmit}>
                     <div>
                       <label className='block mb-2 font-medium'>Name</label>
-                      <Input placeholder='Your name' className='w-full' />
+                      <Input 
+                        placeholder='Your name' 
+                        className='w-full' 
+                        style={{ backgroundColor: inputBgColor }}
+                        value={contactForm.name}
+                        onChange={(e) => setContactForm(prev => ({ ...prev, name: e.target.value }))}
+                        required
+                      />
                     </div>
                     <div>
                       <label className='block mb-2 font-medium'>Email</label>
-                      <Input type='email' placeholder='your@email.com' className='w-full' />
+                      <Input 
+                        type='email' 
+                        placeholder='your@email.com' 
+                        className='w-full' 
+                        style={{ backgroundColor: inputBgColor }}
+                        value={contactForm.email}
+                        onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
+                        required
+                      />
                     </div>
                     {showPhone && (
                       <div>
                         <label className='block mb-2 font-medium'>Phone</label>
-                        <Input type='tel' placeholder='Your phone number' className='w-full' />
+                        <Input 
+                          type='tel' 
+                          placeholder='Your phone number' 
+                          className='w-full' 
+                          style={{ backgroundColor: inputBgColor }}
+                          value={contactForm.phone}
+                          onChange={(e) => setContactForm(prev => ({ ...prev, phone: e.target.value }))}
+                        />
                       </div>
                     )}
                     <div>
                       <label className='block mb-2 font-medium'>Message</label>
-                      <Textarea placeholder='Your message...' rows={5} className='w-full' />
+                      <Textarea 
+                        placeholder='Your message...' 
+                        rows={5} 
+                        className='w-full' 
+                        style={{ backgroundColor: inputBgColor }}
+                        value={contactForm.message}
+                        onChange={(e) => setContactForm(prev => ({ ...prev, message: e.target.value }))}
+                        required
+                      />
                     </div>
-                    <Button type='submit' className='w-full primary-btn'>{buttonText}</Button>
+                    <Button 
+                      type='submit' 
+                      className='w-full font-semibold'
+                      style={{ backgroundColor: buttonColor, color: buttonTextColor }}
+                      disabled={contactSubmitting}
+                    >
+                      {contactSubmitting ? 'Sending...' : buttonText}
+                    </Button>
                   </form>
                 </div>
               </div>
@@ -1258,6 +1737,131 @@ const UserSite = () => {
             );
           }
 
+
+
+          // Roadmap Gallery Section - Pro Only
+          if (section.type === 'roadmap_gallery') {
+            // Check if owner has Pro access
+            if (!['pro', 'pro_plus', 'enterprise'].includes(ownerSubscriptionTier)) {
+              return (
+                <div key={section.id} className="py-16 px-4 sm:px-6 text-center">
+                  <div className="max-w-md mx-auto p-8 bg-slate-900/50 rounded-2xl border border-slate-700/50">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">Roadmap Gallery is a Pro Feature</h3>
+                    <p className="text-gray-400 text-sm">
+                      Upgrade to Pro, Pro+, or Enterprise to display your product roadmaps.
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+
+            // Get customization settings
+            const backgroundColor = section.settings?.backgroundColor || '#0f172a';
+            const backgroundOpacity = section.settings?.backgroundOpacity ?? 100;
+            const gradientStyle = section.settings?.gradientStyle || 'none';
+            const cardBackgroundColor = section.settings?.cardBackgroundColor || '#1e293b';
+            const cardBorderColor = section.settings?.cardBorderColor || '#3b82f6';
+            const cardOpacity = section.settings?.cardOpacity ?? 100;
+            const cardBorderRadius = section.settings?.cardBorderRadius || 'rounded-2xl';
+            const cardsPerRow = section.settings?.cardsPerRow || 'auto';
+            const sectionPadding = section.settings?.sectionPadding || 'py-16';
+
+            // Convert hex to rgba for transparency - MOVED BEFORE USAGE
+            const hexToRgba = (hex: string, opacity: number) => {
+              const r = parseInt(hex.slice(1, 3), 16);
+              const g = parseInt(hex.slice(3, 5), 16);
+              const b = parseInt(hex.slice(5, 7), 16);
+              return `rgba(${r}, ${g}, ${b}, ${opacity / 100})`;
+            };
+
+            // Debug: Log the settings to see what colors are being used
+            console.log('Roadmap Gallery Settings:', {
+              cardBackgroundColor,
+              cardBorderColor,
+              cardOpacity,
+              backgroundColor,
+              backgroundOpacity,
+              hexToRgbaResult: hexToRgba(cardBackgroundColor, cardOpacity),
+              section: section.settings
+            });
+
+            // Gradient styles
+            const gradientStyles = {
+              'none': 'transparent',
+              'purple-blue': 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(59, 130, 246, 0.3))',
+              'blue-cyan': 'linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(6, 182, 212, 0.3))',
+              'purple-pink': 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.3))',
+              'dark-gradient': 'linear-gradient(135deg, rgba(0, 0, 0, 0.5), rgba(30, 41, 59, 0.5))'
+            };
+
+            // Grid classes based on cards per row
+            const gridClasses = {
+              'auto': 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
+              '1': 'grid-cols-1',
+              '2': 'grid-cols-1 md:grid-cols-2',
+              '3': 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
+              '4': 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+            };
+
+            const cardGlow = section.settings?.cardGlow || false;
+            const showBackgroundOrbs = section.settings?.showBackgroundOrbs !== false;
+
+            return (
+              <div 
+                key={section.id} 
+                className={`${sectionPadding} px-4 sm:px-6 relative overflow-hidden`}
+                style={{
+                  backgroundColor: hexToRgba(backgroundColor, backgroundOpacity),
+                  backgroundImage: gradientStyles[gradientStyle as keyof typeof gradientStyles]
+                }}
+              >
+                {/* Background Effects - Conditional Orbs */}
+                {showBackgroundOrbs && (
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+                    <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl" />
+                  </div>
+                )}
+
+                <div className="max-w-6xl mx-auto relative z-10">
+                  {/* Header */}
+                  <div className="text-center mb-12">
+                    <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+                      {section.settings?.title || 'Product Roadmaps'}
+                    </h2>
+                    <p className="text-slate-400 text-lg">
+                      {section.settings?.subtitle || 'Track our development progress across all products'}
+                    </p>
+                  </div>
+
+                  {/* Custom Roadmap Dashboard */}
+                  <CustomRoadmapGallery
+                    creatorId={website.user_id}
+                    isOwner={isOwner}
+                    storeName={website.profiles?.display_name}
+                    storeLogo={pageSections.find(s => s.type === 'header')?.settings?.logo || pageSections.find(s => s.type === 'header')?.logo_url}
+                    storeSlug={slug}
+                    onSelectRoadmap={(productId) => {
+                      navigate(`/site/${slug}/roadmap/${productId}`);
+                    }}
+                    customStyles={{
+                      cardBackgroundColor: hexToRgba(cardBackgroundColor, cardOpacity),
+                      cardBorderColor,
+                      cardBorderRadius,
+                      gridClasses: gridClasses[cardsPerRow as keyof typeof gridClasses],
+                      cardGlow
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          }
+
           // Footer Section
           if (section.type === 'footer') {
             const isTransparent = section.settings?.transparent === true;
@@ -1316,7 +1920,10 @@ const UserSite = () => {
 
           return null;
         })}
-      </div>
+        </>
+        )}
+        </div>
+      )}
     </div>
     </>
   );

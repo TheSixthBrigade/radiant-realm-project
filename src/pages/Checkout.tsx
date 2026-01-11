@@ -10,6 +10,7 @@ import Navigation from "@/components/Navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getAffiliateRef } from "@/lib/affiliateTracking";
 
 const Checkout = () => {
   const [searchParams] = useSearchParams();
@@ -43,7 +44,7 @@ const Checkout = () => {
         // Get the creator's profile with payment info
         const { data: creatorData, error: creatorError } = await supabase
           .from('profiles')
-          .select('bio, display_name, stripe_account_id, stripe_onboarding_status')
+          .select('bio, display_name, stripe_connect_account_id, stripe_connect_status')
           .eq('user_id', productData.creator_id)
           .single();
 
@@ -54,7 +55,7 @@ const Checkout = () => {
         console.log('Creator data:', creatorData);
         
         // Check if creator has Stripe connected
-        const hasStripe = creatorData?.stripe_account_id && (creatorData?.stripe_onboarding_status === 'connected' || creatorData?.stripe_onboarding_status === 'complete');
+        const hasStripe = creatorData?.stripe_connect_account_id && (creatorData?.stripe_connect_status === 'connected' || creatorData?.stripe_connect_status === 'complete');
         
         if (!hasStripe) {
           toast.error('Seller has not connected Stripe. This product is currently unavailable for purchase.');
@@ -64,7 +65,7 @@ const Checkout = () => {
         // Combine the data
         const enrichedProduct = {
           ...productData,
-          creator_stripe_account: creatorData?.stripe_account_id,
+          creator_stripe_account: creatorData?.stripe_connect_account_id,
           creator_display_name: creatorData?.display_name,
           has_stripe: hasStripe
         };
@@ -72,7 +73,7 @@ const Checkout = () => {
         console.log('Setting product data:', {
           title: enrichedProduct.title,
           has_stripe: hasStripe,
-          creator_stripe_account: creatorData?.stripe_account_id
+          creator_stripe_account: creatorData?.stripe_connect_account_id
         });
         
         setProduct(enrichedProduct);
@@ -92,13 +93,31 @@ const Checkout = () => {
       setProcessing(true);
       toast.loading("Creating checkout session...", { id: "stripe" });
 
+      // Get affiliate ref code from URL params first, then robust storage utility
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlRef = urlParams.get('ref');
+      
+      // Prefer URL ref (just passed), fallback to stored ref
+      const validAffiliateRef = urlRef || getAffiliateRef();
+      
+      console.log('Affiliate ref - URL:', urlRef, 'stored:', getAffiliateRef(), 'using:', validAffiliateRef);
+
+      console.log('Calling stripe-create-checkout with:', {
+        productId: product.id,
+        buyerId: user?.id,
+        affiliateRef: validAffiliateRef
+      });
+
       // Call edge function to create Stripe checkout session
       const { data, error } = await supabase.functions.invoke('stripe-create-checkout', {
         body: {
           productId: product.id,
-          buyerId: user?.id
+          buyerId: user?.id,
+          affiliateRef: validAffiliateRef
         }
       });
+
+      console.log('Stripe checkout response:', data, 'error:', error);
 
       if (error) {
         console.error('Stripe checkout error:', error);

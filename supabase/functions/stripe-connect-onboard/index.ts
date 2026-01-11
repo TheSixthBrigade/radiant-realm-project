@@ -83,49 +83,107 @@ serve(async (req) => {
     }
 
     let accountId = profile?.stripe_connect_account_id
+    console.log('User ID:', user.id)
+    console.log('Existing account ID:', accountId)
 
     // Create account only if it doesn't exist
     if (!accountId) {
-      const account = await stripe.accounts.create({
-        type: 'express',
-        email: user.email,
-        business_profile: {
-          name: profile?.business_name || undefined,
-        },
-        capabilities: {
-          card_payments: { requested: true },
-          transfers: { requested: true },
-        },
-        metadata: {
-          user_id: user.id,
-          platform: 'vectabase',
-        },
-      })
-      
-      accountId = account.id
-
-      // Save the account ID to database
-      const { error: updateError } = await supabaseAdmin
-        .from('profiles')
-        .update({
-          stripe_connect_account_id: accountId,
-          stripe_connect_status: 'pending'
+      console.log('Creating new Stripe Connect account...')
+      try {
+        const account = await stripe.accounts.create({
+          type: 'express',
+          email: user.email,
+          business_profile: {
+            name: profile?.business_name || undefined,
+          },
+          capabilities: {
+            card_payments: { requested: true },
+            transfers: { requested: true },
+          },
+          metadata: {
+            user_id: user.id,
+            platform: 'vectabase',
+          },
         })
-        .eq('user_id', user.id)
-      
-      if (updateError) {
-        console.error('Database update error:', updateError)
-        throw new Error(`Failed to save Stripe account: ${updateError.message}`)
+        
+        accountId = account.id
+        console.log('Created Stripe account:', accountId)
+
+        // Save the account ID to database
+        const { error: updateError } = await supabaseAdmin
+          .from('profiles')
+          .update({
+            stripe_connect_account_id: accountId,
+            stripe_connect_status: 'pending'
+          })
+          .eq('user_id', user.id)
+        
+        if (updateError) {
+          console.error('Database update error:', updateError)
+          throw new Error(`Failed to save Stripe account: ${updateError.message}`)
+        }
+      } catch (stripeError: any) {
+        console.error('Stripe account creation error:', stripeError)
+        throw new Error(`Stripe error: ${stripeError.message}`)
+      }
+    } else {
+      // Verify the account still exists in Stripe
+      console.log('Verifying existing Stripe account:', accountId)
+      try {
+        const account = await stripe.accounts.retrieve(accountId)
+        console.log('Account status:', account.details_submitted ? 'complete' : 'incomplete')
+      } catch (retrieveError: any) {
+        console.error('Failed to retrieve account:', retrieveError)
+        // Account doesn't exist in Stripe anymore, clear it and create new
+        if (retrieveError.code === 'account_invalid' || retrieveError.type === 'invalid_request_error') {
+          console.log('Account invalid, clearing and creating new...')
+          await supabaseAdmin
+            .from('profiles')
+            .update({
+              stripe_connect_account_id: null,
+              stripe_connect_status: null
+            })
+            .eq('user_id', user.id)
+          
+          // Create new account
+          const account = await stripe.accounts.create({
+            type: 'express',
+            email: user.email,
+            capabilities: {
+              card_payments: { requested: true },
+              transfers: { requested: true },
+            },
+            metadata: {
+              user_id: user.id,
+              platform: 'vectabase',
+            },
+          })
+          
+          accountId = account.id
+          console.log('Created new Stripe account:', accountId)
+
+          await supabaseAdmin
+            .from('profiles')
+            .update({
+              stripe_connect_account_id: accountId,
+              stripe_connect_status: 'pending'
+            })
+            .eq('user_id', user.id)
+        } else {
+          throw retrieveError
+        }
       }
     }
 
     // Create account link for onboarding (works for new or existing accounts)
+    console.log('Creating account link for:', accountId)
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
       refresh_url: refreshUrl,
       return_url: returnUrl,
       type: 'account_onboarding',
     })
+    console.log('Account link created successfully')
 
     return new Response(
       JSON.stringify({
