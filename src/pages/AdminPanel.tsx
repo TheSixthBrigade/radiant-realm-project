@@ -11,12 +11,14 @@ import {
   BarChart3, 
   Shield,
   Palette,
-  TrendingUp
+  TrendingUp,
+  Globe
 } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import AnnouncementsManager from "@/components/AnnouncementsManager";
 import UserManagement from "@/components/UserManagement";
 import CommissionManagement from "@/components/CommissionManagement";
+import VisitorAnalytics from "@/components/VisitorAnalytics";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useProducts } from "@/hooks/useProducts";
 import { useStats } from "@/hooks/useStats";
@@ -339,7 +341,13 @@ const AdminPanel = () => {
           </TabsContent>
 
           <TabsContent value="design" className="space-y-6">
-            <WebsiteBuilder />
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Website Design</h3>
+              <p className="text-muted-foreground">Website builder coming soon. Use the Store Management page to customize your store.</p>
+              <Button className="mt-4" onClick={() => navigate('/store-management')}>
+                Go to Store Management
+              </Button>
+            </Card>
           </TabsContent>
 
           <TabsContent value="users" className="space-y-6">
@@ -347,6 +355,7 @@ const AdminPanel = () => {
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
+            {/* Sales Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
               <Card className="p-4">
                 <div className="flex items-center justify-between">
@@ -397,47 +406,8 @@ const AdminPanel = () => {
               </Card>
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Sales Overview</h3>
-                <div className="h-64 flex items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-lg">
-                  <div className="text-center">
-                    <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-muted-foreground">Sales chart will be displayed here</p>
-                    <p className="text-sm text-muted-foreground">Connect analytics service for detailed charts</p>
-                  </div>
-                </div>
-              </Card>
-              
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Top Products</h3>
-                <div className="space-y-3">
-                  {productsLoading ? (
-                    <p className="text-muted-foreground">Loading...</p>
-                  ) : products.length > 0 ? (
-                    products.slice(0, 5).map((product, index) => (
-                      <div key={product.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center text-sm font-medium">
-                            {index + 1}
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm">{product.title}</p>
-                            <p className="text-xs text-muted-foreground">{product.downloads} downloads</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium text-sm">${product.price}</p>
-                          <p className="text-xs text-muted-foreground">★ {product.rating}</p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-muted-foreground text-center py-8">No products available</p>
-                  )}
-                </div>
-              </Card>
-            </div>
+            {/* Visitor Analytics */}
+            <VisitorAnalytics />
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">

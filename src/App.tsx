@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { ThemeProvider as StyleThemeProvider } from "@/contexts/ThemeContext";
 import PageTransitionLoader from "@/components/PageTransitionLoader";
+import { useVisitorTracking } from "@/hooks/useVisitorTracking";
 import { lazy, Suspense } from "react";
 
 // Eager load critical pages
@@ -64,6 +65,9 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
+  // Track visitor sessions for analytics
+  useVisitorTracking();
+  
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="vectabase-theme">
