@@ -189,17 +189,13 @@ async function getLocationFromIP(): Promise<Partial<VisitorData>> {
   return {};
 }
 
-// Get precise GPS location from browser (requires HTTPS or localhost)
+// Get precise GPS location from browser
+// Always tries to get location, updates if better accuracy found
 async function getPreciseLocation(): Promise<{ latitude: number; longitude: number; accuracy: number } | null> {
-  // Check if we already asked this session
-  if (sessionStorage.getItem(LOCATION_ASKED_KEY)) {
-    console.log('[Visitor Tracking] GPS already asked this session, skipping');
-    return null;
-  }
-  
-  // GPS requires secure context (HTTPS) - won't work on HTTP except localhost
-  if (!isSecureContext && !window.location.hostname.includes('localhost')) {
-    console.log('[Visitor Tracking] GPS unavailable - requires HTTPS. Current:', window.location.protocol);
+  // Check stored accuracy - only skip if we already have good accuracy (<100m)
+  const storedAccuracy = sessionStorage.getItem('vectabase_gps_accuracy');
+  if (storedAccuracy && parseFloat(storedAccuracy) < 100) {
+    console.log('[Visitor Tracking] Already have good GPS accuracy:', storedAccuracy, 'm');
     return null;
   }
   
@@ -208,32 +204,51 @@ async function getPreciseLocation(): Promise<{ latitude: number; longitude: numb
     return null;
   }
   
-  console.log('[Visitor Tracking] Requesting GPS permission...');
+  console.log('[Visitor Tracking] Requesting location (will use best available method)...');
   
-  return new Promise((resolve) => {
-    sessionStorage.setItem(LOCATION_ASKED_KEY, 'true');
-    
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        console.log('[Visitor Tracking] GPS success! Accuracy:', position.coords.accuracy, 'm');
-        resolve({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-        });
-      },
-      (error) => {
-        // User denied or error - that's fine, we have IP location
-        console.log('[Visitor Tracking] GPS denied/failed:', error.message);
-        resolve(null);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 300000, // 5 minutes cache
-      }
-    );
-  });
+  const getPosition = (highAccuracy: boolean, timeout: number): Promise<GeolocationPosition | null> => {
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => resolve(position),
+        (error) => {
+          console.log('[Visitor Tracking] Location error:', error.message);
+          resolve(null);
+        },
+        {
+          enableHighAccuracy: highAccuracy,
+          timeout: timeout,
+          maximumAge: 0,
+        }
+      );
+    });
+  };
+  
+  // Try high accuracy first
+  console.log('[Visitor Tracking] Trying high accuracy location...');
+  let position = await getPosition(true, 20000);
+  
+  // If poor accuracy or failed, try again
+  if (!position || position.coords.accuracy > 500) {
+    console.log('[Visitor Tracking] Retrying for better accuracy...');
+    const position2 = await getPosition(true, 10000);
+    if (position2 && (!position || position2.coords.accuracy < position.coords.accuracy)) {
+      position = position2;
+    }
+  }
+  
+  if (position) {
+    // Store accuracy so we know if we need to retry next time
+    sessionStorage.setItem('vectabase_gps_accuracy', position.coords.accuracy.toString());
+    console.log('[Visitor Tracking] Location obtained - Accuracy:', position.coords.accuracy, 'm');
+    return {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+      accuracy: position.coords.accuracy,
+    };
+  }
+  
+  console.log('[Visitor Tracking] Could not get location');
+  return null;
 }
 
 // Check if user has consented to analytics
@@ -250,7 +265,6 @@ export function setAnalyticsConsent(consent: boolean): void {
 export async function trackVisitor(): Promise<void> {
   console.log('[Visitor Tracking] Starting tracking...');
   console.log('[Visitor Tracking] Host:', window.location.hostname, 'Protocol:', window.location.protocol);
-  console.log('[Visitor Tracking] Secure context:', isSecureContext, 'Local network:', isLocalNetwork);
   
   try {
     const sessionId = getSessionId();
@@ -260,19 +274,19 @@ export async function trackVisitor(): Promise<void> {
     console.log('[Visitor Tracking] Session ID:', sessionId);
     console.log('[Visitor Tracking] Device:', getDeviceType(ua), 'Browser:', getBrowser(ua), 'OS:', getOS(ua));
     
-    // Get IP-based location data (includes lat/lng, ISP, postal code)
-    const ipLocation = await getLocationFromIP();
+    // Request GPS and IP location IN PARALLEL for faster results
+    const [gpsLocation, ipLocation] = await Promise.all([
+      getPreciseLocation(),
+      getLocationFromIP(),
+    ]);
+    
     console.log('[Visitor Tracking] IP Location result:', ipLocation);
+    console.log('[Visitor Tracking] GPS/Device Location result:', gpsLocation);
     
-    // Try to get precise GPS location (will prompt user once per session)
-    // Note: GPS only works on HTTPS - on HTTP we rely on IP geolocation
-    const gpsLocation = await getPreciseLocation();
-    console.log('[Visitor Tracking] GPS Location result:', gpsLocation);
-    
-    // Use GPS coordinates if available (more accurate), otherwise use IP-based
+    // Use GPS coordinates if available, otherwise use IP-based
     const latitude = gpsLocation?.latitude ?? ipLocation.latitude ?? null;
     const longitude = gpsLocation?.longitude ?? ipLocation.longitude ?? null;
-    const accuracy = gpsLocation?.accuracy ?? null; // Only GPS provides accuracy
+    const accuracy = gpsLocation?.accuracy ?? null;
     
     const visitorData = {
       session_id: sessionId,
@@ -299,6 +313,7 @@ export async function trackVisitor(): Promise<void> {
       utm_campaign: utm.campaign || null,
       first_page: window.location.pathname,
       last_page: window.location.pathname,
+      last_seen_at: new Date().toISOString(),
     };
     
     console.log('[Visitor Tracking] Saving to database:', {
@@ -306,8 +321,8 @@ export async function trackVisitor(): Promise<void> {
       country: visitorData.country,
       latitude: visitorData.latitude,
       longitude: visitorData.longitude,
+      accuracy: visitorData.accuracy,
       device_type: visitorData.device_type,
-      isp: visitorData.isp
     });
     
     // Upsert session (create or update)
@@ -322,6 +337,25 @@ export async function trackVisitor(): Promise<void> {
       console.error('[Visitor Tracking] Database error:', error.message);
     } else {
       console.log('[Visitor Tracking] ✅ Successfully saved visitor data!');
+    }
+    
+    // If we got poor accuracy, try to update with better location in background
+    if (gpsLocation && gpsLocation.accuracy > 500) {
+      console.log('[Visitor Tracking] Poor accuracy, will retry in background...');
+      setTimeout(async () => {
+        const betterLocation = await getPreciseLocation();
+        if (betterLocation && betterLocation.accuracy < gpsLocation.accuracy) {
+          console.log('[Visitor Tracking] Got better accuracy:', betterLocation.accuracy, 'm');
+          await (supabase as any)
+            .from('visitor_sessions')
+            .update({
+              latitude: betterLocation.latitude,
+              longitude: betterLocation.longitude,
+              accuracy: betterLocation.accuracy,
+            })
+            .eq('session_id', sessionId);
+        }
+      }, 5000);
     }
   } catch (e) {
     console.error('[Visitor Tracking] Error:', e);
