@@ -71,6 +71,7 @@ const getLanguageName = (code: string): string => {
 export const VisitorAnalytics = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [liveIndicator, setLiveIndicator] = useState(false);
   const [stats, setStats] = useState<AnalyticsStats>({
     totalSessions: 0,
     todaySessions: 0,
@@ -85,7 +86,8 @@ export const VisitorAnalytics = () => {
     recentVisitors: [],
   });
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = async (showRefreshing = true) => {
+    if (showRefreshing) setRefreshing(true);
     try {
       // Fetch all visitor sessions
       const { data: sessions, error } = await (supabase as any)
@@ -241,8 +243,38 @@ export const VisitorAnalytics = () => {
     }
   };
 
+  // Set up realtime subscription for live updates
   useEffect(() => {
     fetchAnalytics();
+    
+    // Subscribe to realtime changes on visitor_sessions table
+    const channel = (supabase as any)
+      .channel('visitor_sessions_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'visitor_sessions',
+        },
+        (payload: any) => {
+          console.log('[Analytics] Realtime update received:', payload.eventType);
+          // Flash the live indicator
+          setLiveIndicator(true);
+          setTimeout(() => setLiveIndicator(false), 1000);
+          // Refresh data without showing spinner
+          fetchAnalytics(false);
+        }
+      )
+      .subscribe((status: string) => {
+        console.log('[Analytics] Realtime subscription status:', status);
+      });
+
+    // Cleanup subscription on unmount
+    return () => {
+      console.log('[Analytics] Cleaning up realtime subscription');
+      (supabase as any).removeChannel(channel);
+    };
   }, []);
 
   const handleRefresh = () => {
@@ -281,6 +313,10 @@ export const VisitorAnalytics = () => {
         <div className="flex items-center gap-3">
           <Globe className="w-6 h-6 text-primary" />
           <h2 className="text-2xl font-bold">Visitor Analytics</h2>
+          <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs ${liveIndicator ? 'bg-green-500/20 text-green-400' : 'bg-muted text-muted-foreground'}`}>
+            <span className={`w-2 h-2 rounded-full ${liveIndicator ? 'bg-green-500 animate-pulse' : 'bg-green-500'}`} />
+            LIVE
+          </div>
         </div>
         <Button onClick={handleRefresh} variant="outline" disabled={refreshing}>
           <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />

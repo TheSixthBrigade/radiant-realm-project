@@ -283,10 +283,23 @@ export async function trackVisitor(): Promise<void> {
     console.log('[Visitor Tracking] IP Location result:', ipLocation);
     console.log('[Visitor Tracking] GPS/Device Location result:', gpsLocation);
     
-    // Use GPS coordinates if available, otherwise use IP-based
-    const latitude = gpsLocation?.latitude ?? ipLocation.latitude ?? null;
-    const longitude = gpsLocation?.longitude ?? ipLocation.longitude ?? null;
-    const accuracy = gpsLocation?.accuracy ?? null;
+    // ONLY use GPS coordinates if accuracy is GOOD (under 500m)
+    // Otherwise the device location can be wildly wrong (like showing Lincoln instead of Chester)
+    // IP geolocation is more reliable for city-level accuracy
+    let latitude = ipLocation.latitude ?? null;
+    let longitude = ipLocation.longitude ?? null;
+    let accuracy: number | null = null;
+    
+    if (gpsLocation && gpsLocation.accuracy < 500) {
+      // Good GPS accuracy - use it
+      console.log('[Visitor Tracking] Using GPS location (accuracy:', gpsLocation.accuracy, 'm)');
+      latitude = gpsLocation.latitude;
+      longitude = gpsLocation.longitude;
+      accuracy = gpsLocation.accuracy;
+    } else if (gpsLocation) {
+      // Poor GPS accuracy - ignore it, use IP location
+      console.log('[Visitor Tracking] Ignoring poor GPS accuracy:', gpsLocation.accuracy, 'm - using IP location instead');
+    }
     
     const visitorData = {
       session_id: sessionId,
@@ -339,13 +352,14 @@ export async function trackVisitor(): Promise<void> {
       console.log('[Visitor Tracking] ✅ Successfully saved visitor data!');
     }
     
-    // If we got poor accuracy, try to update with better location in background
-    if (gpsLocation && gpsLocation.accuracy > 500) {
-      console.log('[Visitor Tracking] Poor accuracy, will retry in background...');
+    // If we got poor accuracy or no GPS, try to get better location in background
+    if (!gpsLocation || gpsLocation.accuracy > 500) {
+      console.log('[Visitor Tracking] Will retry for better GPS in background...');
       setTimeout(async () => {
         const betterLocation = await getPreciseLocation();
-        if (betterLocation && betterLocation.accuracy < gpsLocation.accuracy) {
-          console.log('[Visitor Tracking] Got better accuracy:', betterLocation.accuracy, 'm');
+        // Only update if we got GOOD accuracy (under 500m)
+        if (betterLocation && betterLocation.accuracy < 500) {
+          console.log('[Visitor Tracking] Got good GPS accuracy:', betterLocation.accuracy, 'm - updating!');
           await (supabase as any)
             .from('visitor_sessions')
             .update({
@@ -354,6 +368,8 @@ export async function trackVisitor(): Promise<void> {
               accuracy: betterLocation.accuracy,
             })
             .eq('session_id', sessionId);
+        } else if (betterLocation) {
+          console.log('[Visitor Tracking] Still poor accuracy:', betterLocation.accuracy, 'm - keeping IP location');
         }
       }, 5000);
     }
