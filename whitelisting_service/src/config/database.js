@@ -1,86 +1,63 @@
 import SecureDatabaseService from '../services/database.js';
 import SupabaseDatabaseService from '../services/supabaseDatabase.js';
 import PostgresDatabaseService from '../services/postgresDatabase.js';
-import dotenv from 'dotenv';
-
-// Load .env file
-dotenv.config();
+import { fetchConfig } from './supabaseConfig.js';
 
 /**
  * Database configuration with enterprise security settings
- * Supports: 'postgres' (recommended), 'supabase', or 'local' (JSON file)
+ * ALL config is loaded from Supabase - NO .env file needed!
  */
-const databaseConfig = {
-  // Database type: 'postgres', 'supabase' (default for now), or 'local'
-  databaseType: process.env.DATABASE_TYPE || 'supabase',
-  
-  // PostgreSQL configuration
-  postgres: {
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    database: process.env.DB_NAME || 'vectabase',
-    user: process.env.DB_USER || 'vectabase_admin',
-    password: process.env.DB_PASSWORD
-  },
-  
-  // Supabase configuration (legacy)
-  supabaseUrl: process.env.SUPABASE_URL || 'https://cmmeqzkbiiqqfvzkmkzt.supabase.co',
-  supabaseKey: process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNtbWVxemtiaWlxcWZ2emtta3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MDcyNjQsImV4cCI6MjA3NDQ4MzI2NH0.iFnZXQmCkindqhm1sevUrIWdC2z-IjrI_duZE2RxjWg',
-  
-  // Local database file path (fallback)
-  databasePath: process.env.DATABASE_PATH || './data/whitelist.json',
-  
-  // Backup configuration
-  backupPath: process.env.BACKUP_PATH || './data/backups/',
-  
-  // Encryption key
-  encryptionKey: process.env.DB_ENCRYPTION_KEY,
-  
-  // Security settings
-  security: {
-    saltRounds: 12,
-    maxRetries: 5,
-    connectionTimeout: 30000,
-    auditLogging: true,
-    backupOnClose: true
-  },
-  
-  // Performance settings
-  performance: {
-    journalMode: 'WAL',
-    synchronous: 'FULL',
-    tempStore: 'MEMORY',
-    cacheSize: 10000
+
+// Cache for config
+let cachedConfig = null;
+
+async function getConfig() {
+  if (!cachedConfig) {
+    cachedConfig = await fetchConfig();
   }
-};
+  return cachedConfig;
+}
 
 /**
  * Initialize and return configured database instance
- * Uses PostgreSQL by default, supports Supabase and local JSON as fallbacks
+ * Uses Supabase by default (no .env needed!)
  */
 export async function initializeDatabase() {
-  const dbType = databaseConfig.databaseType;
+  const config = await getConfig();
+  const dbType = config.DATABASE_TYPE || 'supabase';
+  
+  // Supabase URL and key are hardcoded in supabaseConfig.js (they're public anyway)
+  const SUPABASE_URL = 'https://cmmeqzkbiiqqfvzkmkzt.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNtbWVxemtiaWlxcWZ2emtta3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MDcyNjQsImV4cCI6MjA3NDQ4MzI2NH0.iFnZXQmCkindqhm1sevUrIWdC2z-IjrI_duZE2RxjWg';
   
   if (dbType === 'postgres') {
     console.log('🐘 Using PostgreSQL database...');
     const db = new PostgresDatabaseService({
-      ...databaseConfig.postgres,
-      encryptionKey: databaseConfig.encryptionKey
+      host: config.DB_HOST || 'localhost',
+      port: config.DB_PORT || 5432,
+      database: config.DB_NAME || 'vectabase',
+      user: config.DB_USER || 'vectabase_admin',
+      password: config.DB_PASSWORD,
+      encryptionKey: config.DB_ENCRYPTION_KEY
     });
     await db.initializeDatabase();
     return db;
   } else if (dbType === 'supabase') {
-    console.log('🌐 Using Supabase database...');
+    console.log('🌐 Using Supabase database (no .env needed!)...');
     const db = new SupabaseDatabaseService({
-      supabaseUrl: databaseConfig.supabaseUrl,
-      supabaseKey: databaseConfig.supabaseKey,
-      encryptionKey: databaseConfig.encryptionKey
+      supabaseUrl: SUPABASE_URL,
+      supabaseKey: SUPABASE_ANON_KEY,
+      encryptionKey: config.DB_ENCRYPTION_KEY
     });
     await db.initializeDatabase();
     return db;
   } else {
     console.log('📁 Using local JSON database...');
-    const db = new SecureDatabaseService(databaseConfig);
+    const db = new SecureDatabaseService({
+      databasePath: config.DATABASE_PATH || './data/whitelist.json',
+      backupPath: config.BACKUP_PATH || './data/backups/',
+      encryptionKey: config.DB_ENCRYPTION_KEY
+    });
     await db.initializeDatabase();
     return db;
   }
@@ -89,37 +66,21 @@ export async function initializeDatabase() {
 /**
  * Validate database configuration
  */
-export function validateDatabaseConfig() {
+export async function validateDatabaseConfig() {
+  const config = await getConfig();
   const errors = [];
-  const dbType = databaseConfig.databaseType;
+  const dbType = config.DATABASE_TYPE || 'supabase';
   
   if (dbType === 'postgres') {
-    // PostgreSQL validation
-    if (!databaseConfig.postgres.password && !process.env.DB_PASSWORD) {
+    if (!config.DB_PASSWORD) {
       errors.push('DB_PASSWORD is required for PostgreSQL database');
     }
-    if (!process.env.DB_ENCRYPTION_KEY) {
-      errors.push('DB_ENCRYPTION_KEY environment variable is required for encryption');
-    }
-    if (process.env.DB_ENCRYPTION_KEY && process.env.DB_ENCRYPTION_KEY.length < 64) {
-      errors.push('DB_ENCRYPTION_KEY must be 64 characters (32 bytes hex) for AES-256');
+    if (!config.DB_ENCRYPTION_KEY) {
+      errors.push('DB_ENCRYPTION_KEY is required for encryption');
     }
   } else if (dbType === 'supabase') {
-    // Supabase validation
-    if (!databaseConfig.supabaseUrl) {
-      errors.push('SUPABASE_URL is required for Supabase database');
-    }
-    if (!databaseConfig.supabaseKey) {
-      errors.push('SUPABASE_ANON_KEY is required for Supabase database');
-    }
-  } else {
-    // Local database validation
-    if (!process.env.DB_ENCRYPTION_KEY) {
-      errors.push('DB_ENCRYPTION_KEY environment variable is required for local database encryption');
-    }
-    if (process.env.DB_ENCRYPTION_KEY && process.env.DB_ENCRYPTION_KEY.length < 32) {
-      errors.push('DB_ENCRYPTION_KEY must be at least 32 characters long');
-    }
+    // Supabase URL and key are hardcoded - no validation needed
+    // Encryption key is optional for Supabase
   }
   
   return {
@@ -128,4 +89,7 @@ export function validateDatabaseConfig() {
   };
 }
 
-export default databaseConfig;
+// Export config getter for other modules
+export { getConfig };
+
+export default { initializeDatabase, validateDatabaseConfig, getConfig };
