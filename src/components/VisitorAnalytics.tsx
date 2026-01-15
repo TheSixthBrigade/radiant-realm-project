@@ -89,16 +89,21 @@ export const VisitorAnalytics = () => {
   const fetchAnalytics = async (showRefreshing = true) => {
     if (showRefreshing) setRefreshing(true);
     try {
-      // Fetch all visitor sessions
+      console.log('[Analytics] 🔄 Fetching visitor sessions...');
+      
+      // Fetch all visitor sessions - add timestamp to bust cache
       const { data: sessions, error } = await (supabase as any)
         .from('visitor_sessions')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(500);
 
       if (error) {
-        console.error('Error fetching analytics:', error);
+        console.error('[Analytics] ❌ Error fetching:', error);
         return;
       }
+      
+      console.log('[Analytics] ✅ Fetched', sessions?.length || 0, 'sessions');
 
       if (!sessions || sessions.length === 0) {
         setStats({
@@ -221,6 +226,13 @@ export const VisitorAnalytics = () => {
         .sort((a, b) => b.count - a.count)
         .slice(0, 10);
 
+      console.log('[Analytics] 📊 Stats updated:', {
+        total: sessions.length,
+        today: todaySessions,
+        recentCount: sessions.slice(0, 20).length,
+        firstRecent: sessions[0]?.city,
+      });
+
       setStats({
         totalSessions: sessions.length,
         todaySessions,
@@ -245,35 +257,62 @@ export const VisitorAnalytics = () => {
 
   // Set up realtime subscription for live updates
   useEffect(() => {
+    // Initial fetch
     fetchAnalytics();
     
     // Subscribe to realtime changes on visitor_sessions table
+    console.log('[Analytics] 🔌 Setting up realtime subscription...');
     const channel = (supabase as any)
-      .channel('visitor_sessions_changes')
+      .channel('visitor_sessions_realtime_' + Date.now())
       .on(
         'postgres_changes',
         {
-          event: '*', // Listen to INSERT, UPDATE, DELETE
+          event: 'INSERT',
           schema: 'public',
           table: 'visitor_sessions',
         },
         (payload: any) => {
-          console.log('[Analytics] Realtime update received:', payload.eventType);
-          // Flash the live indicator
+          console.log('[Analytics] 🆕 NEW VISITOR:', payload.new?.city, payload.new?.device_type);
           setLiveIndicator(true);
-          setTimeout(() => setLiveIndicator(false), 1000);
-          // Refresh data without showing spinner
+          setTimeout(() => setLiveIndicator(false), 2000);
+          // Immediate refresh for new visitors
+          fetchAnalytics(false);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'visitor_sessions',
+        },
+        (payload: any) => {
+          console.log('[Analytics] 🔄 Visitor updated:', payload.new?.session_id?.slice(0, 10));
+          setLiveIndicator(true);
+          setTimeout(() => setLiveIndicator(false), 500);
+          // Refresh on updates too
           fetchAnalytics(false);
         }
       )
       .subscribe((status: string) => {
-        console.log('[Analytics] Realtime subscription status:', status);
+        console.log('[Analytics] 📡 Subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('[Analytics] ✅ Realtime connected!');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[Analytics] ❌ Realtime failed, using polling only');
+        }
       });
+
+    // Fallback: Poll every 5 seconds for reliability
+    const pollInterval = setInterval(() => {
+      fetchAnalytics(false);
+    }, 5000);
 
     // Cleanup subscription on unmount
     return () => {
       console.log('[Analytics] Cleaning up realtime subscription');
       (supabase as any).removeChannel(channel);
+      clearInterval(pollInterval);
     };
   }, []);
 
@@ -573,7 +612,7 @@ export const VisitorAnalytics = () => {
               </thead>
               <tbody>
                 {stats.recentVisitors.map((visitor, i) => (
-                  <tr key={i} className="border-b border-muted/30 hover:bg-muted/20">
+                  <tr key={visitor.id || i} className="border-b border-muted/30 hover:bg-muted/20">
                     <td className="p-2">
                       <div className="flex flex-col">
                         <div className="flex items-center gap-1">
@@ -583,6 +622,9 @@ export const VisitorAnalytics = () => {
                         {visitor.postal_code && (
                           <span className="text-xs text-muted-foreground ml-4">{visitor.postal_code}</span>
                         )}
+                        <span className="text-xs text-muted-foreground/50 ml-4 font-mono">
+                          {visitor.session_id?.slice(0, 15)}...
+                        </span>
                       </div>
                     </td>
                     <td className="p-2">
