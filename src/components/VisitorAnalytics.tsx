@@ -91,11 +91,11 @@ export const VisitorAnalytics = () => {
     try {
       console.log('[Analytics] 🔄 Fetching visitor sessions...');
       
-      // Fetch all visitor sessions - add timestamp to bust cache
+      // Fetch all visitor sessions - sort by last_seen_at to show recent activity
       const { data: sessions, error } = await (supabase as any)
         .from('visitor_sessions')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('last_seen_at', { ascending: false })
         .limit(500);
 
       if (error) {
@@ -104,6 +104,9 @@ export const VisitorAnalytics = () => {
       }
       
       console.log('[Analytics] ✅ Fetched', sessions?.length || 0, 'sessions');
+      if (sessions?.length > 0) {
+        console.log('[Analytics] Most recent:', sessions[0]?.city, sessions[0]?.device_type, sessions[0]?.last_seen_at);
+      }
 
       if (!sessions || sessions.length === 0) {
         setStats({

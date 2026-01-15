@@ -250,6 +250,7 @@ async function saveVisitorData(visitorData: Record<string, unknown>, retries = 3
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`[Visitor Tracking] 💾 Save attempt ${attempt}/${retries}...`);
+      showDebugToast(`💾 Save attempt ${attempt}/${retries}...`);
       
       // Try upsert first
       const { data, error } = await (supabase as any)
@@ -266,6 +267,7 @@ async function saveVisitorData(visitorData: Record<string, unknown>, retries = 3
       }
       
       console.error(`[Visitor Tracking] ❌ Attempt ${attempt} failed:`, error.message, error.code);
+      showDebugToast(`❌ DB Error: ${error.message} (${error.code})`, true);
       
       // If upsert failed, try direct insert (in case session_id doesn't exist yet)
       if (attempt === 1 && error.code === '23505') {
@@ -290,6 +292,7 @@ async function saveVisitorData(visitorData: Record<string, unknown>, retries = 3
       }
     } catch (e) {
       console.error(`[Visitor Tracking] ❌ Attempt ${attempt} exception:`, e);
+      showDebugToast(`❌ Exception: ${e}`, true);
       if (attempt < retries) {
         await new Promise(r => setTimeout(r, 1000 * attempt));
       }
@@ -310,6 +313,33 @@ export function setAnalyticsConsent(consent: boolean): void {
   localStorage.setItem('vectabase_analytics_consent', consent ? 'true' : 'false');
 }
 
+// Show debug toast on mobile (temporary for debugging)
+function showDebugToast(message: string, isError = false) {
+  // Only show in development or if debug param is set
+  if (!window.location.search.includes('debug=1') && window.location.hostname !== 'localhost' && !window.location.hostname.startsWith('192.168')) {
+    return;
+  }
+  
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    padding: 12px 16px;
+    background: ${isError ? '#ef4444' : '#22c55e'};
+    color: white;
+    border-radius: 8px;
+    font-size: 12px;
+    z-index: 99999;
+    font-family: monospace;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  `;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
 // Main tracking function - ROBUST VERSION
 export async function trackVisitor(): Promise<void> {
   const startTime = Date.now();
@@ -319,6 +349,8 @@ export async function trackVisitor(): Promise<void> {
   console.log('[Visitor Tracking] Protocol:', window.location.protocol);
   console.log('[Visitor Tracking] URL:', window.location.href);
   console.log('═══════════════════════════════════════════════════════');
+  
+  showDebugToast('🚀 Starting visitor tracking...');
   
   try {
     const sessionId = getSessionId();
@@ -402,14 +434,17 @@ export async function trackVisitor(): Promise<void> {
       console.log(`[Visitor Tracking] ✅ TRACKING COMPLETE in ${elapsed}ms`);
       console.log('═══════════════════════════════════════════════════════');
       sessionStorage.setItem(TRACKED_KEY, 'true');
+      showDebugToast(`✅ Tracked! ${visitorData.city}, ${visitorData.device_type} (${elapsed}ms)`);
     } else {
       console.error('═══════════════════════════════════════════════════════');
       console.error(`[Visitor Tracking] ❌ TRACKING FAILED after ${elapsed}ms`);
       console.error('═══════════════════════════════════════════════════════');
+      showDebugToast(`❌ TRACKING FAILED after ${elapsed}ms`, true);
     }
     
   } catch (e) {
     console.error('[Visitor Tracking] ❌ FATAL ERROR:', e);
+    showDebugToast(`❌ FATAL ERROR: ${e}`, true);
   }
 }
 
