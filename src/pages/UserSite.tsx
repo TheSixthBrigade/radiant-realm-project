@@ -16,7 +16,7 @@ import { PageManager, StorePage } from '@/components/PageManager';
 import { RoadmapPage } from '@/components/RoadmapPage';
 import { RoadmapDashboard } from '@/components/RoadmapDashboard';
 import { CustomRoadmapGallery } from '@/components/CustomRoadmapGallery';
-import { CommunityForums } from '@/components/CommunityForums';
+import { CommunityForumsOptimized as CommunityForums } from '@/components/CommunityForumsOptimized';
 import { AboutPage } from '@/components/AboutPage';
 import { TosPage } from '@/components/TosPage';
 import { setAffiliateRef, buildCheckoutUrl } from '@/lib/affiliateTracking';

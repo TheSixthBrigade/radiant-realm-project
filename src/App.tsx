@@ -12,9 +12,12 @@ import { useVisitorTracking } from "@/hooks/useVisitorTracking";
 import { lazy, Suspense } from "react";
 
 // Eager load critical pages
-import Index from "./pages/Index";
+import IndexRevamped from "./pages/IndexRevamped";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+
+// Old homepage for comparison
+const IndexOld = lazy(() => import("./pages/Index"));
 
 // Lazy load non-critical pages for better initial load
 const Shop = lazy(() => import("./pages/Shop"));
@@ -81,7 +84,8 @@ const App = () => {
                 <PageTransitionLoader />
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
-                    <Route path="/" element={<Index />} />
+                    <Route path="/" element={<IndexRevamped />} />
+                    <Route path="/old" element={<IndexOld />} />
                     <Route path="/shop" element={<Shop />} />
                     <Route path="/product/:id" element={<ProductDetail />} />
                     <Route path="/dashboard" element={<Dashboard />} />

@@ -1,0 +1,7 @@
+{
+  "key": "vb_secret_dev_1234567890",
+  "endpoint": "http://localhost:3000",
+  "projectId": 4,
+  "projectName": "Local Project",
+  "orgName": "Local Development"
+}

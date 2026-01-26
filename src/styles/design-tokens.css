@@ -1,62 +1,41 @@
-/* Design Tokens - Global Design System */
+/* Design Tokens - Vectabase Design System */
 
 :root {
-  /* ===== Core Brand Colors ===== */
-  --color-primary-blue: #2196F3;
-  --color-secondary-cyan: #00BCD4;
-  --color-dark-navy: #0A1929;
-  --color-light-gray: #F5F7FA;
-
-  /* ===== Homepage Colors ===== */
-  --home-gradient-start: #667eea;
-  --home-gradient-end: #764ba2;
-  --home-accent-pink: #f093fb;
-  --home-card-bg: rgba(255, 255, 255, 0.95);
-
-  /* ===== Dashboard Colors ===== */
-  --dash-bg: #F8FAFC;
-  --dash-card-bg: #FFFFFF;
-  --dash-accent-green: #10B981;
-  --dash-warning-amber: #F59E0B;
-  --dash-danger-red: #EF4444;
-
-  /* ===== Shop Colors ===== */
-  --shop-bg: #FFFFFF;
-  --shop-sidebar: #F9FAFB;
-  --shop-accent-indigo: #6366F1;
-  --shop-hover-indigo: #4F46E5;
-
-  /* ===== User Store Colors (Defaults) ===== */
-  --store-bg-default: #FAFAFA;
-  --store-accent-default: #2196F3;
-  --store-card-bg: #FFFFFF;
-
-  /* ===== Product Page Colors ===== */
-  --product-bg: #FFFFFF;
-  --product-accent: #2196F3;
-  --product-success: #10B981;
-  --product-info: #3B82F6;
-
+  /* ===== Brand Colors (Black, Gray, Green) ===== */
+  --color-primary-green: #22c55e;
+  --color-primary-green-dark: #16a34a;
+  --color-primary-green-light: #4ade80;
+  
+  --color-bg-black: #0a0a0a;
+  --color-bg-dark: #1a1a1a;
+  --color-surface-gray: #262626;
+  --color-surface-gray-light: #333333;
+  
+  --color-text-white: #ffffff;
+  --color-text-gray: #a3a3a3;
+  --color-text-gray-dark: #737373;
+  
   /* ===== Semantic Colors ===== */
-  --color-success: #10B981;
-  --color-warning: #F59E0B;
-  --color-error: #EF4444;
-  --color-info: #3B82F6;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
 
-  /* ===== Typography ===== */
-  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-family-heading: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-family-mono: 'JetBrains Mono', 'Courier New', monospace;
+  /* ===== Typography (Supabase-inspired) ===== */
+  --font-family-base: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-heading: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
 
-  /* Type Scale */
-  --font-size-display: 3.5rem;    /* 56px */
-  --font-size-h1: 2.5rem;         /* 40px */
-  --font-size-h2: 2rem;           /* 32px */
-  --font-size-h3: 1.5rem;         /* 24px */
-  --font-size-h4: 1.25rem;        /* 20px */
-  --font-size-body-lg: 1.125rem;  /* 18px */
-  --font-size-body: 1rem;         /* 16px */
-  --font-size-small: 0.875rem;    /* 14px */
+  /* Type Scale (Supabase-inspired) */
+  --font-size-hero: 3.5rem;       /* 56px - Hero headlines */
+  --font-size-h1: 2.5rem;         /* 40px - Page titles */
+  --font-size-h2: 2rem;           /* 32px - Section titles */
+  --font-size-h3: 1.5rem;         /* 24px - Subsections */
+  --font-size-h4: 1.25rem;        /* 20px - Card titles */
+  --font-size-body-lg: 1.125rem;  /* 18px - Large body */
+  --font-size-body: 1rem;         /* 16px - Default body */
+  --font-size-small: 0.875rem;    /* 14px - Small text */
+  --font-size-xs: 0.75rem;        /* 12px - Extra small */
 
   /* Font Weights */
   --font-weight-regular: 400;
@@ -66,40 +45,47 @@
   --font-weight-extrabold: 800;
 
   /* Line Heights */
-  --line-height-tight: 1.25;
+  --line-height-tight: 1.2;
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.75;
 
-  /* ===== Spacing System (8px base) ===== */
-  --space-xs: 0.25rem;   /* 4px */
-  --space-sm: 0.5rem;    /* 8px */
-  --space-md: 1rem;      /* 16px */
-  --space-lg: 1.5rem;    /* 24px */
-  --space-xl: 2rem;      /* 32px */
-  --space-2xl: 3rem;     /* 48px */
-  --space-3xl: 4rem;     /* 64px */
-  --space-4xl: 6rem;     /* 96px */
+  /* ===== Spacing System (4px base) ===== */
+  --space-1: 0.25rem;    /* 4px */
+  --space-2: 0.5rem;     /* 8px */
+  --space-3: 0.75rem;    /* 12px */
+  --space-4: 1rem;       /* 16px */
+  --space-6: 1.5rem;     /* 24px */
+  --space-8: 2rem;       /* 32px */
+  --space-12: 3rem;      /* 48px */
+  --space-16: 4rem;      /* 64px */
+  --space-24: 6rem;      /* 96px */
+  --space-32: 8rem;      /* 128px */
 
-  /* ===== Shadows ===== */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-
-  /* Colored Shadows */
-  --shadow-primary: 0 10px 25px -5px rgba(33, 150, 243, 0.3);
-  --shadow-success: 0 10px 25px -5px rgba(16, 185, 129, 0.3);
+  /* ===== Shadows (Subtle, Green-tinted) ===== */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
+  
+  /* Green Glow Shadows */
+  --shadow-glow-green: 0 0 20px rgba(34, 197, 94, 0.3), 0 0 40px rgba(34, 197, 94, 0.1);
+  --shadow-glow-green-lg: 0 0 30px rgba(34, 197, 94, 0.4), 0 0 60px rgba(34, 197, 94, 0.2);
+  --shadow-success: 0 10px 25px -5px rgba(34, 197, 94, 0.3);
   --shadow-warning: 0 10px 25px -5px rgba(245, 158, 11, 0.3);
   --shadow-error: 0 10px 25px -5px rgba(239, 68, 68, 0.3);
 
   /* ===== Border Radius ===== */
   --radius-sm: 0.25rem;   /* 4px */
-  --radius-md: 0.5rem;    /* 8px */
-  --radius-lg: 0.75rem;   /* 12px */
-  --radius-xl: 1rem;      /* 16px */
+  --radius-md: 0.5rem;    /* 8px - Buttons */
+  --radius-lg: 0.75rem;   /* 12px - Cards */
+  --radius-xl: 1rem;      /* 16px - Modals */
   --radius-2xl: 1.5rem;   /* 24px */
   --radius-full: 9999px;  /* Pill shape */
+  
+  /* Border Colors */
+  --border-default: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(255, 255, 255, 0.2);
+  --border-green: rgba(34, 197, 94, 0.3);
 
   /* ===== Transitions ===== */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -137,34 +123,55 @@
   }
 }
 
-/* Utility classes for common patterns */
-.gradient-primary {
-  background: linear-gradient(135deg, var(--color-primary-blue) 0%, var(--color-secondary-cyan) 100%);
+/* ===== Utility Classes ===== */
+
+/* Gradients */
+.gradient-green {
+  background: linear-gradient(135deg, var(--color-primary-green) 0%, var(--color-primary-green-dark) 100%);
 }
 
-.gradient-home-hero {
-  background: linear-gradient(135deg, var(--home-gradient-start) 0%, var(--home-gradient-end) 100%);
-}
-
-.text-gradient-primary {
-  background: linear-gradient(135deg, var(--color-primary-blue) 0%, var(--color-secondary-cyan) 100%);
+.text-gradient-green {
+  background: linear-gradient(135deg, var(--color-primary-green-light) 0%, var(--color-primary-green) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
+/* Glass Effect */
 .glass-card {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
+  background: rgba(38, 38, 38, 0.5);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-default);
 }
 
-.shadow-glow-primary {
-  box-shadow: 0 0 20px rgba(33, 150, 243, 0.4), 0 0 40px rgba(33, 150, 243, 0.2);
+/* Glow Effects */
+.glow-green {
+  box-shadow: var(--shadow-glow-green);
 }
 
-.shadow-glow-success {
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), 0 0 40px rgba(16, 185, 129, 0.2);
+.glow-green-lg {
+  box-shadow: var(--shadow-glow-green-lg);
+}
+
+/* Interactive States */
+.interactive-card {
+  transition: all 0.2s ease;
+  border: 1px solid var(--border-default);
+}
+
+.interactive-card:hover {
+  border-color: var(--border-green);
+  box-shadow: var(--shadow-glow-green);
+  transform: translateY(-2px);
+}
+
+/* Code Blocks */
+.code-block {
+  font-family: var(--font-family-mono);
+  background: var(--color-bg-dark);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
 }
 
 /* Animation utilities */

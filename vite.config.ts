@@ -12,13 +12,13 @@ function obfuscatorApiPlugin() {
     name: 'obfuscator-api',
     configureServer() {
       // Start the Python obfuscator API
-      const apiPath = path.resolve(__dirname, 'whitelsiting service/new_obfuscator/obfuscator_api.py');
+      const apiPath = path.resolve(__dirname, 'whitelisting_service/new_obfuscator/obfuscator_api.py');
       
       console.log('\n🔧 Starting Obfuscator API...');
       apiProcess = spawn('python', [apiPath], {
         stdio: ['ignore', 'pipe', 'pipe'],
-        shell: false,
-        cwd: path.resolve(__dirname, 'whitelsiting service/new_obfuscator')
+        shell: true,
+        cwd: path.resolve(__dirname, 'whitelisting_service/new_obfuscator')
       });
       
       apiProcess.stdout?.on('data', (data: Buffer) => {
@@ -42,11 +42,11 @@ function obfuscatorApiPlugin() {
       });
 
       // Start the Discord bot
-      const botPath = path.resolve(__dirname, 'whitelsiting service');
+      const botPath = path.resolve(__dirname, 'whitelisting_service');
       console.log('🤖 Starting Discord Bot...');
       botProcess = spawn('node', ['src/index.js'], {
         stdio: ['ignore', 'pipe', 'pipe'],
-        shell: false,
+        shell: true,
         cwd: botPath
       });
       
