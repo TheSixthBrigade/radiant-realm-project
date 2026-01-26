@@ -28,7 +28,7 @@ const AddProductContent = () => {
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [productFiles, setProductFiles] = useState<File[]>([]);
   const [fileUploading, setFileUploading] = useState(false);
-  
+
   const { user } = useAuth();
   const { addProduct } = useProducts();
   const { toast } = useToast();
@@ -60,9 +60,9 @@ const AddProductContent = () => {
           .select('stripe_connect_account_id, stripe_connect_status')
           .eq('user_id', user?.id)
           .single();
-        
+
         const hasStripe = data?.stripe_connect_account_id && (data?.stripe_connect_status === 'connected' || data?.stripe_connect_status === 'complete');
-        
+
         setStripeConnected(hasStripe);
       } catch (error) {
         console.error('Error checking payment methods:', error);
@@ -70,7 +70,7 @@ const AddProductContent = () => {
         setCheckingStripe(false);
       }
     };
-    
+
     if (user) checkPaymentMethods();
   });
 
@@ -87,7 +87,7 @@ const AddProductContent = () => {
       try {
         const fileExt = file.name.split('.').pop();
         const fileName = `files/${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-        
+
         // Try to upload to product-images bucket first (since it exists)
         const { error: uploadError } = await supabase.storage
           .from('product-images')
@@ -115,7 +115,7 @@ const AddProductContent = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) {
       toast({
         title: "Error",
@@ -271,7 +271,7 @@ const AddProductContent = () => {
         <AnimatedBackground />
         <Navigation />
         <div className="container mx-auto px-6 py-24">
-          <Card className="max-w-md mx-auto">
+          <Card padding="none" className="max-w-md mx-auto">
             <CardContent className="p-6 text-center">
               <h2 className="text-2xl font-bold mb-4">Login Required</h2>
               <p className="text-muted-foreground mb-4">
@@ -306,7 +306,7 @@ const AddProductContent = () => {
           animation: 'gridMove 20s linear infinite'
         }} />
       </div>
-      
+
       {/* Glowing Orbs - Dark Mode Only */}
       <div className="hidden dark:block fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-20 left-20 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
@@ -315,7 +315,7 @@ const AddProductContent = () => {
 
       <Navigation />
       <div className="container mx-auto px-6 py-24 relative z-10">
-        <Card className="max-w-2xl mx-auto dark:bg-[#0d1219]/80 dark:border-cyan-400/20 dark:backdrop-blur-sm">
+        <Card variant="glass" padding="none" className="max-w-2xl mx-auto dark:bg-[#0d1219]/80 dark:border-cyan-400/20 dark:backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-3xl text-center dark:text-cyan-400">Add New Product</CardTitle>
           </CardHeader>
@@ -384,7 +384,7 @@ const AddProductContent = () => {
                 </div>
                 <ImageUploadZone
                   value=""
-                  onChange={() => {}}
+                  onChange={() => { }}
                   label="Product Images (drag from Payhip or upload)"
                   multiple
                   values={imageUrls}
@@ -403,7 +403,7 @@ const AddProductContent = () => {
               {/* Product Files Section */}
               <div className="space-y-4">
                 <Label htmlFor="files">Product Files (Required)</Label>
-                
+
                 {/* File List */}
                 {productFiles.length > 0 && (
                   <div className="space-y-2">
@@ -461,9 +461,9 @@ const AddProductContent = () => {
                 )}
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full" 
+              <Button
+                type="submit"
+                className="w-full"
                 disabled={isLoading || productFiles.length === 0 || imageUrls.length === 0}
               >
                 {isLoading ? "Adding Product..." : "Add Product"}

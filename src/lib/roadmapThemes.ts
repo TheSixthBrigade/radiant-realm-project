@@ -71,7 +71,6 @@ export interface RoadmapSettings {
   cardPadding: string;
   glowIntensity: number;
   borderWidth: number;
-  cardGlowIntensity: number;
   // Floating orbs settings
   showFloatingOrbs: boolean;
   orbColor: string;
@@ -296,7 +295,6 @@ export const DEFAULT_ROADMAP_SETTINGS: RoadmapSettings = {
   cardPadding: 'p-10',
   glowIntensity: 50,
   borderWidth: 2,
-  cardGlowIntensity: 50,
   // Floating orbs defaults
   showFloatingOrbs: true,
   orbColor: '#22c55e',
