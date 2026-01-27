@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
  * Vectabase Unified Startup Script (CommonJS)
+ * Optimized for VPS Production
  */
 
 const { spawn } = require('child_process');
@@ -66,33 +67,31 @@ process.on('SIGTERM', cleanup);
 
 async function main() {
     const rootDir = __dirname;
-    const botDir = path.join(rootDir, 'whitelisting_service'); // Fixed path (underscore, no typo)
 
-    // 1. Start Discord Bot (Node.js)
-    const botIndexFile = path.join(botDir, 'src', 'index.js');
-
-    if (fs.existsSync(botIndexFile)) {
-        log('MAIN', 'Starting Discord Bot (Node.js)...', colors.magenta);
-        startProcess(
-            'DISCORD-BOT',
-            'node',
-            ['--experimental-specifier-resolution=node', 'src/index.js'],
-            botDir,
-            colors.magenta
-        );
-    } else {
-        log('MAIN', 'Discord bot not found at ' + botIndexFile + ', skipping...', colors.yellow);
-    }
-
-    // 2. Start Website (Vite)
-    log('MAIN', 'Starting Website...', colors.green);
+    // 1. Start Website (Vite)
+    // Inside the root workspace
+    log('MAIN', 'Starting Website (Dashboard)...', colors.green);
     startProcess(
         'WEBSITE',
         'npm',
-        ['run', 'dev'],
+        ['run', 'dev'], // Port 8081 usually
         rootDir,
         colors.green
     );
+
+    // 2. Start Backend API (Next.js or similar)
+    // Assuming database/event-horizon-ui is the API
+    const apiDir = path.join(rootDir, 'database', 'event-horizon-ui');
+    if (fs.existsSync(apiDir)) {
+        log('MAIN', 'Starting Backend API...', colors.cyan);
+        startProcess(
+            'API',
+            'npm',
+            ['run', 'start'], // Port 3000
+            apiDir,
+            colors.cyan
+        );
+    }
 }
 
 main().catch(err => {

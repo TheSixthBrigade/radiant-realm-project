@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js/dist/main/index.js';
+import { createClient } from '@supabase/supabase-js';
 
 /**
  * Supabase Configuration Service

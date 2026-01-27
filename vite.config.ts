@@ -7,34 +7,36 @@ import { spawn } from "child_process";
 function obfuscatorApiPlugin() {
   let apiProcess: ReturnType<typeof spawn> | null = null;
   let botProcess: ReturnType<typeof spawn> | null = null;
-  
+
   return {
     name: 'obfuscator-api',
     configureServer() {
+      if (process.env.NODE_ENV === 'production') return;
+
       // Start the Python obfuscator API
       const apiPath = path.resolve(__dirname, 'whitelisting_service/new_obfuscator/obfuscator_api.py');
-      
+
       console.log('\n🔧 Starting Obfuscator API...');
       apiProcess = spawn('python', [apiPath], {
         stdio: ['ignore', 'pipe', 'pipe'],
         shell: true,
         cwd: path.resolve(__dirname, 'whitelisting_service/new_obfuscator')
       });
-      
+
       apiProcess.stdout?.on('data', (data: Buffer) => {
         const msg = data.toString().trim();
         if (msg) console.log(`[Obfuscator API] ${msg}`);
       });
-      
+
       apiProcess.stderr?.on('data', (data: Buffer) => {
         const msg = data.toString().trim();
         if (msg) console.log(`[Obfuscator API] ${msg}`);
       });
-      
+
       apiProcess.on('error', (err) => {
         console.log(`[Obfuscator API] Failed to start: ${err.message}`);
       });
-      
+
       apiProcess.on('close', (code) => {
         if (code !== null && code !== 0) {
           console.log(`[Obfuscator API] Exited with code ${code}`);
@@ -49,34 +51,34 @@ function obfuscatorApiPlugin() {
         shell: true,
         cwd: botPath
       });
-      
+
       botProcess.stdout?.on('data', (data: Buffer) => {
         const msg = data.toString().trim();
         if (msg) console.log(`[Discord Bot] ${msg}`);
       });
-      
+
       botProcess.stderr?.on('data', (data: Buffer) => {
         const msg = data.toString().trim();
         if (msg) console.log(`[Discord Bot] ${msg}`);
       });
-      
+
       botProcess.on('error', (err) => {
         console.log(`[Discord Bot] Failed to start: ${err.message}`);
       });
-      
+
       botProcess.on('close', (code) => {
         if (code !== null && code !== 0) {
           console.log(`[Discord Bot] Exited with code ${code}`);
         }
       });
-      
+
       // Cleanup on server close
       process.on('SIGINT', () => {
         if (apiProcess) apiProcess.kill();
         if (botProcess) botProcess.kill();
         process.exit();
       });
-      
+
       process.on('SIGTERM', () => {
         if (apiProcess) apiProcess.kill();
         if (botProcess) botProcess.kill();
