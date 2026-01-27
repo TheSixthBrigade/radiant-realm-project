@@ -1,6 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-// If the above fails in your ESM environment, use:
-// import { createClient } from '@supabase/supabase-js/dist/main/index.js';
+import { createClient } from '@supabase/supabase-js/dist/main/index.js';
 
 /**
  * Supabase Configuration Service
