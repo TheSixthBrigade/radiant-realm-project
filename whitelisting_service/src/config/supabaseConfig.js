@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+// If the above fails in your ESM environment, use:
+// import { createClient } from '@supabase/supabase-js/dist/main/index.js';
 
 /**
  * Supabase Configuration Service
@@ -25,7 +27,7 @@ const FETCH_TIMEOUT = 10000; // 10 second timeout
 function withTimeout(promise, ms, errorMessage) {
   return Promise.race([
     promise,
-    new Promise((_, reject) => 
+    new Promise((_, reject) =>
       setTimeout(() => reject(new Error(errorMessage)), ms)
     )
   ]);
@@ -43,7 +45,7 @@ export async function fetchConfig() {
 
   try {
     console.log('🔄 Fetching config from Supabase...');
-    
+
     const { data, error } = await withTimeout(
       supabase.from('bot_config').select('key, value'),
       FETCH_TIMEOUT,
@@ -74,13 +76,13 @@ export async function fetchConfig() {
     return config;
   } catch (error) {
     console.error('❌ Error fetching config:', error.message);
-    
+
     // Return cached config if available
     if (configCache) {
       console.warn('⚠️ Using stale cached config due to error');
       return configCache;
     }
-    
+
     throw error;
   }
 }
