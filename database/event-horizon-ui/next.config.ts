@@ -1,10 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  basePath: '/database',
-  
-  // Ensure assets are served correctly
-  assetPrefix: '/database',
+  // No basePath - app runs at root of db.vectabase.com
   
   // Allow the app to work behind a reverse proxy
   async headers() {
