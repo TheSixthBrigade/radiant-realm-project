@@ -18,7 +18,8 @@
     "test:watch": "vitest",
     "migrate": "node scripts/apply-migrations.js",
     "migrate:supabase": "node scripts/migrate-from-supabase.js",
-    "backup": "node scripts/backup-database.js"
+    "backup": "node scripts/backup-database.js",
+    "snapshot": "node scripts/snapshot-data.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
