@@ -17,8 +17,6 @@ services:
   # In production, this runs the Rust binary. Here we use a lightweight Alpine proxy mock or placeholder.
   pqc-gateway:
     image: nginx:alpine
-    ports:
-      - "8081:80"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
