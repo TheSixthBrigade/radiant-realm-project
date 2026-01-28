@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+/* Custom Premium Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #262626;
+    border-radius: 10px;
+    transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #3ecf8e;
+}
+
+/* Custom Scrollbar class for specific containers */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #1a1a1a;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #3ecf8e;
+}
+
+
+:root {
+    --background: #0d0d0d;
+    --surface: #141414;
+    --surface-hover: #1a1a1a;
+    --border: #262626;
+    --foreground: #ededed;
+    --muted: #888888;
+    --brand: #3ecf8e;
+    --brand-hover: #4ade80;
+}
+
+body {
+    color: var(--foreground);
+    background: var(--background);
+    font-family: inherit;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.font-mono {
+    font-family: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+@layer utilities {
+    .panel {
+        background: linear-gradient(145deg, #141414 0%, #0f0f0f 100%);
+        border: 1px solid var(--border);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .input {
+        background-color: #0a0a0a;
+        border: 1px solid #262626;
+        color: #ededed;
+        transition: all 0.2s;
+    }
+
+    .input:focus {
+        border-color: var(--brand);
+        box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.1);
+        outline: none;
+    }
+}
+
+/* Global Syntax Highlighting (Outside Layers) */
+.syntax-keyword {
+    color: #ff79c6 !important;
+    font-weight: bold !important;
+}
+
+.syntax-string {
+    color: #f1fa8c !important;
+}
+
+.syntax-comment {
+    color: #6272a4 !important;
+    font-style: italic !important;
+}
+
+.syntax-function {
+    color: #50fa7b !important;
+}
+
+.syntax-constant {
+    color: #bd93f9 !important;
+}
+
+.syntax-builtin {
+    color: #8be9fd !important;
+    font-weight: bold !important;
+}
+
+.syntax-number {
+    color: #ffb86c !important;
+}
+
+.editor-font {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+    font-variant-ligatures: none;
+}
