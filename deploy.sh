@@ -62,7 +62,21 @@ echo "✅ .env.local created with OAuth keys"
 ########################
 # 3. DOCKER DEPLOYMENT
 ########################
-echo "🐳 Deploying Docker stack..."
+echo "🐳 Deploying Services..."
+
+# 3a. Start Main Website (Host Process)
+echo "🌐 Building Main Website..."
+cd "$BASE_DIR"
+npm install
+npm run build
+
+echo "⚡ Starting Main Website on 8080..."
+# Use PM2 to serve static build on port 8080
+pm2 delete "vectabase-main" 2>/dev/null || true
+pm2 serve dist 8080 --name "vectabase-main" --spa
+
+# 3b. Start Database UI (Docker)
+echo "📦 Deploying Database Interface..."
 cd "$DB_DIR"
 
 # verify nginx config is a file and not a dir
