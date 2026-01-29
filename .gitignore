@@ -69,4 +69,15 @@ apply-*.js
 run-*.js
 smart-*.js
 direct-*.js
-*.sql
+
+# SQL files in root (temp/debug files)
+/*.sql
+
+# BUT keep important database files
+!database/schema.sql
+!database/seed-data.sql
+!database/migrations/*.sql
+!database/*.sql
+
+# Database backups (don't commit full backups, only seed data)
+database/backups/

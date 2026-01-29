@@ -1,0 +1,1 @@
+﻿CREATE TABLE tags (id SERIAL PRIMARY KEY, label TEXT);

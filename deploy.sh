@@ -36,6 +36,56 @@ git checkout "$BRANCH"
 git reset --hard "origin/$BRANCH"
 
 ########################
+# 1.5. DATABASE MIGRATIONS
+########################
+echo "🗄️ Running database migrations..."
+
+# Check if PostgreSQL is accessible
+if command -v psql &> /dev/null; then
+    # Run main Vectabase migrations
+    if [ -f "$BASE_DIR/scripts/apply-migrations.js" ]; then
+        echo "📄 Applying main Vectabase schema and migrations..."
+        cd "$BASE_DIR"
+        node scripts/apply-migrations.js || echo "⚠️ Migration warnings (may be OK if tables exist)"
+    fi
+    
+    # Run Event Horizon UI schema (for db.vectabase.com)
+    if [ -f "$UI_DIR/schema.sql" ]; then
+        echo "📄 Applying Event Horizon UI schema..."
+        # Source the Event Horizon env if it exists
+        if [ -f "$UI_DIR/.env.local" ]; then
+            source "$UI_DIR/.env.local"
+        fi
+        EH_DB_HOST="${DB_HOST:-localhost}"
+        EH_DB_PORT="${DB_PORT:-5432}"
+        EH_DB_NAME="${DB_NAME:-postgres}"
+        EH_DB_USER="${DB_USER:-postgres}"
+        EH_DB_PASS="${DB_PASSWORD:-postgres}"
+        
+        PGPASSWORD="$EH_DB_PASS" psql -h "$EH_DB_HOST" -p "$EH_DB_PORT" -U "$EH_DB_USER" -d "$EH_DB_NAME" -f "$UI_DIR/schema.sql" 2>&1 || echo "⚠️ Event Horizon schema may already exist (OK)"
+        echo "✅ Event Horizon schema applied"
+    fi
+    
+    # Import seed data if it exists and DB is empty
+    if [ -f "$BASE_DIR/database/seed-data.sql" ]; then
+        echo "🌱 Checking for seed data..."
+        # Only seed if users table is empty
+        USER_COUNT=$(psql -h localhost -U vectabase_admin -d vectabase -t -c "SELECT COUNT(*) FROM users;" 2>/dev/null || echo "0")
+        if [ "$USER_COUNT" -lt "1" ]; then
+            echo "📥 Importing seed data..."
+            psql -h localhost -U vectabase_admin -d vectabase -f "$BASE_DIR/database/seed-data.sql" || true
+        else
+            echo "✅ Database already has data, skipping seed"
+        fi
+    fi
+else
+    echo "⚠️ psql not found, skipping direct migrations"
+    echo "   Database will be managed by Docker containers"
+fi
+
+cd "$BASE_DIR"
+
+########################
 # 2. ENVIRONMENT INJECTION
 ########################
 echo "🔑 Configuring secrets..."

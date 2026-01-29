@@ -37,6 +37,42 @@ else
     echo "⚠️ docker-compose.yml not found at $DB_DIR/docker-compose.yml"
 fi
 
+# 2.6 Run Database Schema Migrations
+echo "🗄️ Running Event Horizon database schema..."
+if [ -f "$SCRIPT_DIR/schema.sql" ]; then
+    # Wait for PostgreSQL to be ready
+    sleep 5
+    
+    # Get DB credentials from .env.local or use defaults
+    if [ -f "$SCRIPT_DIR/.env.local" ]; then
+        source "$SCRIPT_DIR/.env.local"
+    fi
+    
+    DB_HOST="${DB_HOST:-localhost}"
+    DB_PORT="${DB_PORT:-5432}"
+    DB_NAME="${DB_NAME:-postgres}"
+    DB_USER="${DB_USER:-postgres}"
+    
+    echo "📄 Applying Event Horizon schema to $DB_NAME..."
+    
+    # Try to run schema (will skip if tables exist due to IF NOT EXISTS)
+    if command -v psql &> /dev/null; then
+        PGPASSWORD="${DB_PASSWORD:-postgres}" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$SCRIPT_DIR/schema.sql" 2>&1 || echo "⚠️ Schema may already exist (OK)"
+        echo "✅ Database schema applied"
+        
+        # Import seed data if it exists
+        if [ -f "$SCRIPT_DIR/seed-data.sql" ]; then
+            echo "🌱 Importing seed data..."
+            PGPASSWORD="${DB_PASSWORD:-postgres}" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$SCRIPT_DIR/seed-data.sql" 2>&1 || echo "⚠️ Some seed data may already exist (OK)"
+            echo "✅ Seed data imported"
+        fi
+    else
+        echo "⚠️ psql not found - schema will be applied by Docker container"
+    fi
+else
+    echo "⚠️ schema.sql not found at $SCRIPT_DIR/schema.sql"
+fi
+
 # 3. Build Process
 echo "🏗️ Installing dependencies and building..."
 npm install
