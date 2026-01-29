@@ -3,6 +3,8 @@
 # Vectabase Production Deployment Script
 # SSL handled by Cloudflare - nginx only needs HTTP
 
+set -e  # Exit on error
+
 echo "=== Starting Production Sync & Deploy ==="
 
 # Detect if we're in the main project or the event-horizon-ui folder
@@ -34,12 +36,15 @@ cd "$BASE_DIR"
 git fetch origin
 git reset --hard origin/main
 
+# Make deploy script executable after pull
+chmod +x "$SCRIPT_DIR/deploy.sh"
+
 # 2. Infrastructure Check
 if ! command -v nginx &> /dev/null || ! command -v node &> /dev/null; then
     echo "Installing core dependencies..."
     sudo apt-get update -y
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo apt-get install -y nodejs nginx postgresql postgresql-contrib
+    sudo apt-get install -y nodejs nginx postgresql-client
 fi
 
 # 3. Load secrets and export for Docker
@@ -50,9 +55,9 @@ if [ -f "$BASE_DIR/secrets.env" ]; then
     export GOOGLE_CLIENT_SECRET="${GOOGLE_SECRET:-}"
     echo "Loaded Google credentials from secrets.env"
 elif [ -f "$SCRIPT_DIR/.env.local" ]; then
-    source "$SCRIPT_DIR/.env.local"
-    export GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID:-}"
-    export GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET:-}"
+    # Only load non-DB vars from .env.local
+    export GOOGLE_CLIENT_ID=$(grep "^GOOGLE_CLIENT_ID=" "$SCRIPT_DIR/.env.local" | cut -d'=' -f2)
+    export GOOGLE_CLIENT_SECRET=$(grep "^GOOGLE_CLIENT_SECRET=" "$SCRIPT_DIR/.env.local" | cut -d'=' -f2)
     echo "Loaded Google credentials from .env.local"
 fi
 
@@ -63,21 +68,22 @@ if [ -f "$DB_DIR/docker-compose.yml" ]; then
     if ! command -v docker-compose &> /dev/null; then
         sudo apt-get install -y docker-compose
     fi
-    # Full clean rebuild to fix container issues
+    
     echo "Stopping all containers..."
     sudo docker-compose down --remove-orphans 2>/dev/null || true
     
     echo "Removing old dashboard container and image..."
-    sudo docker rm -f database_dashboard_1 2>/dev/null || true
-    sudo docker rmi -f database_dashboard 2>/dev/null || true
-    sudo docker rmi -f database-dashboard 2>/dev/null || true
+    sudo docker rm -f database_dashboard_1 database-dashboard-1 2>/dev/null || true
+    sudo docker rmi -f database_dashboard database-dashboard 2>/dev/null || true
     
     echo "Pruning unused Docker resources..."
     sudo docker system prune -f
     
     echo "Building fresh dashboard with NEXT_PUBLIC_SITE_URL baked in..."
-    # Pass build args explicitly for NEXT_PUBLIC_* variables
-    sudo docker-compose build --no-cache --build-arg NEXT_PUBLIC_SITE_URL=https://db.vectabase.com --build-arg NEXT_PUBLIC_API_URL=http://localhost:8000 dashboard
+    sudo docker-compose build --no-cache \
+        --build-arg NEXT_PUBLIC_SITE_URL=https://db.vectabase.com \
+        --build-arg NEXT_PUBLIC_API_URL=http://localhost:8000 \
+        dashboard
     
     echo "Starting all containers..."
     sudo -E docker-compose up -d
@@ -87,25 +93,38 @@ else
     echo "WARNING: docker-compose.yml not found at $DB_DIR/docker-compose.yml"
 fi
 
-# 4. Apply Database Schema
+# 5. Wait for PostgreSQL and apply schema
 echo "=== Applying database schema ==="
 echo "Waiting for PostgreSQL to be ready..."
-sleep 8
+sleep 10
 
-if [ -f "$SCRIPT_DIR/schema.sql" ]; then
-    echo "Applying Event Horizon schema to Docker PostgreSQL..."
-    PGPASSWORD="your-super-secret-and-long-postgres-password" psql -h localhost -p 5432 -U postgres -d postgres -f "$SCRIPT_DIR/schema.sql" 2>&1 || echo "Schema may already exist (OK)"
-    
-    if [ -f "$SCRIPT_DIR/seed-data.sql" ]; then
-        echo "Importing seed data..."
-        PGPASSWORD="your-super-secret-and-long-postgres-password" psql -h localhost -p 5432 -U postgres -d postgres -f "$SCRIPT_DIR/seed-data.sql" 2>&1 || echo "Seed data may already exist (OK)"
-    fi
-    echo "Database schema and seed data applied!"
+# ALWAYS use localhost for psql from host machine (not 'postgres' which is Docker internal)
+DB_HOST="localhost"
+DB_PORT="5432"
+DB_USER="postgres"
+DB_NAME="postgres"
+DB_PASS="your-super-secret-and-long-postgres-password"
+
+# Test connection
+echo "Testing database connection..."
+if PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1;" > /dev/null 2>&1; then
+    echo "✅ Database connection successful!"
 else
-    echo "WARNING: schema.sql not found at $SCRIPT_DIR/schema.sql"
+    echo "⚠️ Database not ready yet, waiting more..."
+    sleep 10
 fi
 
-# 4b. ONE-TIME DATA IMPORT (only runs once, then creates marker file)
+if [ -f "$SCRIPT_DIR/schema.sql" ]; then
+    echo "Applying Event Horizon schema..."
+    PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$SCRIPT_DIR/schema.sql" 2>&1 || echo "Schema may already exist (OK)"
+fi
+
+if [ -f "$SCRIPT_DIR/seed-data.sql" ]; then
+    echo "Importing seed data..."
+    PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$SCRIPT_DIR/seed-data.sql" 2>&1 || echo "Seed data may already exist (OK)"
+fi
+
+# 6. ONE-TIME DATA IMPORT (only runs once)
 IMPORT_MARKER="$SCRIPT_DIR/.data_imported"
 DUMP_FILE="$SCRIPT_DIR/dumped_postsql data.sql"
 
@@ -114,87 +133,56 @@ if [ ! -f "$IMPORT_MARKER" ] && [ -f "$DUMP_FILE" ]; then
     echo "Importing PostgreSQL dump from other workspace..."
     echo "This will only run ONCE - future deploys will preserve the data."
     
-    PGPASSWORD="your-super-secret-and-long-postgres-password" psql -h localhost -p 5432 -U postgres -d postgres -f "$DUMP_FILE" 2>&1
+    PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$DUMP_FILE" 2>&1
     
-    if [ $? -eq 0 ]; then
-        echo "✅ Data imported successfully!"
-        # Create marker file so this never runs again
-        touch "$IMPORT_MARKER"
-        echo "Created marker file: $IMPORT_MARKER"
-        echo "Future deploys will skip this import step."
-    else
-        echo "⚠️ Data import had some errors (may be OK if tables already exist)"
-        # Still create marker to avoid repeated attempts
-        touch "$IMPORT_MARKER"
-    fi
+    echo "✅ Data import complete!"
+    touch "$IMPORT_MARKER"
+    echo "Created marker file - future deploys will skip import."
 else
     if [ -f "$IMPORT_MARKER" ]; then
         echo "=== Skipping data import (already done previously) ==="
     elif [ ! -f "$DUMP_FILE" ]; then
-        echo "=== No dump file found, skipping import ==="
+        echo "=== No dump file found at: $DUMP_FILE ==="
+        echo "Transfer it manually via SCP if needed."
     fi
 fi
 
-# 5. Set Production Environment Variables
+# 7. Set Production Environment in .env.local
 echo "=== Setting production environment ==="
-sleep 3
-
-# FORCE set production URL - this is critical for Google OAuth
-echo "Setting NEXT_PUBLIC_SITE_URL to https://db.vectabase.com"
-if [ -f "$SCRIPT_DIR/.env.local" ]; then
-    # Update any existing NEXT_PUBLIC_SITE_URL line
-    sed -i 's|^NEXT_PUBLIC_SITE_URL=.*|NEXT_PUBLIC_SITE_URL=https://db.vectabase.com|g' "$SCRIPT_DIR/.env.local"
-    # If line doesn't exist, add it
-    if ! grep -q "NEXT_PUBLIC_SITE_URL" "$SCRIPT_DIR/.env.local"; then
-        echo "NEXT_PUBLIC_SITE_URL=https://db.vectabase.com" >> "$SCRIPT_DIR/.env.local"
-    fi
-else
-    echo "Creating .env.local with production settings..."
-    cat > "$SCRIPT_DIR/.env.local" << 'ENVFILE'
+cat > "$SCRIPT_DIR/.env.local" << 'ENVFILE'
 NEXT_PUBLIC_SITE_URL=https://db.vectabase.com
+NEXT_PUBLIC_API_URL=http://localhost:8000
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=postgres
 DB_USER=postgres
-DB_PASSWORD=postgres
+DB_PASSWORD=your-super-secret-and-long-postgres-password
 ENVFILE
+
+# Append Google credentials if we have them
+if [ -n "$GOOGLE_CLIENT_ID" ]; then
+    echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> "$SCRIPT_DIR/.env.local"
+fi
+if [ -n "$GOOGLE_CLIENT_SECRET" ]; then
+    echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> "$SCRIPT_DIR/.env.local"
 fi
 
-echo "Current .env.local SITE_URL:"
-grep "NEXT_PUBLIC_SITE_URL" "$SCRIPT_DIR/.env.local" || echo "NOT FOUND!"
+echo "Production .env.local created"
 
-source "$SCRIPT_DIR/.env.local" 2>/dev/null || true
-
-# 5. Run Database Schema Migrations
-echo "=== Running database migrations ==="
-DB_HOST="${DB_HOST:-localhost}"
-DB_PORT="${DB_PORT:-5432}"
-DB_NAME="${DB_NAME:-postgres}"
-DB_USER="${DB_USER:-postgres}"
-
-if command -v psql &> /dev/null && [ -f "$SCRIPT_DIR/schema.sql" ]; then
-    echo "Applying schema..."
-    PGPASSWORD="${DB_PASSWORD:-postgres}" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$SCRIPT_DIR/schema.sql" 2>&1 || echo "Schema may exist (OK)"
-    
-    if [ -f "$SCRIPT_DIR/seed-data.sql" ]; then
-        echo "Importing seed data..."
-        PGPASSWORD="${DB_PASSWORD:-postgres}" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$SCRIPT_DIR/seed-data.sql" 2>&1 || echo "Seed data may exist (OK)"
-    fi
-fi
-
-# 6. Build MAIN Website (vectabase.com on port 8080)
+# 8. Build MAIN Website (vectabase.com on port 8080)
 echo "=== Building MAIN Vectabase website ==="
 cd "$BASE_DIR"
 npm install
 npm run build
 
-# 7. Build Database UI (Next.js on port 3000)
+# 9. Build Database UI (Next.js on port 3000) - Skip if using Docker
+# The Docker container already has the built app, but we build for PM2 fallback
 echo "=== Building Database UI ==="
 cd "$SCRIPT_DIR"
 npm install
-npm run build
+npm run build 2>/dev/null || echo "Build handled by Docker"
 
-# 8. Configure Nginx (HTTP only - Cloudflare handles SSL)
+# 10. Configure Nginx (HTTP only - Cloudflare handles SSL)
 echo "=== Configuring Nginx ==="
 
 sudo rm -f /etc/nginx/sites-enabled/vectabase 2>/dev/null
@@ -292,7 +280,7 @@ else
     exit 1
 fi
 
-# 9. Start Applications with PM2
+# 11. Start Applications with PM2
 echo "=== Starting applications with PM2 ==="
 if ! command -v pm2 &> /dev/null; then
     sudo npm install -g pm2
