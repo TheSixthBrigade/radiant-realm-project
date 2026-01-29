@@ -98,14 +98,14 @@ echo "=== Setting up database ==="
 echo "Waiting for PostgreSQL to be ready..."
 sleep 10
 
-# ALWAYS use localhost for psql from host machine (not 'postgres' which is Docker internal)
+# ALWAYS use localhost for psql from host machine
 DB_HOST="localhost"
 DB_PORT="5432"
 DB_USER="postgres"
 DB_NAME="postgres"
 DB_PASS="your-super-secret-and-long-postgres-password"
 
-# Test connection
+# Test connection with retries
 echo "Testing database connection..."
 for i in 1 2 3 4 5; do
     if PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1;" > /dev/null 2>&1; then
@@ -117,58 +117,15 @@ for i in 1 2 3 4 5; do
     fi
 done
 
-# 6. ONE-TIME DATA IMPORT - WIPES EVERYTHING AND IMPORTS FRESH
-IMPORT_MARKER="$SCRIPT_DIR/.data_imported"
-DUMP_FILE="$SCRIPT_DIR/dump_data.sql"
-
-if [ ! -f "$IMPORT_MARKER" ] && [ -f "$DUMP_FILE" ]; then
-    echo "=== ONE-TIME FULL DATABASE IMPORT ==="
-    echo "⚠️ WIPING ALL EXISTING DATA AND IMPORTING FRESH DUMP..."
-    echo "This will only run ONCE - future deploys will preserve the data."
-    
-    # Drop ALL tables in public schema first to avoid conflicts
-    echo "Dropping all existing tables..."
-    PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" << 'DROPSQL'
-DO $$ 
-DECLARE 
-    r RECORD;
-BEGIN
-    -- Drop all tables in public schema
-    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
-        EXECUTE 'DROP TABLE IF EXISTS public.' || quote_ident(r.tablename) || ' CASCADE';
-    END LOOP;
-    -- Drop all sequences
-    FOR r IN (SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public') LOOP
-        EXECUTE 'DROP SEQUENCE IF EXISTS public.' || quote_ident(r.sequence_name) || ' CASCADE';
-    END LOOP;
-END $$;
-DROPSQL
-    
-    echo "Importing dump file..."
-    PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$DUMP_FILE" 2>&1
-    
-    echo "✅ Full database import complete!"
-    touch "$IMPORT_MARKER"
-    echo "Created marker file - future deploys will NOT wipe data."
-    
-elif [ -f "$IMPORT_MARKER" ]; then
-    echo "=== Skipping data import (already done previously) ==="
-    echo "To re-import, delete: $IMPORT_MARKER"
-    
-    # Only apply schema updates (not full wipe) for subsequent deploys
-    if [ -f "$SCRIPT_DIR/schema.sql" ]; then
-        echo "Applying any schema updates..."
-        PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$SCRIPT_DIR/schema.sql" 2>&1 || echo "Schema up to date"
-    fi
+# 6. Apply clean schema (this drops and recreates everything)
+echo "=== Applying Event Horizon schema ==="
+if [ -f "$SCRIPT_DIR/schema.sql" ]; then
+    echo "Running schema.sql (drops and recreates all tables)..."
+    PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$SCRIPT_DIR/schema.sql" 2>&1
+    echo "✅ Schema applied!"
 else
-    echo "=== No dump file found at: $DUMP_FILE ==="
-    echo "Applying schema.sql instead..."
-    if [ -f "$SCRIPT_DIR/schema.sql" ]; then
-        PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$SCRIPT_DIR/schema.sql" 2>&1
-    fi
-    if [ -f "$SCRIPT_DIR/seed-data.sql" ]; then
-        PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$SCRIPT_DIR/seed-data.sql" 2>&1
-    fi
+    echo "❌ ERROR: schema.sql not found!"
+    exit 1
 fi
 
 # 7. Set Production Environment in .env.local
