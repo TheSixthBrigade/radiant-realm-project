@@ -63,7 +63,10 @@ fi
 echo "�️ Running Event Horizon database schema..."
 sleep 3  # Wait for PostgreSQL
 
+# Update .env.local with production URL for Google OAuth
 if [ -f "$SCRIPT_DIR/.env.local" ]; then
+    # Replace localhost URL with production URL
+    sed -i 's|NEXT_PUBLIC_SITE_URL=http://localhost:3000|NEXT_PUBLIC_SITE_URL=https://db.vectabase.com|g' "$SCRIPT_DIR/.env.local"
     source "$SCRIPT_DIR/.env.local"
 fi
 
