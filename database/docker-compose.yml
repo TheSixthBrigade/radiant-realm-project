@@ -10,8 +10,17 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_SITE_URL=https://db.vectabase.com
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=your-super-secret-and-long-postgres-password
     depends_on:
       - orchestrator
+      - postgres
 
   # 2. The PQC Auth Gateway (Simulated)
   # In production, this runs the Rust binary. Here we use a lightweight Alpine proxy mock or placeholder.

@@ -42,14 +42,31 @@ if ! command -v nginx &> /dev/null || ! command -v node &> /dev/null; then
     sudo apt-get install -y nodejs nginx postgresql postgresql-contrib
 fi
 
-# 3. Start Database (Docker Compose)
+# 3. Load secrets and export for Docker
+echo "=== Loading secrets ==="
+if [ -f "$BASE_DIR/secrets.env" ]; then
+    source "$BASE_DIR/secrets.env"
+    export GOOGLE_CLIENT_ID="${GOOGLE_ID:-}"
+    export GOOGLE_CLIENT_SECRET="${GOOGLE_SECRET:-}"
+    echo "Loaded Google credentials from secrets.env"
+elif [ -f "$SCRIPT_DIR/.env.local" ]; then
+    source "$SCRIPT_DIR/.env.local"
+    export GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID:-}"
+    export GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET:-}"
+    echo "Loaded Google credentials from .env.local"
+fi
+
+# 4. Start Database (Docker Compose)
 echo "=== Starting database services ==="
 if [ -f "$DB_DIR/docker-compose.yml" ]; then
     cd "$DB_DIR"
     if ! command -v docker-compose &> /dev/null; then
         sudo apt-get install -y docker-compose
     fi
-    sudo docker-compose up -d
+    # Rebuild to pick up new environment variables
+    sudo -E docker-compose down
+    sudo -E docker-compose build --no-cache dashboard
+    sudo -E docker-compose up -d
     cd "$BASE_DIR"
 else
     echo "WARNING: docker-compose.yml not found at $DB_DIR/docker-compose.yml"
