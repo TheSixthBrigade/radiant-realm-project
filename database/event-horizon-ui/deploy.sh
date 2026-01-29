@@ -63,10 +63,23 @@ if [ -f "$DB_DIR/docker-compose.yml" ]; then
     if ! command -v docker-compose &> /dev/null; then
         sudo apt-get install -y docker-compose
     fi
-    # Rebuild to pick up new environment variables
-    sudo -E docker-compose down
+    # Full clean rebuild to fix container issues
+    echo "Stopping all containers..."
+    sudo docker-compose down --remove-orphans 2>/dev/null || true
+    
+    echo "Removing old dashboard container and image..."
+    sudo docker rm -f database_dashboard_1 2>/dev/null || true
+    sudo docker rmi -f database_dashboard 2>/dev/null || true
+    
+    echo "Pruning unused Docker resources..."
+    sudo docker system prune -f
+    
+    echo "Building fresh dashboard with new env vars..."
     sudo -E docker-compose build --no-cache dashboard
+    
+    echo "Starting all containers..."
     sudo -E docker-compose up -d
+    
     cd "$BASE_DIR"
 else
     echo "WARNING: docker-compose.yml not found at $DB_DIR/docker-compose.yml"
