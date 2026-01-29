@@ -85,7 +85,25 @@ else
     echo "WARNING: docker-compose.yml not found at $DB_DIR/docker-compose.yml"
 fi
 
-# 4. Set Production Environment Variables
+# 4. Apply Database Schema
+echo "=== Applying database schema ==="
+echo "Waiting for PostgreSQL to be ready..."
+sleep 8
+
+if [ -f "$SCRIPT_DIR/schema.sql" ]; then
+    echo "Applying Event Horizon schema to Docker PostgreSQL..."
+    PGPASSWORD="your-super-secret-and-long-postgres-password" psql -h localhost -p 5432 -U postgres -d postgres -f "$SCRIPT_DIR/schema.sql" 2>&1 || echo "Schema may already exist (OK)"
+    
+    if [ -f "$SCRIPT_DIR/seed-data.sql" ]; then
+        echo "Importing seed data..."
+        PGPASSWORD="your-super-secret-and-long-postgres-password" psql -h localhost -p 5432 -U postgres -d postgres -f "$SCRIPT_DIR/seed-data.sql" 2>&1 || echo "Seed data may already exist (OK)"
+    fi
+    echo "Database schema and seed data applied!"
+else
+    echo "WARNING: schema.sql not found at $SCRIPT_DIR/schema.sql"
+fi
+
+# 5. Set Production Environment Variables
 echo "=== Setting production environment ==="
 sleep 3
 
