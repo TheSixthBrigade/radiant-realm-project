@@ -117,15 +117,23 @@ for i in 1 2 3 4 5; do
     fi
 done
 
-# 6. Apply clean schema (this drops and recreates everything)
-echo "=== Applying Event Horizon schema ==="
-if [ -f "$SCRIPT_DIR/schema.sql" ]; then
-    echo "Running schema.sql (drops and recreates all tables)..."
-    PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$SCRIPT_DIR/schema.sql" 2>&1
-    echo "✅ Schema applied!"
+# 6. Apply schema ONLY ONCE (check for marker file)
+SCHEMA_MARKER="$SCRIPT_DIR/.schema_applied"
+
+if [ ! -f "$SCHEMA_MARKER" ]; then
+    echo "=== Applying Event Horizon schema (first time only) ==="
+    if [ -f "$SCRIPT_DIR/schema.sql" ]; then
+        echo "Running schema.sql..."
+        PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$SCRIPT_DIR/schema.sql" 2>&1
+        touch "$SCHEMA_MARKER"
+        echo "✅ Schema applied! Marker created - won't run again."
+    else
+        echo "❌ ERROR: schema.sql not found!"
+        exit 1
+    fi
 else
-    echo "❌ ERROR: schema.sql not found!"
-    exit 1
+    echo "=== Skipping schema (already applied) ==="
+    echo "To re-apply schema, delete: $SCHEMA_MARKER"
 fi
 
 # 7. Set Production Environment in .env.local
