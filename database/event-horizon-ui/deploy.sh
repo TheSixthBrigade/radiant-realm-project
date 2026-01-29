@@ -126,7 +126,7 @@ fi
 
 # 6. ONE-TIME DATA IMPORT (only runs once)
 IMPORT_MARKER="$SCRIPT_DIR/.data_imported"
-DUMP_FILE="$SCRIPT_DIR/dumped_postsql data.sql"
+DUMP_FILE="$SCRIPT_DIR/dump_data.sql"
 
 if [ ! -f "$IMPORT_MARKER" ] && [ -f "$DUMP_FILE" ]; then
     echo "=== ONE-TIME DATA IMPORT ==="
