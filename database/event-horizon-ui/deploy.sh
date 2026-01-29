@@ -5,22 +5,38 @@
 
 echo "🚀 Starting Production Sync & Deploy..."
 
-# Get directories
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DB_DIR="$(dirname "$SCRIPT_DIR")"
-BASE_DIR="$(dirname "$DB_DIR")"
+# Detect if we're in the main project or the event-horizon-ui folder
+if [ -f "package.json" ] && grep -q '"name": "vectabase"' package.json 2>/dev/null; then
+    # We're in the main project directory
+    BASE_DIR="$(pwd)"
+elif [ -f "../../package.json" ]; then
+    # We're in database/event-horizon-ui
+    BASE_DIR="$(cd ../.. && pwd)"
+else
+    # Fallback to standard location
+    BASE_DIR="/var/www/react-app"
+fi
+
+DB_DIR="$BASE_DIR/database"
+SCRIPT_DIR="$DB_DIR/event-horizon-ui"
 
 echo "📁 Directories:"
 echo "   BASE_DIR: $BASE_DIR"
 echo "   DB_DIR: $DB_DIR"
 echo "   SCRIPT_DIR: $SCRIPT_DIR"
 
+# Verify we're in the right place
+if [ ! -f "$BASE_DIR/package.json" ]; then
+    echo "❌ ERROR: Cannot find package.json in $BASE_DIR"
+    echo "   Please run this script from /var/www/react-app"
+    exit 1
+fi
+
 # 1. GitHub Sync
-echo "📥 Syncing code from GitHub..."
+echo "� Syncing code from GitHub..."
 cd "$BASE_DIR"
-git reset --hard
-git clean -fd
-git pull origin main
+git fetch origin
+git reset --hard origin/main
 
 # 2. Infrastructure Check
 if ! command -v nginx &> /dev/null || ! command -v node &> /dev/null; then
@@ -31,7 +47,7 @@ if ! command -v nginx &> /dev/null || ! command -v node &> /dev/null; then
 fi
 
 # 3. Start Database (Docker Compose)
-echo "🐘 Starting database services..."
+echo "� Starting database services..."
 if [ -f "$DB_DIR/docker-compose.yml" ]; then
     cd "$DB_DIR"
     if ! command -v docker-compose &> /dev/null; then
@@ -40,12 +56,12 @@ if [ -f "$DB_DIR/docker-compose.yml" ]; then
     sudo docker-compose up -d
     cd "$BASE_DIR"
 else
-    echo "⚠️ docker-compose.yml not found"
+    echo "⚠️ docker-compose.yml not found at $DB_DIR/docker-compose.yml"
 fi
 
 # 4. Run Database Schema Migrations
-echo "🗄️ Running Event Horizon database schema..."
-sleep 5  # Wait for PostgreSQL
+echo "�️ Running Event Horizon database schema..."
+sleep 3  # Wait for PostgreSQL
 
 if [ -f "$SCRIPT_DIR/.env.local" ]; then
     source "$SCRIPT_DIR/.env.local"
@@ -79,18 +95,22 @@ npm install
 npm run build
 
 # 7. Configure Nginx (HTTP only - Cloudflare handles SSL)
-echo "🛡️ Configuring Nginx..."
+echo "🛡️ Configuring Nginx (HTTP only - Cloudflare handles SSL)..."
+
+# Remove any old config that might have SSL
+sudo rm -f /etc/nginx/sites-enabled/vectabase 2>/dev/null
+sudo rm -f /etc/nginx/sites-available/vectabase 2>/dev/null
 
 cat <<'EOF' | sudo tee /etc/nginx/sites-available/vectabase
 server {
     listen 80;
-    server_name vectabase.com www.vectabase.com db.vectabase.com 51.210.97.81;
+    server_name vectabase.com www.vectabase.com 51.210.97.81;
 
     client_max_body_size 50M;
 
-    # Database Admin UI (db.vectabase.com or /database path)
+    # Database Admin UI (/database path)
     location /database {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -103,7 +123,7 @@ server {
     }
 
     location /database/api {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -112,7 +132,7 @@ server {
     }
 
     location /database/_next {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
@@ -120,7 +140,7 @@ server {
 
     # Main site API routes (port 3001)
     location /api {
-        proxy_pass http://localhost:3001;
+        proxy_pass http://127.0.0.1:3001;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -128,9 +148,9 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # Main Vectabase site (React/Vite on port 8080)
+    # Main Vectabase site (React on port 8080)
     location / {
-        proxy_pass http://localhost:8080;
+        proxy_pass http://127.0.0.1:8080;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -142,7 +162,6 @@ server {
     }
 }
 
-# Separate server block for db.vectabase.com subdomain
 server {
     listen 80;
     server_name db.vectabase.com;
@@ -150,7 +169,7 @@ server {
     client_max_body_size 50M;
 
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -175,6 +194,7 @@ if sudo nginx -t; then
     echo "✅ Nginx restarted"
 else
     echo "❌ Nginx config failed!"
+    sudo nginx -t
     exit 1
 fi
 
