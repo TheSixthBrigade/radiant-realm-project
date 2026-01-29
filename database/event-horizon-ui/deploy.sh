@@ -70,12 +70,14 @@ if [ -f "$DB_DIR/docker-compose.yml" ]; then
     echo "Removing old dashboard container and image..."
     sudo docker rm -f database_dashboard_1 2>/dev/null || true
     sudo docker rmi -f database_dashboard 2>/dev/null || true
+    sudo docker rmi -f database-dashboard 2>/dev/null || true
     
     echo "Pruning unused Docker resources..."
     sudo docker system prune -f
     
-    echo "Building fresh dashboard with new env vars..."
-    sudo -E docker-compose build --no-cache dashboard
+    echo "Building fresh dashboard with NEXT_PUBLIC_SITE_URL baked in..."
+    # Pass build args explicitly for NEXT_PUBLIC_* variables
+    sudo docker-compose build --no-cache --build-arg NEXT_PUBLIC_SITE_URL=https://db.vectabase.com --build-arg NEXT_PUBLIC_API_URL=http://localhost:8000 dashboard
     
     echo "Starting all containers..."
     sudo -E docker-compose up -d
@@ -101,6 +103,36 @@ if [ -f "$SCRIPT_DIR/schema.sql" ]; then
     echo "Database schema and seed data applied!"
 else
     echo "WARNING: schema.sql not found at $SCRIPT_DIR/schema.sql"
+fi
+
+# 4b. ONE-TIME DATA IMPORT (only runs once, then creates marker file)
+IMPORT_MARKER="$SCRIPT_DIR/.data_imported"
+DUMP_FILE="$SCRIPT_DIR/dumped_postsql data.sql"
+
+if [ ! -f "$IMPORT_MARKER" ] && [ -f "$DUMP_FILE" ]; then
+    echo "=== ONE-TIME DATA IMPORT ==="
+    echo "Importing PostgreSQL dump from other workspace..."
+    echo "This will only run ONCE - future deploys will preserve the data."
+    
+    PGPASSWORD="your-super-secret-and-long-postgres-password" psql -h localhost -p 5432 -U postgres -d postgres -f "$DUMP_FILE" 2>&1
+    
+    if [ $? -eq 0 ]; then
+        echo "✅ Data imported successfully!"
+        # Create marker file so this never runs again
+        touch "$IMPORT_MARKER"
+        echo "Created marker file: $IMPORT_MARKER"
+        echo "Future deploys will skip this import step."
+    else
+        echo "⚠️ Data import had some errors (may be OK if tables already exist)"
+        # Still create marker to avoid repeated attempts
+        touch "$IMPORT_MARKER"
+    fi
+else
+    if [ -f "$IMPORT_MARKER" ]; then
+        echo "=== Skipping data import (already done previously) ==="
+    elif [ ! -f "$DUMP_FILE" ]; then
+        echo "=== No dump file found, skipping import ==="
+    fi
 fi
 
 # 5. Set Production Environment Variables

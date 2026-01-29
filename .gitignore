@@ -81,3 +81,8 @@ direct-*.js
 
 # Database backups (don't commit full backups, only seed data)
 database/backups/
+
+# PostgreSQL dump files (contain secrets, transfer manually to VPS)
+**/dumped_postsql*.sql
+**/*.dump
+**/pg_dump*.sql

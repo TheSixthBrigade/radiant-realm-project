@@ -6,6 +6,9 @@ services:
     build:
       context: ./event-horizon-ui
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_SITE_URL=https://db.vectabase.com
+        - NEXT_PUBLIC_API_URL=http://localhost:8000
     ports:
       - "3000:3000"
     environment:
