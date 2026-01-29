@@ -93,8 +93,8 @@ else
     echo "WARNING: docker-compose.yml not found at $DB_DIR/docker-compose.yml"
 fi
 
-# 5. Wait for PostgreSQL and apply schema
-echo "=== Applying database schema ==="
+# 5. Wait for PostgreSQL
+echo "=== Setting up database ==="
 echo "Waiting for PostgreSQL to be ready..."
 sleep 10
 
@@ -107,43 +107,67 @@ DB_PASS="your-super-secret-and-long-postgres-password"
 
 # Test connection
 echo "Testing database connection..."
-if PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1;" > /dev/null 2>&1; then
-    echo "✅ Database connection successful!"
-else
-    echo "⚠️ Database not ready yet, waiting more..."
-    sleep 10
-fi
+for i in 1 2 3 4 5; do
+    if PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1;" > /dev/null 2>&1; then
+        echo "✅ Database connection successful!"
+        break
+    else
+        echo "⚠️ Database not ready yet, waiting... (attempt $i/5)"
+        sleep 5
+    fi
+done
 
-if [ -f "$SCRIPT_DIR/schema.sql" ]; then
-    echo "Applying Event Horizon schema..."
-    PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$SCRIPT_DIR/schema.sql" 2>&1 || echo "Schema may already exist (OK)"
-fi
-
-if [ -f "$SCRIPT_DIR/seed-data.sql" ]; then
-    echo "Importing seed data..."
-    PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$SCRIPT_DIR/seed-data.sql" 2>&1 || echo "Seed data may already exist (OK)"
-fi
-
-# 6. ONE-TIME DATA IMPORT (only runs once)
+# 6. ONE-TIME DATA IMPORT - WIPES EVERYTHING AND IMPORTS FRESH
 IMPORT_MARKER="$SCRIPT_DIR/.data_imported"
 DUMP_FILE="$SCRIPT_DIR/dump_data.sql"
 
 if [ ! -f "$IMPORT_MARKER" ] && [ -f "$DUMP_FILE" ]; then
-    echo "=== ONE-TIME DATA IMPORT ==="
-    echo "Importing PostgreSQL dump from other workspace..."
+    echo "=== ONE-TIME FULL DATABASE IMPORT ==="
+    echo "⚠️ WIPING ALL EXISTING DATA AND IMPORTING FRESH DUMP..."
     echo "This will only run ONCE - future deploys will preserve the data."
     
+    # Drop ALL tables in public schema first to avoid conflicts
+    echo "Dropping all existing tables..."
+    PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" << 'DROPSQL'
+DO $$ 
+DECLARE 
+    r RECORD;
+BEGIN
+    -- Drop all tables in public schema
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+        EXECUTE 'DROP TABLE IF EXISTS public.' || quote_ident(r.tablename) || ' CASCADE';
+    END LOOP;
+    -- Drop all sequences
+    FOR r IN (SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public') LOOP
+        EXECUTE 'DROP SEQUENCE IF EXISTS public.' || quote_ident(r.sequence_name) || ' CASCADE';
+    END LOOP;
+END $$;
+DROPSQL
+    
+    echo "Importing dump file..."
     PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$DUMP_FILE" 2>&1
     
-    echo "✅ Data import complete!"
+    echo "✅ Full database import complete!"
     touch "$IMPORT_MARKER"
-    echo "Created marker file - future deploys will skip import."
+    echo "Created marker file - future deploys will NOT wipe data."
+    
+elif [ -f "$IMPORT_MARKER" ]; then
+    echo "=== Skipping data import (already done previously) ==="
+    echo "To re-import, delete: $IMPORT_MARKER"
+    
+    # Only apply schema updates (not full wipe) for subsequent deploys
+    if [ -f "$SCRIPT_DIR/schema.sql" ]; then
+        echo "Applying any schema updates..."
+        PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$SCRIPT_DIR/schema.sql" 2>&1 || echo "Schema up to date"
+    fi
 else
-    if [ -f "$IMPORT_MARKER" ]; then
-        echo "=== Skipping data import (already done previously) ==="
-    elif [ ! -f "$DUMP_FILE" ]; then
-        echo "=== No dump file found at: $DUMP_FILE ==="
-        echo "Transfer it manually via SCP if needed."
+    echo "=== No dump file found at: $DUMP_FILE ==="
+    echo "Applying schema.sql instead..."
+    if [ -f "$SCRIPT_DIR/schema.sql" ]; then
+        PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$SCRIPT_DIR/schema.sql" 2>&1
+    fi
+    if [ -f "$SCRIPT_DIR/seed-data.sql" ]; then
+        PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$SCRIPT_DIR/seed-data.sql" 2>&1
     fi
 fi
 
