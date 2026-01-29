@@ -428,7 +428,7 @@ export default function DataStudioPage() {
                                             </div>
                                         </th>
                                         {columns.map((col, i) => (
-                                            <th key={col.column_name} className={cn("px-6 py-2 text-left border-r border-[#1a1a1a]", i === columns.length - 1 && "border-r-0")}>
+                                            <th key={`col-${i}-${col.column_name}`} className={cn("px-6 py-2 text-left border-r border-[#1a1a1a]", i === columns.length - 1 && "border-r-0")}>
                                                 <div className="flex items-center gap-2 text-[11px] font-mono text-gray-500 tracking-tighter cursor-pointer group/col">
                                                     {col.is_primary_key && <Key size={12} className="text-[#3ecf8e]" />}
                                                     <span className="text-white font-bold group-hover/col:text-[#3ecf8e] transition-colors">{col.column_name}</span>
@@ -456,7 +456,7 @@ export default function DataStudioPage() {
                                                 </div>
                                             </td>
                                             {columns.map((col, j) => (
-                                                <td key={col.column_name} className={cn("px-6 py-3 border-r border-[#1a1a1a] font-mono text-[11px]", j === columns.length - 1 && "border-r-0")}>
+                                                <td key={`cell-${i}-${j}-${col.column_name}`} className={cn("px-6 py-3 border-r border-[#1a1a1a] font-mono text-[11px]", j === columns.length - 1 && "border-r-0")}>
                                                     <CellValue value={row[col.column_name]} type={col.udt_name} />
                                                 </td>
                                             ))}
