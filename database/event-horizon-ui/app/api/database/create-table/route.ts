@@ -11,11 +11,12 @@ const VALID_TYPES = [
 
 // POST: Create a new table with user-defined columns
 export async function POST(req: NextRequest) {
-    const { authorized } = await verifyAccess(req);
+    const { authorized, projectId: authProjectId } = await verifyAccess(req);
     if (!authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     try {
         const { tableName, columns, projectId } = await req.json();
+        const actualProjectId = projectId || authProjectId;
 
         if (!tableName || !Array.isArray(columns)) {
             return NextResponse.json({ error: 'Table name is required' }, { status: 400 });
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid table name. Use lowercase letters, numbers, and underscores only.' }, { status: 400 });
         }
 
-        // Required base columns (always added)
+        // Required base columns (always added) - NO foreign key constraint
         const baseColumns = [
             { name: 'id', type: 'serial', primaryKey: true },
             { name: 'project_id', type: 'integer', nullable: false },
@@ -52,31 +53,23 @@ export async function POST(req: NextRequest) {
             return def;
         }).join(',\n    ');
 
-        // Build and execute CREATE TABLE
-        const sql = `
-            CREATE TABLE IF NOT EXISTS "public"."${tableName}" (
-                ${columnDefs}
-            );
-        `;
+        // Build and execute CREATE TABLE - NO foreign key constraint
+        const sql = `CREATE TABLE IF NOT EXISTS "public"."${tableName}" (${columnDefs});`;
 
         console.log('Creating table with SQL:', sql);
         await query(sql);
 
-        // Add foreign key constraint for project_id
+        // Create index on project_id for faster queries
         try {
-            await query(`
-                ALTER TABLE "public"."${tableName}" 
-                ADD CONSTRAINT "${tableName}_project_id_fkey" 
-                FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
-            `);
+            await query(`CREATE INDEX IF NOT EXISTS "${tableName}_project_id_idx" ON "public"."${tableName}" (project_id);`);
         } catch (e) {
-            // Constraint may already exist or projects table not found
-            console.log('FK constraint note:', e);
+            console.log('Index creation note:', e);
         }
 
         return NextResponse.json({
             success: true,
             tableName,
+            projectId: actualProjectId,
             message: `Table "${tableName}" created successfully with ${allColumns.length} columns.`
         });
     } catch (error: any) {
