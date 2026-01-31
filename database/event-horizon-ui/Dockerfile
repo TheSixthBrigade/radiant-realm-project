@@ -10,18 +10,18 @@ ARG NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
-# CRITICAL: Set NODE_ENV to production for proper cookie handling
-ENV NODE_ENV=production
-
-# Install dependencies based on the preferred package manager
+# Install ALL dependencies (including devDependencies like TypeScript) for build
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm ci --include=dev
 
 # Copy the rest of the application code
 COPY . .
 
 # Build the Next.js application with the env vars baked in
 RUN npm run build
+
+# AFTER build, set NODE_ENV to production for runtime
+ENV NODE_ENV=production
 
 # Expose the listening port
 EXPOSE 3000
