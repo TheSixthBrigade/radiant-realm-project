@@ -1,0 +1,39 @@
+commit and psuh ur changes to github yo and also i think the issue is that it HAS the data, its just NOT showing to anything, because i create something it works sucesfully like i can edit shit iand i can FLASH for a secon d it flashes the data like the old data test data and then dissapears nd when irefresh the stuff i js created disapears so its like smt about its not showing for users for some reason find a reaseon yeah, its saying 404 idk what it means but yeah i havent ran teh command u said above becausae u didnt comit ur changes it gave error: 
+
+ubuntu@vps-456974c4:/var/www/react-app$ ^C
+
+ubuntu@vps-456974c4:/var/www/react-app$ cd /var/www/react-app
+
+git pull origin main
+
+# Create the marker so schema won't run again (data already exists)
+
+touch ./database/event-horizon-ui/.schema_applied
+
+# Just restart PM2 (no need to run full deploy)
+
+pm2 restart vectabase-db
+
+remote: Enumerating objects: 9, done.
+
+remote: Counting objects: 100% (9/9), done.
+
+remote: Compressing objects: 100% (1/1), done.
+
+remote: Total 5 (delta 4), reused 5 (delta 4), pack-reused 0 (from 0)
+
+Unpacking objects: 100% (5/5), 717 bytes | 239.00 KiB/s, done.
+
+From https://github.com/TheSixthBrigade/radiant-realm-project
+
+ * branch            main       -> FETCH_HEAD
+
+   fb79f9c..1c91e19  main       -> origin/main
+
+Updating fb79f9c..1c91e19
+
+error: Your local changes to the following files would be overwritten by merge:
+
+        database/event-horizon-ui/deploy.sh
+
+Please commit your changes or stash them before you 

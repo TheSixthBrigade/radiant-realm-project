@@ -5,6 +5,7 @@ export interface UserProfile {
     email: string;
     name: string;
     identity_id: string;
+    isLatticeAdmin?: boolean;
 }
 
 export function useUser() {
@@ -19,8 +20,11 @@ export function useUser() {
                     const data = await res.json();
                     if (data.authorized && data.user) {
                         setUser({
-                            ...data.user,
-                            identity_id: data.user.identity_id || ''
+                            id: data.user.id || 0,
+                            email: data.user.email || '',
+                            name: data.user.name || '',
+                            identity_id: data.user.identity_id || '',
+                            isLatticeAdmin: data.isLatticeAdmin || false
                         });
                     }
                 }

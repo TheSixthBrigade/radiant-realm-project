@@ -1,13 +1,16 @@
 -- Vectabase Pulled Schema
--- Generated at: 2026-01-26T19:58:39.673Z
+-- From: http://localhost:3000
 
 CREATE TABLE IF NOT EXISTS announcements (
-  id integer NOT NULL DEFAULT nextval('announcements_id_seq'::regclass),
   id integer NOT NULL DEFAULT nextval('announcements_id_seq'::regclass),
   content text NOT NULL,
   author_email text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS cli_test_sync (
+  id integer NOT NULL DEFAULT nextval('cli_test_sync_id_seq'::regclass)
 );
 
 CREATE TABLE IF NOT EXISTS edge_function_files (
@@ -25,6 +28,10 @@ CREATE TABLE IF NOT EXISTS edge_functions (
   name text NOT NULL,
   slug text NOT NULL,
   trigger_type text DEFAULT 'http'::text,
+  runtime text DEFAULT 'deno'::text,
+  status text DEFAULT 'active'::text,
+  timeout_ms integer DEFAULT 2000,
+  memory_mb integer DEFAULT 128,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now()
 );
@@ -34,6 +41,16 @@ CREATE TABLE IF NOT EXISTS roblox_users (
   project_id integer NOT NULL,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  id integer NOT NULL DEFAULT nextval('sessions_id_seq'::regclass),
+  user_id integer,
+  token_hash text NOT NULL,
+  expires_at timestamp with time zone NOT NULL,
+  ip_address inet,
+  user_agent text,
+  created_at timestamp with time zone DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS test (
@@ -56,11 +73,14 @@ CREATE TABLE IF NOT EXISTS vault_secrets (
 CREATE TABLE IF NOT EXISTS webhooks (
   id integer NOT NULL DEFAULT nextval('webhooks_id_seq'::regclass),
   project_id integer,
-  table_name text NOT NULL,
-  event text NOT NULL,
-  target_url text NOT NULL,
+  name text NOT NULL,
+  url text NOT NULL,
+  events ARRAY DEFAULT '{}'::text[],
   secret text,
-  created_at timestamp with time zone DEFAULT now()
+  enabled boolean DEFAULT true,
+  last_triggered_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS yes123 (

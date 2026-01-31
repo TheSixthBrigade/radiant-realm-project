@@ -11,7 +11,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #262626;
+    background: #333340;
     border-radius: 10px;
     transition: background 0.2s ease;
 }
@@ -20,27 +20,25 @@
     background: #3ecf8e;
 }
 
-/* Custom Scrollbar class for specific containers */
 .custom-scrollbar::-webkit-scrollbar {
     width: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #1a1a1a;
+    background: #252530;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #3ecf8e;
 }
 
-
 :root {
-    --background: #0d0d0d;
-    --surface: #141414;
-    --surface-hover: #1a1a1a;
-    --border: #262626;
+    --background: #16161a;
+    --surface: #1e1e24;
+    --surface-hover: #28282f;
+    --border: #32323c;
     --foreground: #ededed;
-    --muted: #888888;
+    --muted: #999999;
     --brand: #3ecf8e;
     --brand-hover: #4ade80;
 }
@@ -54,20 +52,30 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
+/* Brighter panel backgrounds - updated for more grey */
+.bg-\[\#0d0d0d\] { background-color: #16161a !important; }
+.bg-\[\#080808\] { background-color: #131316 !important; }
+.bg-\[\#0a0a0a\] { background-color: #141418 !important; }
+.bg-\[\#111\] { background-color: #1a1a1f !important; }
+.bg-\[\#141414\] { background-color: #1e1e24 !important; }
+.bg-\[\#1a1a1a\] { background-color: #262630 !important; }
+.border-\[\#262626\] { border-color: #32323c !important; }
+.border-\[\#222\] { border-color: #2e2e38 !important; }
+
 .font-mono {
     font-family: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 @layer utilities {
     .panel {
-        background: linear-gradient(145deg, #141414 0%, #0f0f0f 100%);
+        background: linear-gradient(145deg, #1a1a1f 0%, #141418 100%);
         border: 1px solid var(--border);
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
     }
 
     .input {
-        background-color: #0a0a0a;
-        border: 1px solid #262626;
+        background-color: #121215;
+        border: 1px solid #32323c;
         color: #ededed;
         transition: all 0.2s;
     }
@@ -79,7 +87,7 @@ body {
     }
 }
 
-/* Global Syntax Highlighting (Outside Layers) */
+/* Global Syntax Highlighting */
 .syntax-keyword {
     color: #ff79c6 !important;
     font-weight: bold !important;

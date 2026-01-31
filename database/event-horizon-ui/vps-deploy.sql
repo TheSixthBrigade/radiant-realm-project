@@ -1,6 +1,14 @@
--- Event Horizon Database Schema
--- Complete schema for the Vectabase Database UI
--- PostgreSQL 16+
+-- ============================================
+-- VECTABASE VPS DEPLOYMENT SQL
+-- Generated: 2026-01-30
+-- Deploy to: db.vectabase.com
+-- ============================================
+-- 
+-- Usage: scp vps-deploy.sql user@db.vectabase.com:/tmp/
+--        ssh user@db.vectabase.com
+--        psql -U postgres -d postgres -f /tmp/vps-deploy.sql
+--
+-- ============================================
 
 -- Drop all existing objects for clean slate
 DROP SCHEMA IF EXISTS p1 CASCADE;
@@ -9,6 +17,7 @@ DROP SCHEMA IF EXISTS p3 CASCADE;
 DROP SCHEMA IF EXISTS p4 CASCADE;
 DROP SCHEMA IF EXISTS p5 CASCADE;
 
+DROP TABLE IF EXISTS sso_configurations CASCADE;
 DROP TABLE IF EXISTS vault_secrets CASCADE;
 DROP TABLE IF EXISTS edge_function_files CASCADE;
 DROP TABLE IF EXISTS edge_functions CASCADE;
@@ -40,7 +49,8 @@ CREATE TABLE users (
     avatar_url TEXT,
     identity_id TEXT UNIQUE,
     provider TEXT DEFAULT 'google',
-    password_hash TEXT,  -- For SSO email authentication
+    password_hash TEXT,  -- For SSO email/password login
+    role TEXT DEFAULT 'Member',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -106,7 +116,7 @@ CREATE TABLE projects (
     db_name TEXT,
     db_user TEXT,
     db_password TEXT,
-    encryption_salt TEXT, -- For vault encryption key derivation
+    encryption_salt TEXT,
     region TEXT DEFAULT 'us-east-1',
     status TEXT DEFAULT 'active',
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -131,6 +141,30 @@ CREATE INDEX idx_project_users_project ON project_users(project_id);
 CREATE INDEX idx_project_users_user ON project_users(user_id);
 
 -- ============================================
+-- SSO CONFIGURATIONS TABLE
+-- ============================================
+
+CREATE TABLE sso_configurations (
+    id SERIAL PRIMARY KEY,
+    domain TEXT UNIQUE NOT NULL,
+    enabled BOOLEAN DEFAULT true,
+    idp_type TEXT DEFAULT 'google',  -- 'google', 'saml', 'oidc', 'email'
+    idp_url TEXT,
+    idp_issuer TEXT,
+    idp_certificate TEXT,
+    client_id TEXT,
+    client_secret TEXT,
+    auto_provision_users BOOLEAN DEFAULT true,
+    default_role TEXT DEFAULT 'Member',
+    allowed_project_ids INTEGER[],
+    created_by INTEGER REFERENCES users(id),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_sso_configurations_domain ON sso_configurations(domain);
+
+-- ============================================
 -- API KEYS TABLE
 -- ============================================
 
@@ -138,9 +172,9 @@ CREATE TABLE api_keys (
     id SERIAL PRIMARY KEY,
     project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
     name TEXT,
-    key_type TEXT NOT NULL, -- 'anon' or 'service_role'
+    key_type TEXT NOT NULL,
     key_hash TEXT NOT NULL,
-    key_prefix TEXT NOT NULL, -- First chars for display
+    key_prefix TEXT NOT NULL,
     permissions JSONB DEFAULT '["read"]',
     expires_at TIMESTAMPTZ,
     last_used_at TIMESTAMPTZ,
@@ -161,7 +195,7 @@ CREATE TABLE edge_functions (
     project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     slug TEXT NOT NULL,
-    trigger_type TEXT DEFAULT 'http', -- 'http', 'schedule', 'webhook'
+    trigger_type TEXT DEFAULT 'http',
     runtime TEXT DEFAULT 'deno',
     status TEXT DEFAULT 'active',
     timeout_ms INTEGER DEFAULT 2000,
@@ -174,7 +208,6 @@ CREATE TABLE edge_functions (
 CREATE INDEX idx_edge_functions_project ON edge_functions(project_id);
 CREATE INDEX idx_edge_functions_slug ON edge_functions(slug);
 
--- Edge Function Files (multi-file support)
 CREATE TABLE edge_function_files (
     id SERIAL PRIMARY KEY,
     function_id INTEGER REFERENCES edge_functions(id) ON DELETE CASCADE,
@@ -196,7 +229,7 @@ CREATE TABLE vault_secrets (
     project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     description TEXT,
-    value TEXT NOT NULL, -- Encrypted with project-specific key
+    value TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(project_id, name)
@@ -205,7 +238,7 @@ CREATE TABLE vault_secrets (
 CREATE INDEX idx_vault_secrets_project ON vault_secrets(project_id);
 
 -- ============================================
--- PROVIDER CONFIGS (OAuth settings per project)
+-- PROVIDER CONFIGS
 -- ============================================
 
 CREATE TABLE provider_configs (
@@ -251,7 +284,7 @@ CREATE TABLE storage_buckets (
     project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     public BOOLEAN DEFAULT false,
-    file_size_limit BIGINT DEFAULT 52428800, -- 50MB default
+    file_size_limit BIGINT DEFAULT 52428800,
     allowed_mime_types TEXT[],
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -280,7 +313,6 @@ CREATE INDEX idx_storage_objects_path ON storage_objects(path);
 -- TRIGGERS
 -- ============================================
 
--- Updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -289,7 +321,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Apply triggers to all tables with updated_at
+-- Apply triggers
 DO $$
 DECLARE
     t TEXT;
@@ -297,7 +329,7 @@ BEGIN
     FOR t IN SELECT unnest(ARRAY[
         'users', 'organizations', 'projects', 'edge_functions', 
         'edge_function_files', 'vault_secrets', 'provider_configs',
-        'webhooks', 'storage_buckets', 'storage_objects'
+        'webhooks', 'storage_buckets', 'storage_objects', 'sso_configurations'
     ])
     LOOP
         EXECUTE format('DROP TRIGGER IF EXISTS %I_updated_at ON %I', t, t);
@@ -310,7 +342,6 @@ $$;
 -- HELPER FUNCTIONS
 -- ============================================
 
--- Function to create isolated schema for a project
 CREATE OR REPLACE FUNCTION create_project_schema(project_id INTEGER)
 RETURNS VOID AS $$
 DECLARE
@@ -322,7 +353,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger to auto-create schema when project is created
 CREATE OR REPLACE FUNCTION on_project_created()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -337,38 +367,9 @@ CREATE TRIGGER project_schema_trigger
     FOR EACH ROW
     EXECUTE FUNCTION on_project_created();
 
-SELECT 'Event Horizon schema created successfully!' as status;
-
-
 -- ============================================
--- SSO CONFIGURATIONS TABLE
+-- DONE
 -- ============================================
 
--- SSO domain configurations for Enterprise SSO
-CREATE TABLE IF NOT EXISTS sso_configurations (
-    id SERIAL PRIMARY KEY,
-    domain TEXT UNIQUE NOT NULL,  -- e.g., 'company.com'
-    enabled BOOLEAN DEFAULT true,
-    idp_type TEXT DEFAULT 'google', -- 'google', 'saml', 'oidc'
-    idp_url TEXT,  -- For SAML/OIDC: IdP login URL
-    idp_issuer TEXT,  -- For SAML: Entity ID
-    idp_certificate TEXT,  -- For SAML: X.509 certificate
-    client_id TEXT,  -- For OIDC
-    client_secret TEXT,  -- For OIDC (encrypted)
-    auto_provision_users BOOLEAN DEFAULT true,  -- Auto-create users on first login
-    default_role TEXT DEFAULT 'Member',
-    allowed_project_ids INTEGER[],  -- NULL = all projects, or specific project IDs
-    created_by INTEGER REFERENCES users(id),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX idx_sso_configurations_domain ON sso_configurations(domain);
-
--- Trigger for updated_at
-DROP TRIGGER IF EXISTS sso_configurations_updated_at ON sso_configurations;
-CREATE TRIGGER sso_configurations_updated_at 
-    BEFORE UPDATE ON sso_configurations 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-
-SELECT 'SSO configurations table created!' as status;
+SELECT 'Vectabase schema deployed successfully!' as status;
+SELECT 'Tables created: users, permissions, sessions, organizations, projects, project_users, sso_configurations, api_keys, edge_functions, edge_function_files, vault_secrets, provider_configs, webhooks, storage_buckets, storage_objects' as tables;

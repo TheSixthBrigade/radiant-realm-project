@@ -119,14 +119,19 @@ export default function AdvancedFunctionsPage() {
     };
 
     const handleInvoke = async () => {
-        if (!selectedFunc) return;
+        if (!selectedFunc || !currentProject) return;
         setExecuting(true);
         // We don't clear logs here to show history like a terminal
         try {
-            const res = await fetch(`/api/v1/functions/${selectedFunc.slug}/invoke`, {
+            // Use internal invoke endpoint that works with session auth
+            const res = await fetch(`/api/functions/invoke`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: "Tester", timestamp: new Date().toISOString() })
+                body: JSON.stringify({ 
+                    projectId: currentProject.id,
+                    functionSlug: selectedFunc.slug,
+                    payload: { name: "Tester", timestamp: new Date().toISOString() }
+                })
             });
             const data = await res.json();
             const logEntry = {

@@ -32,6 +32,23 @@ export async function GET(req: NextRequest) {
 
         // If it's a session, we return user info + their entities
         if (auth.method === 'session') {
+            // Handle Lattice admin sessions
+            if ((auth as any).isLatticeAdmin) {
+                return NextResponse.json({
+                    authorized: true,
+                    method: 'session',
+                    isAdmin: true,
+                    isLatticeAdmin: true,
+                    user: {
+                        id: auth.userId || 0,
+                        email: 'lattice-admin@vectabase.internal',
+                        name: 'Lattice Admin',
+                        identity_id: 'lattice:master-admin'
+                    },
+                    organizations: [] // Lattice admin can see all orgs via UI
+                });
+            }
+
             const userRes = await query('SELECT id, email, name, identity_id FROM users WHERE id = $1', [auth.userId]);
             const orgsRes = await query('SELECT id, name, slug FROM organizations WHERE owner_id = $1', [auth.userId]);
 

@@ -25,6 +25,7 @@ import {
     Lock
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter, useParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/hooks/useUser";
@@ -172,6 +173,16 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
         return <main className="h-screen w-full overflow-hidden bg-[#0d0d0d]">{children}</main>;
     }
 
+    // Admin routes - render without project requirement (Lattice admin only)
+    if (pathname.startsWith('/admin')) {
+        return <main className="h-screen w-full overflow-hidden bg-[#0d0d0d]">{children}</main>;
+    }
+
+    // Account settings - render without project requirement
+    if (pathname === '/settings') {
+        return <main className="h-screen w-full overflow-hidden bg-[#0d0d0d]">{children}</main>;
+    }
+
     // While loading user on protected routes, show nothing to prevent "leak"
     if (loading) {
         return <div className="h-screen w-full bg-[#0d0d0d] flex items-center justify-center">
@@ -179,12 +190,15 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
         </div>;
     }
 
-    // If fetch failed but we're on a non-auth route, the middleware should have redirected.
-    // If we're here and no user, show a simple fallback instead of return null.
+    // If no user after loading, redirect to login
     if (!user) {
+        // Use effect to redirect to avoid render issues
+        if (typeof window !== 'undefined') {
+            window.location.href = '/login';
+        }
         return <div className="h-screen w-full bg-[#0d0d0d] flex flex-col items-center justify-center gap-4 text-gray-500">
-            <div className="w-12 h-12 border-2 border-red-500/20 border-t-red-500 rounded-full animate-spin" />
-            <p className="text-xs font-mono uppercase tracking-widest">Authentication Synchronization Failed</p>
+            <div className="w-12 h-12 border-2 border-[#3ecf8e]/20 border-t-[#3ecf8e] rounded-full animate-spin" />
+            <p className="text-xs font-mono uppercase tracking-widest">Redirecting to login...</p>
         </div>;
     }
 
@@ -197,9 +211,13 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
                         onClick={() => router.push('/projects')}
                         className="cursor-pointer transition-transform hover:scale-105"
                     >
-                        <div className="w-10 h-10 bg-[#3ecf8e] rounded-xl flex items-center justify-center text-black font-bold text-xl shadow-[0_0_15px_rgba(62,207,142,0.3)]">
-                            V
-                        </div>
+                        <Image 
+                            src="/vectabase-logo.png" 
+                            alt="Vectabase" 
+                            width={40} 
+                            height={40}
+                            className="rounded-xl shadow-[0_0_15px_rgba(62,207,142,0.3)]"
+                        />
                     </div>
                 </div>
                 <div className="flex-1 flex flex-col gap-4 overflow-y-auto w-full items-center custom-scrollbar">
@@ -227,7 +245,18 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
                 </div>
                 <div className="mt-auto flex flex-col gap-4 pb-2">
                     <Link href="/settings" className="text-gray-500 hover:text-white transition-colors"><Settings size={20} /></Link>
-                    <Link href="/login" className="text-gray-500 hover:text-white transition-colors"><LogOut size={20} /></Link>
+                    <button 
+                        onClick={() => {
+                            // Clear all auth cookies
+                            document.cookie = 'pqc_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                            document.cookie = 'lattice_admin=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                            window.location.href = '/login';
+                        }}
+                        className="text-gray-500 hover:text-red-400 transition-colors"
+                        title="Sign Out"
+                    >
+                        <LogOut size={20} />
+                    </button>
                 </div>
             </aside>
 

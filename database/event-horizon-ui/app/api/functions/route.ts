@@ -72,14 +72,25 @@ export async function POST(req: NextRequest) {
         const funcResult = await query(`
             INSERT INTO edge_functions (project_id, name, slug, updated_at)
             VALUES ($1, $2, $3, NOW())
-            ON CONFLICT (project_id, slug) DO UPDATE SET updated_at = NOW()
+            ON CONFLICT (project_id, slug) DO UPDATE SET name = EXCLUDED.name, updated_at = NOW()
             RETURNING *
         `, [projectId, name, slug]);
 
         const func = funcResult.rows[0];
 
-        // 2. Sync the files (for simplicity, we upsert each provided file)
-        // In a real system, we might delete files not in the list
+        // 2. Get existing files to detect deletions
+        const existingFiles = await query('SELECT path FROM edge_function_files WHERE function_id = $1', [func.id]);
+        const existingPaths = new Set(existingFiles.rows.map((f: any) => f.path));
+        const newPaths = new Set(files.map((f: any) => f.path));
+
+        // 3. Delete files that are no longer in the list
+        for (const existingPath of existingPaths) {
+            if (!newPaths.has(existingPath)) {
+                await query('DELETE FROM edge_function_files WHERE function_id = $1 AND path = $2', [func.id, existingPath]);
+            }
+        }
+
+        // 4. Upsert each provided file
         for (const file of files) {
             await query(`
                 INSERT INTO edge_function_files (function_id, path, content, updated_at)
@@ -88,11 +99,30 @@ export async function POST(req: NextRequest) {
             `, [func.id, file.path, file.content]);
         }
 
-        // 3. Return the function with its files
+        // 5. Return the function with its files
         const finalFiles = await query('SELECT path, content FROM edge_function_files WHERE function_id = $1', [func.id]);
         func.files = finalFiles.rows;
 
         return NextResponse.json(func);
+    } catch (e: any) {
+        return NextResponse.json({ error: e.message }, { status: 500 });
+    }
+}
+
+export async function DELETE(req: NextRequest) {
+    try {
+        const { projectId, functionId } = await req.json();
+        if (!projectId || !functionId) {
+            return NextResponse.json({ error: 'Missing projectId or functionId' }, { status: 400 });
+        }
+
+        const { authorized } = await verifyAccess(req, projectId);
+        if (!authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        // Delete function (files cascade automatically)
+        await query('DELETE FROM edge_functions WHERE id = $1 AND project_id = $2', [functionId, projectId]);
+
+        return NextResponse.json({ success: true });
     } catch (e: any) {
         return NextResponse.json({ error: e.message }, { status: 500 });
     }

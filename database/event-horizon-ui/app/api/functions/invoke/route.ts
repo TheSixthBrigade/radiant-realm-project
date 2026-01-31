@@ -5,42 +5,42 @@ import vm from 'vm';
 import { decrypt, deriveProjectKey } from '@/lib/crypto';
 import crypto from 'crypto';
 
-// Ensure vault table exists
-async function ensureVaultTable() {
-    await query(`
-        CREATE TABLE IF NOT EXISTS vault_secrets (
-            id SERIAL PRIMARY KEY,
-            project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
-            name TEXT NOT NULL,
-            description TEXT,
-            value TEXT NOT NULL,
-            created_at TIMESTAMPTZ DEFAULT NOW(),
-            updated_at TIMESTAMPTZ DEFAULT NOW(),
-            UNIQUE(project_id, name)
-        )
-    `);
-}
-
-// Ensure encryption_salt column exists
-async function ensureEncryptionSalt() {
-    try {
-        await query(`
-            ALTER TABLE projects ADD COLUMN IF NOT EXISTS encryption_salt TEXT
-        `);
-    } catch (e) {
-        // Column might already exist, ignore
-    }
-}
-
-export async function POST(req: NextRequest, { params }: { params: Promise<{ name: string }> }) {
-    const { name } = await params;
-    console.log(`[Invoke] Execution started for function: ${name}`);
-
-    // Verify Access (Project Key required)
+/**
+ * Internal invoke endpoint for UI - uses session auth
+ * POST /api/functions/invoke
+ * Body: { projectId, functionSlug, payload }
+ */
+export async function POST(req: NextRequest) {
     const auth = await verifyAccess(req);
-    console.log('[Invoke] Auth result:', auth.authorized, 'Project:', auth.projectId);
-    if (!auth.authorized || !auth.projectId) {
-        return NextResponse.json({ error: 'Unauthorized. Project API Key required.' }, { status: 401 });
+    
+    if (!auth.authorized) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    let body;
+    try {
+        body = await req.json();
+    } catch {
+        return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+
+    const { projectId, functionSlug, payload = {} } = body;
+
+    if (!projectId || !functionSlug) {
+        return NextResponse.json({ error: 'projectId and functionSlug are required' }, { status: 400 });
+    }
+
+    // If session auth, verify user has access to this project
+    if (auth.method === 'session' && auth.userId) {
+        const accessCheck = await query(`
+            SELECT 1 FROM project_users WHERE project_id = $1 AND user_id = $2
+            UNION
+            SELECT 1 FROM projects p JOIN organizations o ON p.org_id = o.id WHERE p.id = $1 AND o.owner_id = $2
+        `, [projectId, auth.userId]);
+        
+        if (accessCheck.rows.length === 0 && !auth.isAdmin) {
+            return NextResponse.json({ error: 'No access to this project' }, { status: 403 });
+        }
     }
 
     const logs: string[] = [];
@@ -48,27 +48,36 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ nam
 
     try {
         // Ensure tables exist
-        await ensureVaultTable();
-        await ensureEncryptionSalt();
+        await query(`
+            CREATE TABLE IF NOT EXISTS vault_secrets (
+                id SERIAL PRIMARY KEY,
+                project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+                name TEXT NOT NULL,
+                description TEXT,
+                value TEXT NOT NULL,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW(),
+                UNIQUE(project_id, name)
+            )
+        `);
 
-        // 1. Fetch Function & Files
-        console.log('[Invoke] Querying function meta...');
+        try {
+            await query(`ALTER TABLE projects ADD COLUMN IF NOT EXISTS encryption_salt TEXT`);
+        } catch { /* ignore */ }
+
+        // Fetch function
         const funcResult = await query(
             'SELECT id FROM edge_functions WHERE project_id = $1 AND slug = $2',
-            [auth.projectId, name]
+            [projectId, functionSlug]
         );
 
         if (funcResult.rows.length === 0) {
-            console.log('[Invoke] Function not found in DB');
             return NextResponse.json({ error: 'Function not found' }, { status: 404 });
         }
 
         const funcId = funcResult.rows[0].id;
-        console.log('[Invoke] ID found:', funcId);
-        
         const filesResult = await query('SELECT path, content FROM edge_function_files WHERE function_id = $1', [funcId]);
         const files = filesResult.rows;
-        console.log(`[Invoke] Loaded ${files.length} files.`);
 
         // Find entry point
         let entryPoint = files.find((f: any) => f.path === 'index.js' || f.path === 'index.ts' || f.path === 'index.tsx');
@@ -77,57 +86,43 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ nam
         }
 
         if (!entryPoint) {
-            console.log('[Invoke] Entry point not found');
             return NextResponse.json({ 
-                error: 'Entry point not found. Please ensure you have an index.js/ts or only one file deployed.' 
+                error: 'Entry point not found. Ensure you have an index.js/ts file.' 
             }, { status: 400 });
         }
 
-        // 2. Fetch Secrets from Vault (with graceful fallback)
-        console.log('[Invoke] Querying secrets...');
+        // Fetch secrets
         let secrets: { [key: string]: string } = {};
-        
         try {
-            const projectRes = await query('SELECT encryption_salt FROM projects WHERE id = $1', [auth.projectId]);
+            const projectRes = await query('SELECT encryption_salt FROM projects WHERE id = $1', [projectId]);
             let salt = projectRes.rows[0]?.encryption_salt;
             
             if (!salt) {
-                // Generate and save salt if missing
                 salt = crypto.randomBytes(16).toString('hex');
-                await query('UPDATE projects SET encryption_salt = $1 WHERE id = $2', [salt, auth.projectId]);
+                await query('UPDATE projects SET encryption_salt = $1 WHERE id = $2', [salt, projectId]);
             }
             
             const projectKey = deriveProjectKey(salt);
-
-            const secretsResult = await query('SELECT name, value FROM vault_secrets WHERE project_id = $1', [auth.projectId]);
+            const secretsResult = await query('SELECT name, value FROM vault_secrets WHERE project_id = $1', [projectId]);
+            
             secretsResult.rows.forEach((row: any) => {
                 try {
                     secrets[row.name] = decrypt(row.value, projectKey);
-                } catch (e) {
+                } catch {
                     logs.push(`WARN: Failed to decrypt secret "${row.name}"`);
                 }
             });
-            console.log(`[Invoke] Decrypted ${Object.keys(secrets).length} secrets.`);
         } catch (e: any) {
             logs.push(`WARN: Could not load secrets: ${e.message}`);
         }
 
-        // 3. Parse Body
-        console.log('[Invoke] Parsing request body...');
-        let body = {};
-        try {
-            const text = await req.text();
-            if (text) body = JSON.parse(text);
-        } catch { /* ignore */ }
-
-        // 4. Prepare Sandbox
-        console.log('[Invoke] Preparing sandbox...');
+        // Prepare sandbox
         const sandbox: any = {
             event: {
-                body,
-                headers: Object.fromEntries(req.headers),
-                method: req.method,
-                url: req.url
+                body: payload,
+                headers: {},
+                method: 'POST',
+                url: `/api/functions/invoke`
             },
             console: {
                 log: (...args: any[]) => logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')),
@@ -135,24 +130,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ nam
                 warn: (...args: any[]) => logs.push('WARN: ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')),
                 info: (...args: any[]) => logs.push('INFO: ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '))
             },
-            // DB Helper with schema isolation
             db: {
                 query: async (sql: string, params: any[] = []) => {
-                    const schema = `p${auth.projectId}`;
+                    const schema = `p${projectId}`;
                     logs.push(`[DB] Schema: ${schema}`);
-                    
-                    // Ensure schema exists
                     await query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
                     await query(`SET search_path TO ${schema}, public`);
-
                     logs.push(`[DB] Execute: ${sql.substring(0, 100)}...`);
                     const result = await query(sql, params);
                     return result.rows;
                 }
             },
-            // Inject Secrets
             secrets,
-            // Simple VFS require
             require: (modulePath: string) => {
                 const cleanPath = modulePath.replace(/^\.\//, '');
                 const file = files.find((f: any) => 
@@ -164,29 +153,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ nam
                 if (file.path.endsWith('.json')) return JSON.parse(file.content);
                 return file.content;
             },
-            // Utility functions
-            JSON,
-            Math,
-            Date,
-            Array,
-            Object,
-            String,
-            Number,
-            Boolean,
-            Promise,
+            JSON, Math, Date, Array, Object, String, Number, Boolean, Promise,
             setTimeout: (fn: Function, ms: number) => {
-                if (ms > 1000) ms = 1000; // Cap timeout
+                if (ms > 1000) ms = 1000;
                 return setTimeout(fn, ms);
             },
             fetch: async (url: string, options?: any) => {
                 logs.push(`[Fetch] ${options?.method || 'GET'} ${url}`);
-                const response = await fetch(url, options);
-                return response;
+                return fetch(url, options);
             }
         };
 
-        // 5. Execute
-        console.log('[Invoke] Starting VM execution...');
+        // Execute
         const script = `
             (async () => {
                 const { event, console, db, require, secrets, JSON, Math, Date, Array, Object, String, Number, Boolean, Promise, setTimeout, fetch } = this;
@@ -194,7 +172,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ nam
             })()
         `;
 
-        // Execution with timeout
         const timeoutPromise = new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Execution timed out after 2000ms')), 2000)
         );
@@ -204,17 +181,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ nam
             timeoutPromise
         ]);
 
-        const executionTime = Date.now() - startTime;
-        console.log(`[Invoke] Execution finished in ${executionTime}ms`);
-
         return NextResponse.json({
             result: executionResult,
             logs,
-            executionTime
+            executionTime: Date.now() - startTime
         });
 
     } catch (e: any) {
-        console.error('[Invoke] ERROR:', e.message);
         return NextResponse.json({ 
             error: 'Execution Failed', 
             details: e.message, 
