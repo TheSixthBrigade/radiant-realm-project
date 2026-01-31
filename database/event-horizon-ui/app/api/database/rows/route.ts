@@ -73,10 +73,12 @@ export async function POST(req: NextRequest) {
 
         const columns = Object.keys(data);
         const values = Object.values(data);
-        const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
-        const columnList = columns.map(c => `"${c}"`).join(', ');
+        // CRITICAL: PostgreSQL placeholders must have $ prefix
+        const placeholders = columns.map((_, i) => '$' + (i + 1)).join(', ');
+        const columnList = columns.map(c => '"' + c + '"').join(', ');
 
         const sql = `INSERT INTO "${schema}"."${table}" (${columnList}) VALUES (${placeholders}) RETURNING *`;
+        console.log('Insert SQL:', sql, 'Values:', values);
         const result = await query(sql, values);
 
         return NextResponse.json({ success: true, row: result.rows[0] });
@@ -103,10 +105,12 @@ export async function PUT(req: NextRequest) {
         const whereColumns = Object.keys(where);
         const whereValues = Object.values(where);
 
-        const setClause = setColumns.map((col, i) => `"${col}" = $${i + 1}`).join(', ');
-        const whereClause = whereColumns.map((col, i) => `"${col}" = $${setColumns.length + i + 1}`).join(' AND ');
+        // CRITICAL: PostgreSQL placeholders must have $ prefix
+        const setClause = setColumns.map((col, i) => '"' + col + '" = $' + (i + 1)).join(', ');
+        const whereClause = whereColumns.map((col, i) => '"' + col + '" = $' + (setColumns.length + i + 1)).join(' AND ');
 
         const sql = `UPDATE "${schema}"."${table}" SET ${setClause} WHERE ${whereClause} RETURNING *`;
+        console.log('Update SQL:', sql);
         const result = await query(sql, [...setValues, ...whereValues]);
 
         return NextResponse.json({ success: true, row: result.rows[0], rowsAffected: result.rowCount });
@@ -130,9 +134,11 @@ export async function DELETE(req: NextRequest) {
 
         const whereColumns = Object.keys(where);
         const whereValues = Object.values(where);
-        const whereClause = whereColumns.map((col, i) => `"${col}" = $${i + 1}`).join(' AND ');
+        // CRITICAL: PostgreSQL placeholders must have $ prefix
+        const whereClause = whereColumns.map((col, i) => '"' + col + '" = $' + (i + 1)).join(' AND ');
 
         const sql = `DELETE FROM "${schema}"."${table}" WHERE ${whereClause} RETURNING *`;
+        console.log('Delete SQL:', sql);
         const result = await query(sql, whereValues);
 
         return NextResponse.json({ success: true, deleted: result.rows, rowsAffected: result.rowCount });

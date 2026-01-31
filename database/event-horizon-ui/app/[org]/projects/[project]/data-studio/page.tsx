@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import {
     Table,
     Search,
@@ -22,7 +23,8 @@ import { useUser } from "@/hooks/useUser";
 
 export default function DataStudioPage() {
     const { user } = useUser();
-    const { currentProject } = useProject();
+    const { currentProject, projects } = useProject();
+    const params = useParams();
     const [tables, setTables] = useState<any[]>([]);
     const [selectedTable, setSelectedTable] = useState<string | null>(null);
     const [columns, setColumns] = useState<any[]>([]);
@@ -31,6 +33,19 @@ export default function DataStudioPage() {
     const [loadingRows, setLoadingRows] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [pagination, setPagination] = useState({ total: 0, offset: 0, limit: 50 });
+
+    // Get project ID - try currentProject first, then find from projects list by URL slug
+    const getProjectId = () => {
+        if (currentProject?.id) return currentProject.id;
+        if (params?.project && projects.length > 0) {
+            const slug = params.project as string;
+            const found = projects.find(p => 
+                p.slug === slug || p.name === slug || String(p.id) === slug
+            );
+            return found?.id;
+        }
+        return null;
+    };
 
     // Modal states
     const [showInsertModal, setShowInsertModal] = useState(false);
@@ -58,11 +73,12 @@ export default function DataStudioPage() {
     const fetchTables = async () => {
         setLoading(true);
         try {
-            const projectId = currentProject?.id;
+            const projectId = getProjectId();
             const timestamp = Date.now(); // Cache buster
             const url = projectId
                 ? `/api/database/tables?schema=public&projectId=${projectId}&_t=${timestamp}`
                 : `/api/database/tables?schema=public&_t=${timestamp}`;
+            console.log('Fetching tables with projectId:', projectId);
             const res = await fetch(url, { cache: 'no-store' });
             if (res.ok) {
                 const data = await res.json();
@@ -105,8 +121,9 @@ export default function DataStudioPage() {
                     if (!col.column_default?.includes('nextval') && !col.is_primary_key) {
                         if ((colName === 'owner_id' || colName === 'user_id' || colName === 'author_id') && user?.id) {
                             initialData[col.column_name] = user.id.toString();
-                        } else if (colName === 'project_id' && currentProject?.id) {
-                            initialData[col.column_name] = currentProject.id.toString();
+                        } else if (colName === 'project_id') {
+                            const pid = getProjectId();
+                            initialData[col.column_name] = pid ? pid.toString() : '';
                         } else if (colName === 'created_at' || colName === 'updated_at') {
                             initialData[col.column_name] = new Date().toISOString();
                         } else {
@@ -202,14 +219,16 @@ export default function DataStudioPage() {
         }
 
         // Force project_id to current project
-        if (currentProject?.id) {
-            transformedData.project_id = currentProject.id;
+        const projectId = getProjectId();
+        if (projectId) {
+            transformedData.project_id = projectId;
         } else {
-            // Try to get project_id from URL params if currentProject is not set
-            console.warn('currentProject not set, insert may fail for project_id');
+            console.error('No project ID available for insert!');
+            setInsertError('Project not found. Please refresh the page.');
+            return;
         }
 
-        console.log('Inserting row:', { table: selectedTable, data: transformedData });
+        console.log('Inserting row:', { table: selectedTable, data: transformedData, projectId });
 
         setInserting(true);
         try {
@@ -244,6 +263,13 @@ export default function DataStudioPage() {
         setCreateTableError(null);
         setCreatingTable(true);
         
+        const projectId = getProjectId();
+        if (!projectId) {
+            setCreateTableError('Project not found. Please refresh the page.');
+            setCreatingTable(false);
+            return;
+        }
+        
         try {
             const tableName = newTableName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
             const res = await fetch('/api/database/create-table', {
@@ -252,7 +278,7 @@ export default function DataStudioPage() {
                 body: JSON.stringify({
                     tableName,
                     columns: customColumns.filter(c => c.name.trim()),
-                    projectId: currentProject?.id
+                    projectId
                 })
             });
             const result = await res.json();
@@ -279,13 +305,15 @@ export default function DataStudioPage() {
         if (!tableToDelete) return;
         setDeletingTable(true);
         
+        const projectId = getProjectId();
+        
         try {
             const res = await fetch('/api/database/delete-table', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     tableName: tableToDelete,
-                    projectId: currentProject?.id
+                    projectId
                 })
             });
             const result = await res.json();
@@ -588,16 +616,17 @@ export default function DataStudioPage() {
                             {columns.filter(c => !c.column_default?.includes('nextval') && !c.is_primary_key).map(col => {
                                 const colName = col.column_name.toLowerCase();
                                 const isProjectId = colName === 'project_id';
+                                const projectIdValue = getProjectId();
                                 return (
                                     <div key={col.column_name} className="space-y-2">
                                         <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                             {col.column_name}
                                             <span className="text-gray-700 font-mono normal-case">{col.udt_name}</span>
                                             {col.is_nullable === 'NO' && <span className="text-red-500">*</span>}
-                                            {isProjectId && <span className="text-[9px] text-[#3ecf8e] ml-auto">Auto-set to {currentProject?.id}</span>}
+                                            {isProjectId && <span className="text-[9px] text-[#3ecf8e] ml-auto">Auto-set to {projectIdValue}</span>}
                                         </label>
                                         <input
-                                            value={isProjectId ? (currentProject?.id || '') : (insertData[col.column_name] || '')}
+                                            value={isProjectId ? (projectIdValue || '') : (insertData[col.column_name] || '')}
                                             onChange={(e) => !isProjectId && setInsertData({ ...insertData, [col.column_name]: e.target.value })}
                                             disabled={isProjectId}
                                             className={cn(
