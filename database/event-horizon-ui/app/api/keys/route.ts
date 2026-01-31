@@ -37,10 +37,18 @@ async function verifyAccess(req: NextRequest, projectId?: string) {
             return { authorized: true, userId: userRes.rows[0]?.id };
         }
 
-        const userRes = await query('SELECT id FROM users WHERE identity_id = $1', [payload.id]);
+        // Try to find user by identity_id first, then by email
+        let userRes = await query('SELECT id FROM users WHERE identity_id = $1', [payload.id]);
         console.log('[API Keys] User lookup by identity_id:', payload.id, 'found:', userRes.rows.length);
+        
+        if (userRes.rows.length === 0 && payload.email) {
+            // Fallback: try to find by email
+            userRes = await query('SELECT id FROM users WHERE email = $1', [payload.email]);
+            console.log('[API Keys] User lookup by email:', payload.email, 'found:', userRes.rows.length);
+        }
+        
         if (userRes.rows.length === 0) {
-            console.log('[API Keys] User not found - unauthorized');
+            console.log('[API Keys] User not found by identity_id or email - unauthorized');
             return { authorized: false };
         }
         const userId = userRes.rows[0].id;
