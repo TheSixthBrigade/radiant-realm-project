@@ -143,9 +143,10 @@ export default function DataStudioPage() {
     const fetchRows = async (tableName: string, offset = 0) => {
         setLoadingRows(true);
         try {
-            const url = `/api/database/rows?table=${tableName}&schema=public&limit=50&offset=${offset}`;
+            const timestamp = Date.now(); // Cache buster
+            const url = `/api/database/rows?table=${tableName}&schema=public&limit=50&offset=${offset}&_t=${timestamp}`;
             console.log('Fetching rows from:', url);
-            const res = await fetch(url);
+            const res = await fetch(url, { cache: 'no-store' });
             const data = await res.json();
             console.log('Fetched rows response:', JSON.stringify(data));
             console.log('Rows array:', data.rows, 'Length:', data.rows?.length);

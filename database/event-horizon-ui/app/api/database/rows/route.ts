@@ -46,13 +46,18 @@ export async function GET(req: NextRequest) {
         const total = parseInt(countResult.rows[0]?.total || '0');
         console.log('Total count:', total);
 
-        return NextResponse.json({
+        const response = NextResponse.json({
             rows: result.rows,
             total,
             limit,
             offset,
             hasMore: offset + limit < total
         });
+        // Prevent caching
+        response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        response.headers.set('Pragma', 'no-cache');
+        response.headers.set('Expires', '0');
+        return response;
     } catch (error: any) {
         console.error('Row fetch error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
