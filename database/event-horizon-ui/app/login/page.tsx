@@ -15,6 +15,7 @@ function LoginContent() {
     const urlError = searchParams.get('error');
     const urlSetupPassword = searchParams.get('setup_password');
     const urlEmail = searchParams.get('email');
+    const loggedOut = searchParams.get('logged_out');
     
     // Set initial state based on URL params
     const initialMode = (urlSsoEmail === 'true' && urlDomain) ? 'sso_email' : 'social';
@@ -33,6 +34,18 @@ function LoginContent() {
     const [ssoPassword, setSsoPassword] = useState("");
     const [ssoConfirmPassword, setSsoConfirmPassword] = useState("");
     const [requiresPasswordSetup, setRequiresPasswordSetup] = useState(urlSetupPassword === 'true');
+
+    // Clear any stale cookies when login page loads
+    useEffect(() => {
+        // Clear cookies client-side to ensure clean login state
+        document.cookie = 'pqc_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = 'lattice_admin=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        
+        // If we just logged out, show a message
+        if (loggedOut === 'true') {
+            setSuccess('You have been logged out successfully.');
+        }
+    }, [loggedOut]);
 
     const handleLatticeLogin = async (e: React.FormEvent) => {
         e.preventDefault();

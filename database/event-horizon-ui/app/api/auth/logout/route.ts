@@ -8,30 +8,28 @@ export async function POST(req: NextRequest) {
     const response = NextResponse.json({ success: true, message: 'Logged out successfully' });
     
     // Clear all auth cookies by setting them to expire immediately
-    response.cookies.set('pqc_session', '', {
+    // Use multiple methods to ensure cookies are cleared
+    const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 0,
+        sameSite: 'lax' as const,
+        maxAge: -1,
         path: '/',
         expires: new Date(0)
-    });
+    };
     
-    response.cookies.set('lattice_admin', '', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 0,
-        path: '/',
-        expires: new Date(0)
-    });
+    response.cookies.set('pqc_session', '', cookieOptions);
+    response.cookies.set('lattice_admin', '', cookieOptions);
+    response.cookies.set('session', '', { ...cookieOptions, httpOnly: false });
+    
+    // Also delete cookies (alternative method)
+    response.cookies.delete('pqc_session');
+    response.cookies.delete('lattice_admin');
+    response.cookies.delete('session');
 
-    // Clear any other potential session cookies
-    response.cookies.set('session', '', {
-        maxAge: 0,
-        path: '/',
-        expires: new Date(0)
-    });
+    // Set cache control to prevent caching of auth state
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
 
     return response;
 }
@@ -42,26 +40,23 @@ export async function POST(req: NextRequest) {
  */
 export async function GET(req: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    const response = NextResponse.redirect(new URL('/login', baseUrl));
+    const response = NextResponse.redirect(new URL('/login?logged_out=true', baseUrl));
     
-    // Clear all auth cookies
-    response.cookies.set('pqc_session', '', {
+    const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 0,
+        sameSite: 'lax' as const,
+        maxAge: -1,
         path: '/',
         expires: new Date(0)
-    });
+    };
     
-    response.cookies.set('lattice_admin', '', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 0,
-        path: '/',
-        expires: new Date(0)
-    });
+    response.cookies.set('pqc_session', '', cookieOptions);
+    response.cookies.set('lattice_admin', '', cookieOptions);
+    response.cookies.delete('pqc_session');
+    response.cookies.delete('lattice_admin');
+    
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
 
     return response;
 }
