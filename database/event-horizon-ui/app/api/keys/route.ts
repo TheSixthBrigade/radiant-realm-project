@@ -4,12 +4,25 @@ import { jwtVerify } from 'jose';
 import { generateApiKey, sha256 } from '@/lib/crypto';
 
 async function verifyAccess(req: NextRequest, projectId?: string) {
+    // Check for Lattice admin first
+    const LATTICE_MASTER_KEY = process.env.LATTICE_MASTER_KEY || 'vectabase-lattice-2026-master-key';
+    const latticeToken = req.cookies.get('lattice_admin')?.value;
+    if (latticeToken === LATTICE_MASTER_KEY) {
+        return { authorized: true, userId: 0, isLatticeAdmin: true };
+    }
+
     const token = req.cookies.get('pqc_session')?.value;
     if (!token) return { authorized: false };
     try {
         const secret = new TextEncoder().encode(process.env.DB_PASSWORD || 'postgres');
         const { payload } = await jwtVerify(token, secret);
 
+        // Check if JWT is for Lattice admin
+        if (payload.isLatticeAdmin) {
+            return { authorized: true, userId: 0, isLatticeAdmin: true };
+        }
+
+        // Admin emails always have access
         if (payload.email === 'thecheesemanatyou@gmail.com' || payload.email === 'maxedwardcheetham@gmail.com') {
             const userRes = await query('SELECT id FROM users WHERE email = $1', [payload.email]);
             return { authorized: true, userId: userRes.rows[0]?.id };
@@ -20,12 +33,19 @@ async function verifyAccess(req: NextRequest, projectId?: string) {
         const userId = userRes.rows[0].id;
 
         if (projectId) {
-            const membership = await query('SELECT role FROM project_users WHERE user_id = $1 AND project_id = $2', [userId, projectId]);
-            if (membership.rows.length === 0) return { authorized: false };
+            // Check if user owns the org that owns the project, or has direct project access
+            const accessCheck = await query(`
+                SELECT 1 FROM projects p
+                JOIN organizations o ON p.org_id = o.id
+                LEFT JOIN project_users pu ON pu.project_id = p.id AND pu.user_id = $1
+                WHERE p.id = $2 AND (o.owner_id = $1 OR pu.user_id IS NOT NULL)
+            `, [userId, projectId]);
+            if (accessCheck.rows.length === 0) return { authorized: false };
         }
 
         return { authorized: true, userId };
-    } catch {
+    } catch (e) {
+        console.error('verifyAccess error:', e);
         return { authorized: false };
     }
 }
