@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyAccess } from '@/lib/auth';
 
+// System/internal tables that should NEVER be shown in the Table Editor
 const INTERNAL_TABLES = [
     'api_keys',
     'app_users',
@@ -13,19 +14,50 @@ const INTERNAL_TABLES = [
     'users',
     '_vectabase_migrations',
     'storage_buckets',
-    'storage_objects'
+    'storage_objects',
+    // Security/system tables
+    'sessions',
+    'sso_configurations',
+    'sso_invites',
+    'vault_secrets',
+    'encryption_keys',
+    'security_audit_log',
+    'failed_logins',
+    'rate_limits',
+    // Views (can't insert into these)
+    'active_sessions',
+    // Edge function tables (internal)
+    'edge_functions',
+    'edge_function_files',
+    // Webhook/realtime internal
+    'webhooks',
+    'realtime_subscriptions',
+    'realtime_broadcasts',
+    // Migration tracking
+    'migrations',
+    'applied_migrations',
+    // Roblox internal
+    'roblox_users',
+    // Announcements (internal)
+    'announcements',
+    // CLI sync
+    'cli_test_sync'
 ];
 
 export async function GET(req: NextRequest) {
-    const { authorized } = await verifyAccess(req);
+    const { authorized, projectId: authProjectId } = await verifyAccess(req);
     if (!authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
     const schema = searchParams.get('schema') || 'public';
-    const projectId = searchParams.get('projectId');
+    const projectId = searchParams.get('projectId') || authProjectId;
 
     try {
+        // Build the exclusion list for the query
+        const exclusionPlaceholders = INTERNAL_TABLES.map((_, i) => `$${i + 2}`).join(', ');
+        
         // Query PostgreSQL information_schema for real table data
+        // Only show BASE TABLEs (not VIEWs) to avoid insert errors
         const result = await query(`
             SELECT 
                 t.table_name,
@@ -37,16 +69,17 @@ export async function GET(req: NextRequest) {
                 ) as column_count
             FROM information_schema.tables t
             WHERE t.table_schema = $1
-            AND t.table_type IN ('BASE TABLE', 'VIEW')
-            AND t.table_name NOT IN (${INTERNAL_TABLES.map((_, i) => `$${i + 2}`).join(', ')})
+            AND t.table_type = 'BASE TABLE'
+            AND t.table_name NOT IN (${exclusionPlaceholders})
             ORDER BY t.table_name
         `, [schema, ...INTERNAL_TABLES]);
 
-        // Get row count estimates for each table
+        // Get row count estimates for each table, filtered by project if specified
         const tablesWithCounts = await Promise.all(
             result.rows.map(async (table: any) => {
                 try {
                     let count = 0;
+                    
                     if (projectId) {
                         // Check if project_id column exists
                         const colCheck = await query(`
@@ -55,27 +88,34 @@ export async function GET(req: NextRequest) {
                         `, [schema, table.table_name]);
 
                         if (colCheck.rows.length > 0) {
-                            const res = await query(`SELECT COUNT(*) as count FROM "${schema}"."${table.table_name}" WHERE project_id = $1`, [projectId]);
+                            // Table has project_id - filter by it
+                            const res = await query(
+                                `SELECT COUNT(*) as count FROM "${schema}"."${table.table_name}" WHERE project_id = $1`, 
+                                [projectId]
+                            );
                             count = parseInt(res.rows[0].count);
+                            return { ...table, row_count_estimate: count, has_project_id: true };
                         } else {
-                            // Non-scoped table, return 0 for project-only view
-                            count = 0;
+                            // Table doesn't have project_id - it's a shared/global table
+                            // Don't show it in project-specific view
+                            return null;
                         }
                     } else {
+                        // No project filter - show all with total counts
                         const countResult = await query(`SELECT COUNT(*) as count FROM "${schema}"."${table.table_name}"`);
                         count = parseInt(countResult.rows[0].count);
+                        return { ...table, row_count_estimate: count };
                     }
-                    return {
-                        ...table,
-                        row_count_estimate: count
-                    };
                 } catch {
-                    return { ...table, row_count_estimate: 0 };
+                    return null;
                 }
             })
         );
 
-        return NextResponse.json(tablesWithCounts);
+        // Filter out nulls (tables that don't belong to this project)
+        const filteredTables = tablesWithCounts.filter(t => t !== null);
+
+        return NextResponse.json(filteredTables);
     } catch (error: any) {
         console.error('Database introspection error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
