@@ -7,29 +7,42 @@ async function verifyAccess(req: NextRequest, projectId?: string) {
     // Check for Lattice admin first
     const LATTICE_MASTER_KEY = process.env.LATTICE_MASTER_KEY || 'vectabase-lattice-2026-master-key';
     const latticeToken = req.cookies.get('lattice_admin')?.value;
+    console.log('[API Keys] Lattice token present:', !!latticeToken);
     if (latticeToken === LATTICE_MASTER_KEY) {
+        console.log('[API Keys] Lattice admin authorized');
         return { authorized: true, userId: 0, isLatticeAdmin: true };
     }
 
     const token = req.cookies.get('pqc_session')?.value;
-    if (!token) return { authorized: false };
+    console.log('[API Keys] PQC session token present:', !!token);
+    if (!token) {
+        console.log('[API Keys] No token found - unauthorized');
+        return { authorized: false };
+    }
     try {
         const secret = new TextEncoder().encode(process.env.DB_PASSWORD || 'postgres');
         const { payload } = await jwtVerify(token, secret);
+        console.log('[API Keys] JWT payload:', JSON.stringify(payload));
 
         // Check if JWT is for Lattice admin
         if (payload.isLatticeAdmin) {
+            console.log('[API Keys] JWT has isLatticeAdmin flag');
             return { authorized: true, userId: 0, isLatticeAdmin: true };
         }
 
         // Admin emails always have access
         if (payload.email === 'thecheesemanatyou@gmail.com' || payload.email === 'maxedwardcheetham@gmail.com') {
+            console.log('[API Keys] Admin email detected:', payload.email);
             const userRes = await query('SELECT id FROM users WHERE email = $1', [payload.email]);
             return { authorized: true, userId: userRes.rows[0]?.id };
         }
 
         const userRes = await query('SELECT id FROM users WHERE identity_id = $1', [payload.id]);
-        if (userRes.rows.length === 0) return { authorized: false };
+        console.log('[API Keys] User lookup by identity_id:', payload.id, 'found:', userRes.rows.length);
+        if (userRes.rows.length === 0) {
+            console.log('[API Keys] User not found - unauthorized');
+            return { authorized: false };
+        }
         const userId = userRes.rows[0].id;
 
         if (projectId) {
@@ -40,12 +53,17 @@ async function verifyAccess(req: NextRequest, projectId?: string) {
                 LEFT JOIN project_users pu ON pu.project_id = p.id AND pu.user_id = $1
                 WHERE p.id = $2 AND (o.owner_id = $1 OR pu.user_id IS NOT NULL)
             `, [userId, projectId]);
-            if (accessCheck.rows.length === 0) return { authorized: false };
+            console.log('[API Keys] Access check for userId:', userId, 'projectId:', projectId, 'result:', accessCheck.rows.length);
+            if (accessCheck.rows.length === 0) {
+                console.log('[API Keys] No project access - unauthorized');
+                return { authorized: false };
+            }
         }
 
+        console.log('[API Keys] Authorized userId:', userId);
         return { authorized: true, userId };
     } catch (e) {
-        console.error('verifyAccess error:', e);
+        console.error('[API Keys] verifyAccess error:', e);
         return { authorized: false };
     }
 }
