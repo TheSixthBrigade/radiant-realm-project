@@ -104,7 +104,37 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
     sql += '-- DATA DUMP\n';
     sql += '-- ============================================\n\n';
 
-    // Get ALL tables dynamically
+    // Tables in correct order for foreign key dependencies
+    // Parent tables first, then child tables
+    const orderedTables = [
+        // Base tables (no foreign keys)
+        'permissions',
+        'users',
+        'sessions',
+        // Second level (depends on users)
+        'organizations',
+        'sso_configurations',
+        // Third level (depends on organizations)
+        'projects',
+        // Fourth level (depends on projects/users)
+        'project_users',
+        'api_keys',
+        'edge_functions',
+        'vault_secrets',
+        'webhooks',
+        'storage_buckets',
+        'provider_configs',
+        // Fifth level (depends on above)
+        'edge_function_files',
+        'storage_objects',
+        // Security/audit tables
+        'security_audit_log',
+        'rate_limits',
+        'failed_logins',
+        'encryption_keys',
+    ];
+
+    // Get ALL tables dynamically and merge with ordered list
     const allTablesResult = await pool.query(`
         SELECT table_name 
         FROM information_schema.tables 
@@ -113,8 +143,10 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
         ORDER BY table_name
     `);
     
-    const tablesToDump = allTablesResult.rows.map(r => r.table_name);
-    console.log(`Found ${tablesToDump.length} tables to dump`);
+    const allTables = allTablesResult.rows.map(r => r.table_name);
+    // Add any tables not in our ordered list at the end
+    const tablesToDump = [...orderedTables, ...allTables.filter(t => !orderedTables.includes(t))];
+    console.log(`Found ${allTables.length} tables to dump (ordered: ${orderedTables.length})`);
 
     for (const table of tablesToDump) {
         try {
@@ -153,8 +185,29 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
                     if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';
                     if (typeof val === 'number') return val.toString();
                     if (val instanceof Date) return `'${val.toISOString()}'`;
-                    if (Array.isArray(val)) return `ARRAY[${val.map(v => `'${String(v).replace(/'/g, "''")}'`).join(',')}]`;
-                    if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
+                    if (Array.isArray(val)) {
+                        // Determine array type based on content
+                        if (val.length === 0) return "'{}'";
+                        const firstVal = val[0];
+                        if (typeof firstVal === 'number') {
+                            // Integer array
+                            return `ARRAY[${val.join(',')}]::integer[]`;
+                        } else {
+                            // Text array - but check if column expects integer[]
+                            // For allowed_project_ids, cast to integer
+                            if (col === 'allowed_project_ids') {
+                                return `ARRAY[${val.map(v => parseInt(v) || 0).join(',')}]::integer[]`;
+                            }
+                            return `ARRAY[${val.map(v => `'${String(v).replace(/'/g, "''")}'`).join(',')}]::text[]`;
+                        }
+                    }
+                    if (typeof val === 'object') {
+                        // JSONB columns
+                        if (col === 'permissions' || col === 'device_info' || col === 'metadata' || col === 'old_values' || col === 'new_values' || col === 'details') {
+                            return `'${JSON.stringify(val).replace(/'/g, "''")}'::jsonb`;
+                        }
+                        return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
+                    }
                     return `'${String(val).replace(/'/g, "''")}'`;
                 });
                 

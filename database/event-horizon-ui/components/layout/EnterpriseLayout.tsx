@@ -246,10 +246,17 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
                 <div className="mt-auto flex flex-col gap-4 pb-2">
                     <Link href="/settings" className="text-gray-500 hover:text-white transition-colors"><Settings size={20} /></Link>
                     <button 
-                        onClick={() => {
-                            // Clear all auth cookies
+                        onClick={async () => {
+                            // Call logout API to properly clear server-side session
+                            try {
+                                await fetch('/api/auth/logout', { method: 'POST' });
+                            } catch (e) {
+                                console.error('Logout error:', e);
+                            }
+                            // Clear client-side cookies as backup
                             document.cookie = 'pqc_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
                             document.cookie = 'lattice_admin=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                            // Force full page reload to clear any cached state
                             window.location.href = '/login';
                         }}
                         className="text-gray-500 hover:text-red-400 transition-colors"

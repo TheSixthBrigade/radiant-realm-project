@@ -29,6 +29,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Email domain does not match SSO domain' }, { status: 403 });
         }
 
+        // Check if this domain has any existing users (first user becomes admin)
+        const existingDomainUsers = await query(
+            `SELECT COUNT(*) as count FROM users WHERE email LIKE $1 AND provider = 'sso'`,
+            [`%@${domain}`]
+        );
+        const isFirstUserForDomain = parseInt(existingDomainUsers.rows[0].count) === 0;
+
         // Check if user exists
         let userResult = await query(
             'SELECT * FROM users WHERE email = $1',
@@ -38,13 +45,29 @@ export async function POST(req: NextRequest) {
         let user = userResult.rows[0];
 
         if (!user) {
-            // Auto-provision user if enabled
-            if (!config.auto_provision_users) {
-                return NextResponse.json({ error: 'User not found and auto-provisioning is disabled' }, { status: 403 });
+            // For non-first users, check if auto-provisioning is enabled OR if they were invited
+            if (!isFirstUserForDomain && !config.auto_provision_users) {
+                // Check if user was invited by domain admin
+                const inviteCheck = await query(
+                    'SELECT * FROM sso_invites WHERE email = $1 AND domain = $2 AND used_at IS NULL AND expires_at > NOW()',
+                    [email, domain]
+                );
+                
+                if (inviteCheck.rows.length === 0) {
+                    return NextResponse.json({ 
+                        error: 'You must be invited by your domain administrator to access this system',
+                        requiresInvite: true 
+                    }, { status: 403 });
+                }
+                
+                // Mark invite as used
+                await query('UPDATE sso_invites SET used_at = NOW() WHERE id = $1', [inviteCheck.rows[0].id]);
             }
 
             // Create new user - they need to set password on first login
             const identityId = `sso:${domain}:${Date.now()}`;
+            const role = isFirstUserForDomain ? 'domain_admin' : (config.default_role || 'Member');
+            
             const newUserResult = await query(
                 `INSERT INTO users (email, identity_id, name, provider, created_at)
                  VALUES ($1, $2, $3, $4, NOW())
@@ -52,6 +75,22 @@ export async function POST(req: NextRequest) {
                 [email, identityId, email.split('@')[0], 'sso']
             );
             user = newUserResult.rows[0];
+            
+            // If first user, make them the domain admin
+            if (isFirstUserForDomain) {
+                await query(
+                    'UPDATE sso_configurations SET created_by = $1 WHERE id = $2',
+                    [user.id, config.id]
+                );
+                
+                // Add to permissions as domain admin
+                await query(
+                    `INSERT INTO permissions (email, access_level, created_at)
+                     VALUES ($1, $2, NOW())
+                     ON CONFLICT (email) DO UPDATE SET access_level = $2`,
+                    [email, 'DomainAdmin']
+                );
+            }
 
             // Grant access to allowed projects
             if (config.allowed_project_ids && config.allowed_project_ids.length > 0) {
