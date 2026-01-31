@@ -3,6 +3,16 @@ import { SignJWT } from 'jose';
 import { query } from '@/lib/db';
 import { sha256 } from '@/lib/crypto';
 
+// Get the base URL for redirects (handles production vs dev)
+function getBaseUrl(req: NextRequest): string {
+    // In production, use the configured site URL
+    if (process.env.NEXT_PUBLIC_SITE_URL) {
+        return process.env.NEXT_PUBLIC_SITE_URL;
+    }
+    // Fallback to request origin
+    return req.nextUrl.origin;
+}
+
 /**
  * GET /api/auth/sso?domain=company.com
  * Enterprise SSO authentication - domain-based login
@@ -11,9 +21,10 @@ import { sha256 } from '@/lib/crypto';
  */
 export async function GET(req: NextRequest) {
     const domain = req.nextUrl.searchParams.get('domain');
+    const baseUrl = getBaseUrl(req);
     
     if (!domain) {
-        return NextResponse.redirect(new URL('/login?error=missing_domain', req.url));
+        return NextResponse.redirect(new URL('/login?error=missing_domain', baseUrl));
     }
 
     // Normalize domain
@@ -32,7 +43,7 @@ export async function GET(req: NextRequest) {
             // If email/password SSO (for domains like privateemail)
             if (config.idp_type === 'email') {
                 // Redirect to login page with SSO email mode
-                return NextResponse.redirect(new URL(`/login?sso_email=true&domain=${encodeURIComponent(normalizedDomain)}`, req.url));
+                return NextResponse.redirect(new URL(`/login?sso_email=true&domain=${encodeURIComponent(normalizedDomain)}`, baseUrl));
             }
             
             // If SAML/OIDC is configured with custom IdP URL, redirect there
@@ -42,7 +53,7 @@ export async function GET(req: NextRequest) {
             }
             
             // For Google-based SSO, redirect to Google OAuth with domain hint
-            const googleAuthUrl = new URL('/api/auth/google', req.url);
+            const googleAuthUrl = new URL('/api/auth/google', baseUrl);
             googleAuthUrl.searchParams.set('hd', normalizedDomain);
             googleAuthUrl.searchParams.set('sso_domain', normalizedDomain);
             
@@ -50,11 +61,11 @@ export async function GET(req: NextRequest) {
         }
 
         // No SSO config found - show error
-        return NextResponse.redirect(new URL(`/login?error=sso_not_configured&domain=${encodeURIComponent(normalizedDomain)}`, req.url));
+        return NextResponse.redirect(new URL(`/login?error=sso_not_configured&domain=${encodeURIComponent(normalizedDomain)}`, baseUrl));
 
     } catch (error) {
         console.error('SSO error:', error);
-        return NextResponse.redirect(new URL('/login?error=sso_failed', req.url));
+        return NextResponse.redirect(new URL('/login?error=sso_failed', baseUrl));
     }
 }
 

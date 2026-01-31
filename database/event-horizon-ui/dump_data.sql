@@ -1292,44 +1292,25 @@ SELECT 'Session security complete!' as status;
 -- DATA DUMP
 -- ============================================
 
--- users data
-INSERT INTO "users" ("id", "email", "name", "avatar_url", "identity_id", "provider", "created_at", "updated_at", "password_hash") VALUES (1, 'test@localhost', 'Local Developer', NULL, 'local-dev-001', 'local', '2026-01-30T20:01:17.635Z', '2026-01-30T20:01:17.635Z', NULL) ON CONFLICT DO NOTHING;
-INSERT INTO "users" ("id", "email", "name", "avatar_url", "identity_id", "provider", "created_at", "updated_at", "password_hash") VALUES (2, 'maxedwardcheetham@gmail.com', 'Phoenix Cheetah', NULL, 'google:101801468049696456427', 'google', '2026-01-30T20:05:50.170Z', '2026-01-30T20:05:50.170Z', NULL) ON CONFLICT DO NOTHING;
-INSERT INTO "users" ("id", "email", "name", "avatar_url", "identity_id", "provider", "created_at", "updated_at", "password_hash") VALUES (3, 'thecheesemanatyou@gmail.com', 'thecheese manatyou', NULL, 'google:118142992181711626941', 'google', '2026-01-30T20:06:03.735Z', '2026-01-30T20:06:03.735Z', NULL) ON CONFLICT DO NOTHING;
-INSERT INTO "users" ("id", "email", "name", "avatar_url", "identity_id", "provider", "created_at", "updated_at", "password_hash") VALUES (9, 'support@vectabase.com', 'support', NULL, 'sso:vectabase.com:1769849583223', 'sso', '2026-01-31T08:53:03.223Z', '2026-01-31T08:53:17.071Z', 'vectabase-sso-9-1769849597070:c1add7ea8e58b0015322522a199ab6907210f867e793441038b2c46bc56fb0a4') ON CONFLICT DO NOTHING;
-INSERT INTO "users" ("id", "email", "name", "avatar_url", "identity_id", "provider", "created_at", "updated_at", "password_hash") VALUES (4, 'lattice-admin@vectabase.internal', 'Lattice Admin', NULL, 'lattice:master-admin', 'lattice', '2026-01-30T20:25:17.132Z', '2026-01-31T09:58:56.931Z', NULL) ON CONFLICT DO NOTHING;
+-- _vectabase_migrations data
+INSERT INTO "_vectabase_migrations" ("id", "project_id", "filename", "hash", "executed_at") VALUES (1, 5, '002_cli_test.sql', '748da4cd727878d8ffef9fb344f76ff55cd72c4cf6a841e35c254b4d611438de', '2026-01-26T20:10:09.784Z') ON CONFLICT DO NOTHING;
+INSERT INTO "_vectabase_migrations" ("id", "project_id", "filename", "hash", "executed_at") VALUES (2, 1, '001_create_test_table.sql', '89702f81884e608419aa712dfdebb1c378dd478aed95f5b78acb6872cee257b4', '2026-01-30T20:03:41.444Z') ON CONFLICT DO NOTHING;
+INSERT INTO "_vectabase_migrations" ("id", "project_id", "filename", "hash", "executed_at") VALUES (3, 1, '002_cli_test.sql', '748da4cd727878d8ffef9fb344f76ff55cd72c4cf6a841e35c254b4d611438de', '2026-01-30T20:03:41.499Z') ON CONFLICT DO NOTHING;
 
--- permissions data
-INSERT INTO "permissions" ("id", "email", "access_level", "created_at") VALUES (1, 'thecheesemanatyou@gmail.com', 'Owner', '2026-01-30T20:01:16.819Z') ON CONFLICT DO NOTHING;
-INSERT INTO "permissions" ("id", "email", "access_level", "created_at") VALUES (3, 'lattice-admin@vectabase.internal', 'Owner', '2026-01-30T20:25:17.134Z') ON CONFLICT DO NOTHING;
-
--- organizations data
-INSERT INTO "organizations" ("id", "name", "slug", "owner_id", "billing_email", "plan", "created_at", "updated_at") VALUES (1, 'Local Development', 'local-dev', 1, NULL, 'free', '2026-01-30T20:01:17.638Z', '2026-01-30T20:01:17.638Z') ON CONFLICT DO NOTHING;
-INSERT INTO "organizations" ("id", "name", "slug", "owner_id", "billing_email", "plan", "created_at", "updated_at") VALUES (2, 'Default Org', 'default-org', 3, NULL, 'free', '2026-01-30T20:06:03.737Z', '2026-01-30T20:06:03.737Z') ON CONFLICT DO NOTHING;
-INSERT INTO "organizations" ("id", "name", "slug", "owner_id", "billing_email", "plan", "created_at", "updated_at") VALUES (3, 'test123', 'test123', 3, NULL, 'free', '2026-01-30T20:19:25.575Z', '2026-01-30T20:19:25.575Z') ON CONFLICT DO NOTHING;
-
--- projects data
-INSERT INTO "projects" ("id", "name", "slug", "org_id", "db_host", "db_port", "db_name", "db_user", "db_password", "encryption_salt", "region", "status", "created_at", "updated_at") VALUES (1, 'Test Project', 'test-project', 1, 'localhost', 5432, 'postgres', 'postgres', 'postgres', '7b0756cba4a2f079d7c2bdef0cebe603', 'us-east-1', 'active', '2026-01-30T20:01:17.641Z', '2026-01-30T20:03:07.053Z') ON CONFLICT DO NOTHING;
-INSERT INTO "projects" ("id", "name", "slug", "org_id", "db_host", "db_port", "db_name", "db_user", "db_password", "encryption_salt", "region", "status", "created_at", "updated_at") VALUES (2, 'Main Project', 'main-project', 2, 'localhost', 5432, NULL, NULL, NULL, NULL, 'us-east-1', 'active', '2026-01-30T20:06:03.739Z', '2026-01-30T20:06:03.739Z') ON CONFLICT DO NOTHING;
-INSERT INTO "projects" ("id", "name", "slug", "org_id", "db_host", "db_port", "db_name", "db_user", "db_password", "encryption_salt", "region", "status", "created_at", "updated_at") VALUES (3, 'test123', 'test123', 3, 'localhost', 5432, NULL, NULL, NULL, NULL, 'us-east-1', 'active', '2026-01-30T20:19:27.538Z', '2026-01-30T20:19:27.538Z') ON CONFLICT DO NOTHING;
-
--- project_users data
-INSERT INTO "project_users" ("id", "project_id", "user_id", "role", "created_at") VALUES (1, 1, 1, 'Owner', '2026-01-30T20:01:17.655Z') ON CONFLICT DO NOTHING;
-INSERT INTO "project_users" ("id", "project_id", "user_id", "role", "created_at") VALUES (2, 2, 3, 'Member', '2026-01-30T20:06:03.742Z') ON CONFLICT DO NOTHING;
-INSERT INTO "project_users" ("id", "project_id", "user_id", "role", "created_at") VALUES (3, 2, 9, 'Developer', '2026-01-31T08:53:03.225Z') ON CONFLICT DO NOTHING;
-
--- sso_configurations data
-INSERT INTO "sso_configurations" ("id", "domain", "enabled", "idp_type", "idp_url", "idp_issuer", "idp_certificate", "client_id", "client_secret", "auto_provision_users", "default_role", "allowed_project_ids", "created_by", "created_at", "updated_at") VALUES (1, 'testcompany.com', TRUE, 'google', '', NULL, NULL, NULL, NULL, TRUE, 'Member', ARRAY['2'], NULL, '2026-01-30T20:35:13.688Z', '2026-01-30T20:35:52.657Z') ON CONFLICT DO NOTHING;
-INSERT INTO "sso_configurations" ("id", "domain", "enabled", "idp_type", "idp_url", "idp_issuer", "idp_certificate", "client_id", "client_secret", "auto_provision_users", "default_role", "allowed_project_ids", "created_by", "created_at", "updated_at") VALUES (2, 'vectabase.com', TRUE, 'email', '', NULL, NULL, NULL, NULL, TRUE, 'Developer', ARRAY['2'], NULL, '2026-01-30T20:58:59.160Z', '2026-01-30T21:02:34.076Z') ON CONFLICT DO NOTHING;
+-- announcements data
+INSERT INTO "announcements" ("id", "content", "author_email", "created_at", "updated_at") VALUES (1, 'sigma test 123', 'thecheesemanatyou@gmail.com', '2026-01-25T19:47:00.089Z', '2026-01-25T19:47:00.089Z') ON CONFLICT DO NOTHING;
+INSERT INTO "announcements" ("id", "content", "author_email", "created_at", "updated_at") VALUES (2, 'Edge Audit: Found 2 users. Engagement Score: 84. Secret used: blah', 'system@vectabase.edge', '2026-01-25T21:06:34.913Z', '2026-01-25T21:06:34.913Z') ON CONFLICT DO NOTHING;
+INSERT INTO "announcements" ("id", "content", "author_email", "created_at", "updated_at") VALUES (3, 'Edge Audit: Found 2 users. Engagement Score: 84. Secret used: blah', 'system@vectabase.edge', '2026-01-26T17:09:10.611Z', '2026-01-26T17:09:10.611Z') ON CONFLICT DO NOTHING;
+INSERT INTO "announcements" ("id", "content", "author_email", "created_at", "updated_at") VALUES (4, 'Edge Audit: Found 2 users. Engagement Score: 84. Secret used: blah', 'system@vectabase.edge', '2026-01-26T17:10:48.305Z', '2026-01-26T17:10:48.305Z') ON CONFLICT DO NOTHING;
+INSERT INTO "announcements" ("id", "content", "author_email", "created_at", "updated_at") VALUES (5, 'Edge Audit: Found 2 users. Engagement Score: 84. Secret used: blah', 'system@vectabase.edge', '2026-01-26T17:18:09.890Z', '2026-01-26T17:18:09.890Z') ON CONFLICT DO NOTHING;
+INSERT INTO "announcements" ("id", "content", "author_email", "created_at", "updated_at") VALUES (6, 'Edge Audit: Found 2 users. Engagement Score: 84. Secret used: ultr', 'system@vectabase.edge', '2026-01-26T17:38:41.316Z', '2026-01-26T17:38:41.316Z') ON CONFLICT DO NOTHING;
 
 -- api_keys data
 INSERT INTO "api_keys" ("id", "project_id", "name", "key_type", "key_hash", "key_prefix", "permissions", "expires_at", "last_used_at", "created_at") VALUES (1, 1, NULL, 'anon', 'd73025c9a3f7275953f56c47b4dca8440cae2f00f3fff4d1c495f882717dabdc', 'eh_anon_y1c_63x9...', ARRAY['read'], NULL, NULL, '2026-01-30T20:01:26.970Z') ON CONFLICT DO NOTHING;
 INSERT INTO "api_keys" ("id", "project_id", "name", "key_type", "key_hash", "key_prefix", "permissions", "expires_at", "last_used_at", "created_at") VALUES (2, 1, NULL, 'service_role', '97286c02108c2b0d59203b687e7009dc2794622465ec89595c4715c167a442d4', 'eh_secret_G5kUNs...', ARRAY['read'], NULL, '2026-01-30T20:04:45.540Z', '2026-01-30T20:01:26.975Z') ON CONFLICT DO NOTHING;
 
--- edge_functions data
-INSERT INTO "edge_functions" ("id", "project_id", "name", "slug", "trigger_type", "runtime", "status", "timeout_ms", "memory_mb", "created_at", "updated_at") VALUES (1, 1, 'Hello World', 'hello-world', 'http', 'deno', 'active', 2000, 128, '2026-01-30T20:01:17.658Z', '2026-01-30T20:01:17.658Z') ON CONFLICT DO NOTHING;
-INSERT INTO "edge_functions" ("id", "project_id", "name", "slug", "trigger_type", "runtime", "status", "timeout_ms", "memory_mb", "created_at", "updated_at") VALUES (2, 1, 'test-func', 'test-func', 'http', 'deno', 'active', 2000, 128, '2026-01-30T20:02:57.462Z', '2026-01-30T20:04:39.446Z') ON CONFLICT DO NOTHING;
-INSERT INTO "edge_functions" ("id", "project_id", "name", "slug", "trigger_type", "runtime", "status", "timeout_ms", "memory_mb", "created_at", "updated_at") VALUES (4, 2, 'index', 'index', 'http', 'deno', 'active', 2000, 128, '2026-01-30T20:06:39.031Z', '2026-01-30T20:06:39.031Z') ON CONFLICT DO NOTHING;
+-- app_users data
+INSERT INTO "app_users" ("id", "username", "email", "created_at") VALUES (1, 'max', 'max@example.com', '2026-01-25T17:10:37.949Z') ON CONFLICT DO NOTHING;
 
 -- edge_function_files data
 INSERT INTO "edge_function_files" ("id", "function_id", "path", "content", "created_at", "updated_at") VALUES (1, 1, 'index.ts', '// Hello World Edge Function
@@ -1373,8 +1354,54 @@ return {
 ', '2026-01-30T20:02:57.468Z', '2026-01-30T20:04:39.452Z') ON CONFLICT DO NOTHING;
 INSERT INTO "edge_function_files" ("id", "function_id", "path", "content", "created_at", "updated_at") VALUES (4, 4, 'index.ts', 'return { message: ''Hello from index'' };', '2026-01-30T20:06:39.034Z', '2026-01-30T20:06:39.034Z') ON CONFLICT DO NOTHING;
 
+-- edge_functions data
+INSERT INTO "edge_functions" ("id", "project_id", "name", "slug", "trigger_type", "runtime", "status", "timeout_ms", "memory_mb", "created_at", "updated_at") VALUES (1, 1, 'Hello World', 'hello-world', 'http', 'deno', 'active', 2000, 128, '2026-01-30T20:01:17.658Z', '2026-01-30T20:01:17.658Z') ON CONFLICT DO NOTHING;
+INSERT INTO "edge_functions" ("id", "project_id", "name", "slug", "trigger_type", "runtime", "status", "timeout_ms", "memory_mb", "created_at", "updated_at") VALUES (2, 1, 'test-func', 'test-func', 'http', 'deno', 'active', 2000, 128, '2026-01-30T20:02:57.462Z', '2026-01-30T20:04:39.446Z') ON CONFLICT DO NOTHING;
+INSERT INTO "edge_functions" ("id", "project_id", "name", "slug", "trigger_type", "runtime", "status", "timeout_ms", "memory_mb", "created_at", "updated_at") VALUES (4, 2, 'index', 'index', 'http', 'deno', 'active', 2000, 128, '2026-01-30T20:06:39.031Z', '2026-01-30T20:06:39.031Z') ON CONFLICT DO NOTHING;
+
+-- organizations data
+INSERT INTO "organizations" ("id", "name", "slug", "owner_id", "billing_email", "plan", "created_at", "updated_at") VALUES (1, 'Local Development', 'local-dev', 1, NULL, 'free', '2026-01-30T20:01:17.638Z', '2026-01-30T20:01:17.638Z') ON CONFLICT DO NOTHING;
+INSERT INTO "organizations" ("id", "name", "slug", "owner_id", "billing_email", "plan", "created_at", "updated_at") VALUES (2, 'Default Org', 'default-org', 3, NULL, 'free', '2026-01-30T20:06:03.737Z', '2026-01-30T20:06:03.737Z') ON CONFLICT DO NOTHING;
+INSERT INTO "organizations" ("id", "name", "slug", "owner_id", "billing_email", "plan", "created_at", "updated_at") VALUES (3, 'test123', 'test123', 3, NULL, 'free', '2026-01-30T20:19:25.575Z', '2026-01-30T20:19:25.575Z') ON CONFLICT DO NOTHING;
+
+-- permissions data
+INSERT INTO "permissions" ("id", "email", "access_level", "created_at") VALUES (1, 'thecheesemanatyou@gmail.com', 'Owner', '2026-01-30T20:01:16.819Z') ON CONFLICT DO NOTHING;
+INSERT INTO "permissions" ("id", "email", "access_level", "created_at") VALUES (3, 'lattice-admin@vectabase.internal', 'Owner', '2026-01-30T20:25:17.134Z') ON CONFLICT DO NOTHING;
+
+-- project_users data
+INSERT INTO "project_users" ("id", "project_id", "user_id", "role", "created_at") VALUES (1, 1, 1, 'Owner', '2026-01-30T20:01:17.655Z') ON CONFLICT DO NOTHING;
+INSERT INTO "project_users" ("id", "project_id", "user_id", "role", "created_at") VALUES (2, 2, 3, 'Member', '2026-01-30T20:06:03.742Z') ON CONFLICT DO NOTHING;
+INSERT INTO "project_users" ("id", "project_id", "user_id", "role", "created_at") VALUES (3, 2, 9, 'Developer', '2026-01-31T08:53:03.225Z') ON CONFLICT DO NOTHING;
+
+-- projects data
+INSERT INTO "projects" ("id", "name", "slug", "org_id", "db_host", "db_port", "db_name", "db_user", "db_password", "encryption_salt", "region", "status", "created_at", "updated_at") VALUES (1, 'Test Project', 'test-project', 1, 'localhost', 5432, 'postgres', 'postgres', 'postgres', '7b0756cba4a2f079d7c2bdef0cebe603', 'us-east-1', 'active', '2026-01-30T20:01:17.641Z', '2026-01-30T20:03:07.053Z') ON CONFLICT DO NOTHING;
+INSERT INTO "projects" ("id", "name", "slug", "org_id", "db_host", "db_port", "db_name", "db_user", "db_password", "encryption_salt", "region", "status", "created_at", "updated_at") VALUES (2, 'Main Project', 'main-project', 2, 'localhost', 5432, NULL, NULL, NULL, NULL, 'us-east-1', 'active', '2026-01-30T20:06:03.739Z', '2026-01-30T20:06:03.739Z') ON CONFLICT DO NOTHING;
+INSERT INTO "projects" ("id", "name", "slug", "org_id", "db_host", "db_port", "db_name", "db_user", "db_password", "encryption_salt", "region", "status", "created_at", "updated_at") VALUES (3, 'test123', 'test123', 3, 'localhost', 5432, NULL, NULL, NULL, NULL, 'us-east-1', 'active', '2026-01-30T20:19:27.538Z', '2026-01-30T20:19:27.538Z') ON CONFLICT DO NOTHING;
+
+-- roblox_users data
+INSERT INTO "roblox_users" ("id", "project_id", "created_at", "updated_at") VALUES (1, 2, '2026-01-25T18:56:57.407Z', '2026-01-25T18:56:55.000Z') ON CONFLICT DO NOTHING;
+
+-- sso_configurations data
+INSERT INTO "sso_configurations" ("id", "domain", "enabled", "idp_type", "idp_url", "idp_issuer", "idp_certificate", "client_id", "client_secret", "auto_provision_users", "default_role", "allowed_project_ids", "created_by", "created_at", "updated_at") VALUES (1, 'testcompany.com', TRUE, 'google', '', NULL, NULL, NULL, NULL, TRUE, 'Member', ARRAY['2'], NULL, '2026-01-30T20:35:13.688Z', '2026-01-30T20:35:52.657Z') ON CONFLICT DO NOTHING;
+INSERT INTO "sso_configurations" ("id", "domain", "enabled", "idp_type", "idp_url", "idp_issuer", "idp_certificate", "client_id", "client_secret", "auto_provision_users", "default_role", "allowed_project_ids", "created_by", "created_at", "updated_at") VALUES (2, 'vectabase.com', TRUE, 'email', '', NULL, NULL, NULL, NULL, TRUE, 'Developer', ARRAY['2'], NULL, '2026-01-30T20:58:59.160Z', '2026-01-30T21:02:34.076Z') ON CONFLICT DO NOTHING;
+
+-- test data
+INSERT INTO "test" ("id", "project_id", "created_at", "updated_at") VALUES (9, 2, '2026-01-25T18:27:56.585Z', '2026-01-25T18:27:56.585Z') ON CONFLICT DO NOTHING;
+INSERT INTO "test" ("id", "project_id", "created_at", "updated_at") VALUES (12, 2, '2026-01-25T18:33:07.098Z', '2026-01-25T18:33:07.098Z') ON CONFLICT DO NOTHING;
+INSERT INTO "test" ("id", "project_id", "created_at", "updated_at") VALUES (13, 2, '2026-01-25T18:39:42.336Z', '2026-01-25T18:38:59.000Z') ON CONFLICT DO NOTHING;
+
+-- users data
+INSERT INTO "users" ("id", "email", "name", "avatar_url", "identity_id", "provider", "created_at", "updated_at", "password_hash") VALUES (1, 'test@localhost', 'Local Developer', NULL, 'local-dev-001', 'local', '2026-01-30T20:01:17.635Z', '2026-01-30T20:01:17.635Z', NULL) ON CONFLICT DO NOTHING;
+INSERT INTO "users" ("id", "email", "name", "avatar_url", "identity_id", "provider", "created_at", "updated_at", "password_hash") VALUES (2, 'maxedwardcheetham@gmail.com', 'Phoenix Cheetah', NULL, 'google:101801468049696456427', 'google', '2026-01-30T20:05:50.170Z', '2026-01-30T20:05:50.170Z', NULL) ON CONFLICT DO NOTHING;
+INSERT INTO "users" ("id", "email", "name", "avatar_url", "identity_id", "provider", "created_at", "updated_at", "password_hash") VALUES (3, 'thecheesemanatyou@gmail.com', 'thecheese manatyou', NULL, 'google:118142992181711626941', 'google', '2026-01-30T20:06:03.735Z', '2026-01-30T20:06:03.735Z', NULL) ON CONFLICT DO NOTHING;
+INSERT INTO "users" ("id", "email", "name", "avatar_url", "identity_id", "provider", "created_at", "updated_at", "password_hash") VALUES (9, 'support@vectabase.com', 'support', NULL, 'sso:vectabase.com:1769849583223', 'sso', '2026-01-31T08:53:03.223Z', '2026-01-31T08:53:17.071Z', 'vectabase-sso-9-1769849597070:c1add7ea8e58b0015322522a199ab6907210f867e793441038b2c46bc56fb0a4') ON CONFLICT DO NOTHING;
+INSERT INTO "users" ("id", "email", "name", "avatar_url", "identity_id", "provider", "created_at", "updated_at", "password_hash") VALUES (4, 'lattice-admin@vectabase.internal', 'Lattice Admin', NULL, 'lattice:master-admin', 'lattice', '2026-01-30T20:25:17.132Z', '2026-01-31T09:58:56.931Z', NULL) ON CONFLICT DO NOTHING;
+
 -- vault_secrets data
 INSERT INTO "vault_secrets" ("id", "project_id", "name", "description", "value", "created_at", "updated_at") VALUES (1, 1, 'TEST_API_KEY', 'Test API key', 'vPHw5Dfs8gzwaWl1WFMIqpy7E0r7CE4bjgeExqFLyD7YqqWnuB/cVTI=', '2026-01-30T20:04:17.037Z', '2026-01-30T20:04:17.037Z') ON CONFLICT DO NOTHING;
+
+-- yes123 data
+INSERT INTO "yes123" ("id", "project_id", "created_at", "updated_at", "test123") VALUES (1, 2, '2026-01-25T18:48:15.870Z', '2026-01-25T18:48:13.000Z', '4234') ON CONFLICT DO NOTHING;
 
 
 -- ============================================

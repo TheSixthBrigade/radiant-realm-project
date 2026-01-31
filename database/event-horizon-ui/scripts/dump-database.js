@@ -104,24 +104,17 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
     sql += '-- DATA DUMP\n';
     sql += '-- ============================================\n\n';
 
-    // Tables to dump data from (in order of dependencies)
-    const tablesToDump = [
-        'users',
-        'permissions', 
-        'organizations',
-        'projects',
-        'project_users',
-        'sso_configurations',
-        'sessions',
-        'api_keys',
-        'edge_functions',
-        'edge_function_files',
-        'vault_secrets',
-        'provider_configs',
-        'webhooks',
-        'storage_buckets',
-        'storage_objects'
-    ];
+    // Get ALL tables dynamically
+    const allTablesResult = await pool.query(`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_type = 'BASE TABLE'
+        ORDER BY table_name
+    `);
+    
+    const tablesToDump = allTablesResult.rows.map(r => r.table_name);
+    console.log(`Found ${tablesToDump.length} tables to dump`);
 
     for (const table of tablesToDump) {
         try {
