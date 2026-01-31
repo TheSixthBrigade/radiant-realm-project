@@ -211,15 +211,27 @@ export default function DataStudioPage() {
 
         setInserting(true);
         try {
+            // Ensure project_id is set
+            if (currentProject?.id && !transformedData.project_id) {
+                transformedData.project_id = currentProject.id;
+            }
+            
             const res = await fetch('/api/database/rows', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ table: selectedTable, schema: 'public', data: transformedData })
             });
             if (res.ok) {
+                const result = await res.json();
                 setShowInsertModal(false);
                 setInsertData({});
                 setInsertError(null);
+                // Immediately add to local state for instant feedback
+                if (result.row) {
+                    setRows(prev => [result.row, ...prev]);
+                    setPagination(prev => ({ ...prev, total: prev.total + 1 }));
+                }
+                // Then refresh from server
                 fetchRows(selectedTable);
             } else {
                 const err = await res.json();
@@ -687,19 +699,25 @@ export default function DataStudioPage() {
                                     setCreateTableError(null);
                                     setCreatingTable(true);
                                     try {
+                                        const tableName = newTableName.toLowerCase().replace(/\s+/g, '_');
                                         const res = await fetch('/api/database/create-table', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({
-                                                tableName: newTableName.toLowerCase().replace(/\s+/g, '_'),
-                                                columns: customColumns.filter(c => c.name.trim())
+                                                tableName,
+                                                columns: customColumns.filter(c => c.name.trim()),
+                                                projectId: currentProject?.id
                                             })
                                         });
                                         if (res.ok) {
                                             setShowCreateTableModal(false);
                                             setNewTableName('');
                                             setCustomColumns([]);
-                                            fetchTables();
+                                            // Immediately add to local state for instant feedback
+                                            setTables(prev => [...prev, { table_name: tableName, row_count_estimate: 0 }]);
+                                            setSelectedTable(tableName);
+                                            // Then refresh from server
+                                            await fetchTables();
                                         } else {
                                             const err = await res.json();
                                             setCreateTableError(err.error || 'Failed to create table');
