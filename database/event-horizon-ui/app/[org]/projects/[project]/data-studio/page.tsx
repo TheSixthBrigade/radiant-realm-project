@@ -126,18 +126,23 @@ export default function DataStudioPage() {
     const fetchRows = async (tableName: string, offset = 0) => {
         setLoadingRows(true);
         try {
-            const res = await fetch(`/api/database/rows?table=${tableName}&schema=public&limit=50&offset=${offset}`);
+            const url = `/api/database/rows?table=${tableName}&schema=public&limit=50&offset=${offset}`;
+            console.log('Fetching rows from:', url);
+            const res = await fetch(url);
+            const data = await res.json();
+            console.log('Fetched rows response:', JSON.stringify(data));
+            console.log('Rows array:', data.rows, 'Length:', data.rows?.length);
+            
             if (res.ok) {
-                const data = await res.json();
-                console.log('Fetched rows:', data);
                 setRows(data.rows || []);
                 setPagination({ total: data.total || 0, offset: data.offset || 0, limit: data.limit || 50 });
             } else {
-                const err = await res.json();
-                console.error('Fetch rows error:', err);
+                console.error('Fetch rows error:', data);
+                setRows([]);
             }
         } catch (e) {
             console.error("Failed to fetch rows", e);
+            setRows([]);
         } finally {
             setLoadingRows(false);
         }
