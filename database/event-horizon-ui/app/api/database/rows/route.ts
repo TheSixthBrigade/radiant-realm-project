@@ -80,8 +80,13 @@ export async function POST(req: NextRequest) {
         const sql = `INSERT INTO "${schema}"."${table}" (${columnList}) VALUES (${placeholders}) RETURNING *`;
         console.log('Insert SQL:', sql, 'Values:', values);
         const result = await query(sql, values);
+        console.log('Insert result rows:', result.rows);
+        
+        // Verify the insert by immediately querying
+        const verifyResult = await query(`SELECT * FROM "${schema}"."${table}" ORDER BY id DESC LIMIT 5`);
+        console.log('Verify query result:', verifyResult.rows);
 
-        return NextResponse.json({ success: true, row: result.rows[0] });
+        return NextResponse.json({ success: true, row: result.rows[0], verified: verifyResult.rows });
     } catch (error: any) {
         console.error('Row insert error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
