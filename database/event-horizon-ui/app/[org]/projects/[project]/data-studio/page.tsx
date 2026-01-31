@@ -53,26 +53,19 @@ export default function DataStudioPage() {
     const COLUMN_TYPES = ['text', 'varchar', 'integer', 'bigint', 'uuid', 'boolean', 'timestamptz', 'jsonb', 'float8', 'bytea'];
 
 
-    // Stable fetch function that won't cause loops
-    const fetchTables = useCallback(async (forceRefresh = false) => {
-        if (isFetching.current && !forceRefresh) return;
-        if (!forceRefresh && lastProjectId.current === currentProject?.id && tables.length > 0) return;
-        
-        isFetching.current = true;
+    // Fetch tables - simple and direct
+    const fetchTables = async () => {
         setLoading(true);
-        
         try {
             const projectId = currentProject?.id;
-            lastProjectId.current = projectId || null;
-            
+            const timestamp = Date.now(); // Cache buster
             const url = projectId
-                ? `/api/database/tables?schema=public&projectId=${projectId}`
-                : '/api/database/tables?schema=public';
-            const res = await fetch(url);
+                ? `/api/database/tables?schema=public&projectId=${projectId}&_t=${timestamp}`
+                : `/api/database/tables?schema=public&_t=${timestamp}`;
+            const res = await fetch(url, { cache: 'no-store' });
             if (res.ok) {
                 const data = await res.json();
                 setTables(data);
-                // Only auto-select first table if none selected
                 if (data.length > 0 && !selectedTable) {
                     setSelectedTable(data[0].table_name);
                 }
@@ -81,21 +74,13 @@ export default function DataStudioPage() {
             console.error("Failed to fetch tables", e);
         } finally {
             setLoading(false);
-            isFetching.current = false;
         }
-    }, [currentProject?.id, selectedTable, tables.length]);
+    };
 
-    // Only fetch on mount or when project actually changes
-    useEffect(() => {
-        if (currentProject?.id !== lastProjectId.current) {
-            fetchTables(true);
-        }
-    }, [currentProject?.id]);
-
-    // Initial fetch
+    // Fetch on mount and when project changes
     useEffect(() => {
         fetchTables();
-    }, []);
+    }, [currentProject?.id]);
 
     useEffect(() => {
         if (selectedTable) {
@@ -259,7 +244,7 @@ export default function DataStudioPage() {
                 setTables(prev => [...prev, { table_name: tableName, row_count_estimate: 0 }]);
                 setSelectedTable(tableName);
                 // Force refresh
-                await fetchTables(true);
+                await fetchTables();
             } else {
                 setCreateTableError(result.error || 'Failed to create table');
             }

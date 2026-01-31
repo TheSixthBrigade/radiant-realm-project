@@ -1,0 +1,39 @@
+# Ignore local env files - production uses Dockerfile ARGs
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production.local
+
+# Dependencies
+node_modules
+
+# Build outputs
+.next
+out
+dist
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test files
+tests
+test-results
+playwright-report
+*.spec.ts
+
+# Scripts not needed in production
+scripts/*.ts

@@ -107,17 +107,28 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const handleSelectOrg = (org: any) => {
+    const handleSelectOrg = async (org: any) => {
+        if (currentOrg?.id === org.id) return; // Already selected
+        
         setCurrentOrg(org);
         setCurrentProject(null);
-        // Navigate to the org's project list (which might default to first project via root page logic if we had one, but here just stay on layout?)
-        // Or navigate to deep link base for org?
-        // Let's just go to root and let root page redirect, OR better:
-        // router.push(`/${org.name}/projects`); // If we had an org dashboard
-        // But we don't have an org dashboard, only project dashboard.
-        // So stay put or select first project? 
-        // Logic: Set org, clear project. The UI shows "Select a project".
-        router.push('/');
+        
+        // Fetch projects for this org and navigate to first one
+        try {
+            const pRes = await fetch(`/api/projects?orgId=${org.id}`);
+            if (pRes.ok) {
+                const orgProjects = await pRes.json();
+                setProjects(orgProjects);
+                if (orgProjects.length > 0) {
+                    const firstProject = orgProjects[0];
+                    setCurrentProject(firstProject);
+                    router.push(`/${org.name}/projects/${firstProject.slug}`);
+                }
+                // If no projects, stay on current page - the UI will show "Create project"
+            }
+        } catch (e) {
+            console.error("Failed to fetch projects for org", e);
+        }
     };
 
     const handleSelectProject = (proj: any) => {
