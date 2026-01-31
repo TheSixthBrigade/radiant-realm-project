@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
 
         console.log('Fetching rows with SQL:', sql, 'Params:', [limit, offset]);
         const result = await query(sql, [limit, offset]);
-        console.log('Rows result:', result.rows.length, 'rows');
+        console.log('Rows result:', result.rows.length, 'rows', 'Data:', JSON.stringify(result.rows));
 
         // Get total count
         const countResult = await query(`SELECT COUNT(*) as total FROM "${schema}"."${table}"`);
