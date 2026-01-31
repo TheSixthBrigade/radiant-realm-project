@@ -48,7 +48,40 @@ export async function GET(req: NextRequest) {
     try {
         // If projectId is specified, only show tables owned by this project
         if (projectId) {
-            // First, get tables from registry for this project
+            // First, check if _table_registry exists
+            const registryExists = await query(`
+                SELECT 1 FROM information_schema.tables 
+                WHERE table_schema = 'public' AND table_name = '_table_registry'
+            `);
+
+            if (registryExists.rows.length === 0) {
+                // Registry doesn't exist - fall back to showing all tables with project_id column
+                console.log('_table_registry not found, falling back to legacy mode');
+                const placeholders = INTERNAL_TABLES.map((_, i) => `$${i + 2}`).join(', ');
+                const sql = `
+                    SELECT t.table_name, t.table_type
+                    FROM information_schema.tables t
+                    WHERE t.table_schema = $1
+                    AND t.table_type = 'BASE TABLE'
+                    AND t.table_name NOT IN (${placeholders})
+                    ORDER BY t.table_name
+                `;
+                const result = await query(sql, [schema, ...INTERNAL_TABLES]);
+                
+                const tablesWithCounts = await Promise.all(
+                    result.rows.map(async (table: any) => {
+                        try {
+                            const countResult = await query(`SELECT COUNT(*) as count FROM "${schema}"."${table.table_name}"`);
+                            return { ...table, row_count_estimate: parseInt(countResult.rows[0]?.count || '0') };
+                        } catch {
+                            return { ...table, row_count_estimate: 0 };
+                        }
+                    })
+                );
+                return NextResponse.json(tablesWithCounts);
+            }
+
+            // Registry exists - get tables from registry for this project
             const registryResult = await query(`
                 SELECT table_name FROM _table_registry WHERE project_id = $1
             `, [projectId]);
