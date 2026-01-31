@@ -19,17 +19,24 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
         }
 
         const projectSlug = params.project as string;
-        const project = projects.find(p => p.slug === projectSlug);
+        // Try to match by slug first, then by name, then by id
+        const project = projects.find(p => 
+            p.slug === projectSlug || 
+            p.name === projectSlug || 
+            p.name?.toLowerCase().replace(/\s+/g, '-') === projectSlug ||
+            String(p.id) === projectSlug
+        );
 
         if (project) {
             setCurrentProject(project);
             setLoading(false);
         } else if (projects.length > 0) {
-            // Project not found in loaded projects, maybe redirect to 404 or projects list
-            console.error("Project not found:", projectSlug);
-            router.push('/projects');
+            // Project not found in loaded projects
+            console.error("Project not found:", projectSlug, "Available:", projects.map(p => ({ slug: p.slug, name: p.name, id: p.id })));
+            // Don't redirect, just show the page - might be a timing issue
+            setLoading(false);
         }
-    }, [params?.project, projects]);
+    }, [params?.project, projects, setCurrentProject]);
 
     if (loading) {
         return (

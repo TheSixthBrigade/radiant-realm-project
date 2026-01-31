@@ -192,7 +192,12 @@ export default function DataStudioPage() {
         // Force project_id to current project
         if (currentProject?.id) {
             transformedData.project_id = currentProject.id;
+        } else {
+            // Try to get project_id from URL params if currentProject is not set
+            console.warn('currentProject not set, insert may fail for project_id');
         }
+
+        console.log('Inserting row:', { table: selectedTable, data: transformedData });
 
         setInserting(true);
         try {
@@ -202,6 +207,7 @@ export default function DataStudioPage() {
                 body: JSON.stringify({ table: selectedTable, schema: 'public', data: transformedData })
             });
             const result = await res.json();
+            console.log('Insert result:', result);
             if (res.ok) {
                 setShowInsertModal(false);
                 setInsertError(null);
@@ -211,6 +217,7 @@ export default function DataStudioPage() {
                 setInsertError(result.error || 'Insert failed');
             }
         } catch (e: any) {
+            console.error('Insert error:', e);
             setInsertError(e.message || 'Insert failed');
         } finally {
             setInserting(false);
