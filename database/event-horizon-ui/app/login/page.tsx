@@ -45,18 +45,11 @@ function LoginContent() {
             document.cookie = 'lattice_admin=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
             document.cookie = 'session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
             setSuccess('You have been logged out successfully.');
-        } else {
-            // Check if user already has a valid session - redirect to dashboard
-            fetch('/api/auth/verify')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.authorized) {
-                        router.push('/');
-                    }
-                })
-                .catch(() => {});
         }
-    }, [loggedOut, router]);
+        // REMOVED: Auto-redirect check that was causing infinite loop
+        // The redirect to dashboard should only happen AFTER successful login,
+        // not on page load. The EnterpriseLayout handles auth gating.
+    }, [loggedOut]);
 
     const handleLatticeLogin = async (e: React.FormEvent) => {
         e.preventDefault();
