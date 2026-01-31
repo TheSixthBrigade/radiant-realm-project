@@ -96,6 +96,7 @@ export default function DataStudioPage() {
             const res = await fetch(`/api/database/columns?table=${tableName}&schema=public`);
             if (res.ok) {
                 const cols = await res.json();
+                console.log('Fetched columns:', cols);
                 setColumns(cols);
                 // Pre-populate insert form
                 const initialData: Record<string, any> = {};
@@ -114,6 +115,8 @@ export default function DataStudioPage() {
                     }
                 });
                 setInsertData(initialData);
+            } else {
+                console.error('Failed to fetch columns:', await res.text());
             }
         } catch (e) {
             console.error("Failed to fetch columns", e);
@@ -126,8 +129,12 @@ export default function DataStudioPage() {
             const res = await fetch(`/api/database/rows?table=${tableName}&schema=public&limit=50&offset=${offset}`);
             if (res.ok) {
                 const data = await res.json();
+                console.log('Fetched rows:', data);
                 setRows(data.rows || []);
                 setPagination({ total: data.total || 0, offset: data.offset || 0, limit: data.limit || 50 });
+            } else {
+                const err = await res.json();
+                console.error('Fetch rows error:', err);
             }
         } catch (e) {
             console.error("Failed to fetch rows", e);

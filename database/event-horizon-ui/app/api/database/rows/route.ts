@@ -37,11 +37,14 @@ export async function GET(req: NextRequest) {
         }
         sql += ` LIMIT $1 OFFSET $2`;
 
+        console.log('Fetching rows with SQL:', sql, 'Params:', [limit, offset]);
         const result = await query(sql, [limit, offset]);
+        console.log('Rows result:', result.rows.length, 'rows');
 
         // Get total count
         const countResult = await query(`SELECT COUNT(*) as total FROM "${schema}"."${table}"`);
         const total = parseInt(countResult.rows[0]?.total || '0');
+        console.log('Total count:', total);
 
         return NextResponse.json({
             rows: result.rows,
