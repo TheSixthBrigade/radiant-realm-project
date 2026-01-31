@@ -52,7 +52,7 @@ export default function VisualRLSPage() {
             if (res.ok) {
                 const data = await res.json();
                 setTables(data);
-                if (data.length > 0) setSelectedTable(data[0].name);
+                if (data.length > 0) setSelectedTable(data[0].table_name);
             }
         } catch (err) {
             console.error("Failed to fetch tables", err);
@@ -156,18 +156,18 @@ export default function VisualRLSPage() {
                     <div className="flex-1 overflow-auto p-2 space-y-1 custom-scrollbar">
                         {tables.map(t => (
                             <button
-                                key={t.name}
-                                onClick={() => setSelectedTable(t.name)}
+                                key={t.table_name}
+                                onClick={() => setSelectedTable(t.table_name)}
                                 className={cn(
                                     "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all group",
-                                    selectedTable === t.name
+                                    selectedTable === t.table_name
                                         ? "bg-[#3ecf8e]/10 text-[#3ecf8e] border border-[#3ecf8e]/20"
                                         : "text-gray-400 hover:bg-[#111] border border-transparent"
                                 )}
                             >
-                                <Database size={14} className={selectedTable === t.name ? "text-[#3ecf8e]" : "text-gray-600"} />
-                                <span className="font-mono text-[11px] font-bold">{t.name}</span>
-                                {selectedTable === t.name && (
+                                <Database size={14} className={selectedTable === t.table_name ? "text-[#3ecf8e]" : "text-gray-600"} />
+                                <span className="font-mono text-[11px] font-bold">{t.table_name}</span>
+                                {selectedTable === t.table_name && (
                                     <ChevronRight size={12} className="ml-auto" />
                                 )}
                             </button>

@@ -35,17 +35,28 @@ function LoginContent() {
     const [ssoConfirmPassword, setSsoConfirmPassword] = useState("");
     const [requiresPasswordSetup, setRequiresPasswordSetup] = useState(urlSetupPassword === 'true');
 
-    // Clear any stale cookies when login page loads
+    // Only clear cookies if user explicitly logged out (not on every page load)
+    // This prevents clearing a valid session when redirected back from OAuth/SSO
     useEffect(() => {
-        // Clear cookies client-side to ensure clean login state
-        document.cookie = 'pqc_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        document.cookie = 'lattice_admin=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        
-        // If we just logged out, show a message
         if (loggedOut === 'true') {
+            // User explicitly logged out - clear everything
+            fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+            document.cookie = 'pqc_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            document.cookie = 'lattice_admin=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            document.cookie = 'session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
             setSuccess('You have been logged out successfully.');
+        } else {
+            // Check if user already has a valid session - redirect to dashboard
+            fetch('/api/auth/verify')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.authorized) {
+                        router.push('/');
+                    }
+                })
+                .catch(() => {});
         }
-    }, [loggedOut]);
+    }, [loggedOut, router]);
 
     const handleLatticeLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -64,7 +75,8 @@ function LoginContent() {
 
             if (res.ok) {
                 setSuccess("Lattice key verified. Redirecting...");
-                setTimeout(() => router.push('/'), 1000);
+                // Use window.location for full page reload to ensure cookie is properly read
+                setTimeout(() => window.location.href = '/', 1000);
             } else {
                 setError(data.error || 'Invalid Lattice key');
             }
@@ -137,7 +149,8 @@ function LoginContent() {
                     setSsoConfirmPassword('');
                 } else {
                     setSuccess('Login successful. Redirecting...');
-                    setTimeout(() => router.push('/'), 1000);
+                    // Use window.location for full page reload to ensure cookie is properly read
+                    setTimeout(() => window.location.href = '/', 1000);
                 }
             } else {
                 setError(data.error || 'Login failed');

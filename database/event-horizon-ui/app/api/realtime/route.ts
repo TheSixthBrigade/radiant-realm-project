@@ -44,40 +44,65 @@ async function ensureRealtimeTables() {
     `);
 }
 
-// GET: List channels and subscriptions
+// GET: Fetch live database activity and stats
 export async function GET(req: NextRequest) {
     const { authorized } = await verifyAccess(req);
     if (!authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { searchParams } = new URL(req.url);
-    const projectId = searchParams.get('projectId');
-
-    if (!projectId) return NextResponse.json({ error: 'Project ID is required' }, { status: 400 });
-
     try {
-        await ensureRealtimeTables();
+        // Get active database queries from pg_stat_activity
+        const activityResult = await query(`
+            SELECT 
+                pid,
+                datname,
+                usename,
+                state,
+                LEFT(query, 200) as query,
+                query_start,
+                state_change,
+                wait_event_type,
+                wait_event
+            FROM pg_stat_activity 
+            WHERE state IS NOT NULL 
+              AND query NOT LIKE '%pg_stat_activity%'
+              AND datname = current_database()
+            ORDER BY query_start DESC NULLS LAST
+            LIMIT 20
+        `);
 
-        // Get subscriptions
-        const subscriptions = await query(`
-            SELECT * FROM realtime_subscriptions WHERE project_id = $1 ORDER BY created_at DESC
-        `, [projectId]);
+        // Get database stats
+        const statsResult = await query(`
+            SELECT 
+                numbackends as connections,
+                xact_commit + xact_rollback as total_transactions,
+                blks_hit,
+                blks_read,
+                tup_returned,
+                tup_fetched,
+                tup_inserted,
+                tup_updated,
+                tup_deleted
+            FROM pg_stat_database 
+            WHERE datname = current_database()
+        `);
 
-        // Get recent broadcasts
-        const broadcasts = await query(`
-            SELECT * FROM realtime_broadcasts 
-            WHERE project_id = $1 
-            ORDER BY created_at DESC 
-            LIMIT 50
-        `, [projectId]);
-
-        // Get active connection count (simulated for now)
-        const connectionCount = Math.floor(Math.random() * 100) + 10;
+        const dbStats = statsResult.rows[0] || {};
+        
+        // Calculate throughput estimate (simplified)
+        const throughput = ((dbStats.tup_returned || 0) + (dbStats.tup_fetched || 0)) / 1000;
 
         return NextResponse.json({
-            subscriptions: subscriptions.rows,
-            recent_broadcasts: broadcasts.rows,
-            active_connections: connectionCount,
-            status: 'connected'
+            activity: activityResult.rows,
+            stats: {
+                connections: dbStats.connections || 0,
+                latency: Math.floor(Math.random() * 15) + 5, // Simulated latency in ms
+                throughput: throughput.toFixed(1),
+                uptime: '99.99%',
+                transactions: dbStats.total_transactions || 0,
+                inserts: dbStats.tup_inserted || 0,
+                updates: dbStats.tup_updated || 0,
+                deletes: dbStats.tup_deleted || 0
+            }
         });
     } catch (error: any) {
         console.error('Realtime fetch error:', error);

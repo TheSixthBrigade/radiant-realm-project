@@ -73,8 +73,10 @@ export async function verifyAccess(req: NextRequest, projectId?: string) {
             };
         }
 
-        // Optimization: Use a simpler user query
-        const userRes = await query('SELECT id FROM users WHERE identity_id = $1 LIMIT 1', [payload.id]);
+        // FIXED: Look up user by EMAIL instead of identity_id
+        // This fixes the issue where logging in with different providers (Google, SSO, etc.)
+        // would create different identity_ids but the JWT contains the correct email
+        const userRes = await query('SELECT id FROM users WHERE email = $1 LIMIT 1', [payload.email]);
         if (userRes.rows.length === 0) return { authorized: false };
 
         return {

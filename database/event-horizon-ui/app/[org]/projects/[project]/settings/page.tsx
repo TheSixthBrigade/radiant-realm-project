@@ -224,50 +224,7 @@ export default function SettingsPage() {
                     )}
 
                     {activeTab === "api" && (
-                        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <section className="space-y-2">
-                                <h3 className="text-2xl font-bold text-white tracking-tight">API Access Keys</h3>
-                                <p className="text-gray-500 text-sm">Project keys used to authenticate requests to your PQC-Database instance.</p>
-                            </section>
-
-                            <div className="grid gap-6">
-                                <ApiKeyBox
-                                    title="Project Public (anon) Key"
-                                    desc="Used for client-side authentication. Safe to use in browsers."
-                                    value={`eyJh${currentProject?.id || '0'}...pqc_v1_anon_772`}
-                                    id="anon"
-                                    copied={copied === "anon"}
-                                    onCopy={() => copyToClipboard(`eyJh${currentProject?.id || '0'}...pqc_v1_anon_772`, "anon")}
-                                    showKey={showKey === "anon"}
-                                    onToggleShow={() => setShowKey(showKey === "anon" ? null : "anon")}
-                                />
-                                <ApiKeyBox
-                                    title="Project Secret (service_role) Key"
-                                    desc="Full bypass of RLS policies. NEVER expose to the client-side."
-                                    value={`eyJh${currentProject?.id || '0'}...pqc_v1_secret_911`}
-                                    id="secret"
-                                    isSecret
-                                    copied={copied === "secret"}
-                                    onCopy={() => copyToClipboard(`eyJh${currentProject?.id || '0'}...pqc_v1_secret_911`, "secret")}
-                                    showKey={showKey === "secret"}
-                                    onToggleShow={() => setShowKey(showKey === "secret" ? null : "secret")}
-                                />
-                                <div className="panel p-6 rounded-2xl bg-[#080808] border-[#1a1a1a] flex items-center justify-between group hover:border-[#333] transition-all">
-                                    <div className="flex items-center gap-4">
-                                        <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20 text-blue-500">
-                                            <Zap size={20} />
-                                        </div>
-                                        <div>
-                                            <div className="text-sm font-bold text-white uppercase tracking-widest">JWT Secret</div>
-                                            <div className="text-[11px] text-gray-500 mt-0.5">Used for signing PQC-Tokens and Lattice-Handshakes.</div>
-                                        </div>
-                                    </div>
-                                    <button className="flex items-center gap-2 px-4 py-2 text-[10px] font-bold text-white bg-[#111] hover:bg-[#222] border border-[#222] rounded-lg transition-all uppercase tracking-widest">
-                                        <RefreshCw size={12} /> Rotate Secret
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <ApiKeysView currentProject={currentProject} />
                     )}
 
                     {activeTab === "vault" && (
@@ -595,4 +552,211 @@ function VaultSecretsView({ currentProject }: any) {
             )}
         </div>
     )
+}
+
+
+function ApiKeysView({ currentProject }: any) {
+    const [keys, setKeys] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [generating, setGenerating] = useState<string | null>(null);
+    const [newKey, setNewKey] = useState<{ key: string; type: string } | null>(null);
+    const [copied, setCopied] = useState<string | null>(null);
+    const [showKey, setShowKey] = useState<string | null>(null);
+
+    const fetchKeys = async () => {
+        if (!currentProject) return;
+        setLoading(true);
+        try {
+            const res = await fetch(`/api/keys?projectId=${currentProject.id}`);
+            if (res.ok) {
+                setKeys(await res.json());
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchKeys();
+    }, [currentProject?.id]);
+
+    const generateKey = async (keyType: 'anon' | 'service_role') => {
+        if (!currentProject) return;
+        setGenerating(keyType);
+        try {
+            const res = await fetch('/api/keys', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ projectId: currentProject.id, keyType })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setNewKey({ key: data.key, type: keyType });
+                fetchKeys();
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setGenerating(null);
+        }
+    };
+
+    const copyToClipboard = (text: string, id: string) => {
+        navigator.clipboard.writeText(text);
+        setCopied(id);
+        setTimeout(() => setCopied(null), 2000);
+    };
+
+    const anonKey = keys.find(k => k.key_type === 'anon');
+    const secretKey = keys.find(k => k.key_type === 'service_role');
+
+    return (
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <section className="space-y-2">
+                <h3 className="text-2xl font-bold text-white tracking-tight">API Access Keys</h3>
+                <p className="text-gray-500 text-sm">Project keys used to authenticate requests to your PQC-Database instance.</p>
+            </section>
+
+            {/* Show newly generated key warning */}
+            {newKey && (
+                <div className="p-6 bg-yellow-500/10 border border-yellow-500/30 rounded-2xl space-y-4 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex items-center gap-3">
+                        <AlertTriangle className="text-yellow-500" size={20} />
+                        <span className="text-sm font-bold text-yellow-500 uppercase tracking-widest">Save This Key Now!</span>
+                    </div>
+                    <p className="text-xs text-yellow-200/80">This is the only time you will see this key. Copy it and store it securely.</p>
+                    <div className="relative">
+                        <div className="w-full bg-black border border-yellow-500/30 rounded-xl p-4 pr-20 font-mono text-xs text-yellow-300 break-all">
+                            {newKey.key}
+                        </div>
+                        <button 
+                            onClick={() => copyToClipboard(newKey.key, 'new')}
+                            className="absolute right-3 top-3 p-2 bg-yellow-500/20 rounded-lg text-yellow-500 hover:bg-yellow-500/30 transition-colors"
+                        >
+                            {copied === 'new' ? <Check size={16} /> : <Copy size={16} />}
+                        </button>
+                    </div>
+                    <button 
+                        onClick={() => setNewKey(null)}
+                        className="text-xs text-yellow-500/60 hover:text-yellow-500 transition-colors"
+                    >
+                        I've saved this key, dismiss this message
+                    </button>
+                </div>
+            )}
+
+            {loading ? (
+                <div className="p-20 flex justify-center"><Loader2 className="animate-spin text-[#3ecf8e]" size={32} /></div>
+            ) : (
+                <div className="grid gap-6">
+                    {/* Anon Key */}
+                    <div className="panel p-8 rounded-2xl bg-[#080808] border-[#1a1a1a] space-y-6 group hover:border-[#333] transition-all">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h4 className="text-sm font-bold text-white uppercase tracking-widest">Project Public (anon) Key</h4>
+                                <p className="text-[11px] text-gray-500 mt-1 font-medium">Used for client-side authentication. Safe to use in browsers.</p>
+                            </div>
+                        </div>
+                        {anonKey ? (
+                            <div className="space-y-3">
+                                <div className="relative group/key">
+                                    <div className="w-full bg-[#050505] border border-[#222] rounded-xl p-4 pr-32 font-mono text-[11px] text-gray-500 break-all min-h-[52px] flex items-center shadow-inner">
+                                        {showKey === 'anon' ? anonKey.key_prefix : "••••••••••••••••••••••••••••••••"}
+                                    </div>
+                                    <div className="absolute right-3 top-2 flex items-center gap-2">
+                                        <button onClick={() => setShowKey(showKey === 'anon' ? null : 'anon')} className="p-2.5 hover:bg-white/5 rounded-lg text-gray-500 hover:text-white transition-colors">
+                                            {showKey === 'anon' ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between text-[10px] text-gray-600">
+                                    <span>Created: {new Date(anonKey.created_at).toLocaleDateString()}</span>
+                                    <button 
+                                        onClick={() => generateKey('anon')}
+                                        disabled={generating === 'anon'}
+                                        className="flex items-center gap-2 text-yellow-500 hover:text-yellow-400 transition-colors"
+                                    >
+                                        {generating === 'anon' ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                                        Regenerate
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <button 
+                                onClick={() => generateKey('anon')}
+                                disabled={generating === 'anon'}
+                                className="w-full h-12 bg-[#111] border border-[#222] rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:border-[#333] transition-all flex items-center justify-center gap-2"
+                            >
+                                {generating === 'anon' ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                                Generate Anon Key
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Service Role Key */}
+                    <div className="panel p-8 rounded-2xl bg-[#080808] border-[#1a1a1a] space-y-6 group hover:border-[#333] transition-all">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h4 className="text-sm font-bold text-white uppercase tracking-widest">Project Secret (service_role) Key</h4>
+                                <p className="text-[11px] text-gray-500 mt-1 font-medium">Full bypass of RLS policies. NEVER expose to the client-side.</p>
+                            </div>
+                            <span className="text-[9px] font-bold text-red-500 bg-red-950/20 px-3 py-1 rounded-full border border-red-500/20 uppercase tracking-widest">Secret</span>
+                        </div>
+                        {secretKey ? (
+                            <div className="space-y-3">
+                                <div className="relative group/key">
+                                    <div className="w-full bg-[#050505] border border-[#222] rounded-xl p-4 pr-32 font-mono text-[11px] text-gray-500 break-all min-h-[52px] flex items-center shadow-inner">
+                                        {showKey === 'secret' ? secretKey.key_prefix : "••••••••••••••••••••••••••••••••"}
+                                    </div>
+                                    <div className="absolute right-3 top-2 flex items-center gap-2">
+                                        <button onClick={() => setShowKey(showKey === 'secret' ? null : 'secret')} className="p-2.5 hover:bg-white/5 rounded-lg text-gray-500 hover:text-white transition-colors">
+                                            {showKey === 'secret' ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between text-[10px] text-gray-600">
+                                    <span>Created: {new Date(secretKey.created_at).toLocaleDateString()}</span>
+                                    <button 
+                                        onClick={() => generateKey('service_role')}
+                                        disabled={generating === 'service_role'}
+                                        className="flex items-center gap-2 text-yellow-500 hover:text-yellow-400 transition-colors"
+                                    >
+                                        {generating === 'service_role' ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                                        Regenerate
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <button 
+                                onClick={() => generateKey('service_role')}
+                                disabled={generating === 'service_role'}
+                                className="w-full h-12 bg-[#111] border border-[#222] rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:border-[#333] transition-all flex items-center justify-center gap-2"
+                            >
+                                {generating === 'service_role' ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                                Generate Service Role Key
+                            </button>
+                        )}
+                    </div>
+
+                    {/* JWT Secret Info */}
+                    <div className="panel p-6 rounded-2xl bg-[#080808] border-[#1a1a1a] flex items-center justify-between group hover:border-[#333] transition-all">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20 text-blue-500">
+                                <Zap size={20} />
+                            </div>
+                            <div>
+                                <div className="text-sm font-bold text-white uppercase tracking-widest">JWT Secret</div>
+                                <div className="text-[11px] text-gray-500 mt-0.5">Used for signing PQC-Tokens and Lattice-Handshakes.</div>
+                            </div>
+                        </div>
+                        <button className="flex items-center gap-2 px-4 py-2 text-[10px] font-bold text-white bg-[#111] hover:bg-[#222] border border-[#222] rounded-lg transition-all uppercase tracking-widest">
+                            <RefreshCw size={12} /> Rotate Secret
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }

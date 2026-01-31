@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
                 });
             }
 
-            const userRes = await query('SELECT id, email, name, identity_id FROM users WHERE id = $1', [auth.userId]);
+            const userRes = await query('SELECT id, email, name, identity_id, provider FROM users WHERE id = $1', [auth.userId]);
             const orgsRes = await query('SELECT id, name, slug FROM organizations WHERE owner_id = $1', [auth.userId]);
 
             return NextResponse.json({

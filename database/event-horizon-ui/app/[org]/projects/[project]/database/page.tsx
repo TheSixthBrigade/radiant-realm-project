@@ -244,7 +244,17 @@ function SchemaVisualizer() {
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
             className="absolute inset-0 p-10 cursor-default select-none overflow-auto"
-            style={{ backgroundImage: 'radial-gradient(#222 1px, transparent 1px)', backgroundSize: '32px 32px', minWidth: '1500px', minHeight: '1200px' }}>
+            style={{ 
+                backgroundImage: `
+                    linear-gradient(rgba(62, 207, 142, 0.03) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(62, 207, 142, 0.03) 1px, transparent 1px),
+                    radial-gradient(circle at 50% 50%, rgba(62, 207, 142, 0.05) 0%, transparent 50%),
+                    radial-gradient(#1a1a1a 1px, transparent 1px)
+                `, 
+                backgroundSize: '64px 64px, 64px 64px, 100% 100%, 16px 16px',
+                minWidth: '1500px', 
+                minHeight: '1200px' 
+            }}>
 
             <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
                 {renderConnections()}
