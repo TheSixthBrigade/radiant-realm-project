@@ -66,6 +66,19 @@ export async function POST(req: NextRequest) {
             console.log('Index creation note:', e);
         }
 
+        // Register table ownership for project isolation
+        if (actualProjectId) {
+            try {
+                await query(`
+                    INSERT INTO _table_registry (table_name, project_id, created_by)
+                    VALUES ($1, $2, $3)
+                    ON CONFLICT (table_name) DO UPDATE SET project_id = $2
+                `, [tableName, actualProjectId, null]);
+            } catch (e) {
+                console.log('Table registry note:', e);
+            }
+        }
+
         return NextResponse.json({
             success: true,
             tableName,

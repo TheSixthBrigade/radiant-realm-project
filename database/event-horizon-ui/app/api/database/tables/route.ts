@@ -33,7 +33,8 @@ const INTERNAL_TABLES = [
     'applied_migrations',
     'roblox_users',
     'announcements',
-    'cli_test_sync'
+    'cli_test_sync',
+    '_table_registry'
 ];
 
 export async function GET(req: NextRequest) {
@@ -45,10 +46,66 @@ export async function GET(req: NextRequest) {
     const projectId = searchParams.get('projectId') || authProjectId;
 
     try {
-        // Build the exclusion list with proper $N placeholders
-        const placeholders = INTERNAL_TABLES.map((_, i) => '$' + (i + 2)).join(', ');
+        // If projectId is specified, only show tables owned by this project
+        if (projectId) {
+            // First, get tables from registry for this project
+            const registryResult = await query(`
+                SELECT table_name FROM _table_registry WHERE project_id = $1
+            `, [projectId]);
+
+            const ownedTables = registryResult.rows.map((r: any) => r.table_name);
+
+            if (ownedTables.length === 0) {
+                return NextResponse.json([]);
+            }
+
+            // Get details for owned tables only
+            const tablesWithCounts = await Promise.all(
+                ownedTables.map(async (tableName: string) => {
+                    try {
+                        // Verify table still exists
+                        const exists = await query(`
+                            SELECT 1 FROM information_schema.tables 
+                            WHERE table_schema = $1 AND table_name = $2
+                        `, [schema, tableName]);
+
+                        if (exists.rows.length === 0) {
+                            // Table was deleted externally, clean up registry
+                            await query(`DELETE FROM _table_registry WHERE table_name = $1`, [tableName]);
+                            return null;
+                        }
+
+                        // Get column count
+                        const colCount = await query(`
+                            SELECT COUNT(*) as count FROM information_schema.columns 
+                            WHERE table_schema = $1 AND table_name = $2
+                        `, [schema, tableName]);
+
+                        // Get row count for this project
+                        const rowCount = await query(
+                            `SELECT COUNT(*) as count FROM "${schema}"."${tableName}" WHERE project_id = $1`,
+                            [projectId]
+                        );
+
+                        return {
+                            table_name: tableName,
+                            table_type: 'BASE TABLE',
+                            column_count: parseInt(colCount.rows[0]?.count || '0'),
+                            row_count_estimate: parseInt(rowCount.rows[0]?.count || '0')
+                        };
+                    } catch (e) {
+                        console.error(`Error getting table ${tableName}:`, e);
+                        return null;
+                    }
+                })
+            );
+
+            return NextResponse.json(tablesWithCounts.filter(t => t !== null));
+        }
+
+        // No project filter - show all non-internal tables (admin view)
+        const placeholders = INTERNAL_TABLES.map((_, i) => `$${i + 2}`).join(', ');
         
-        // Query PostgreSQL for BASE TABLEs only (not VIEWs)
         const sql = `
             SELECT 
                 t.table_name,
@@ -67,43 +124,19 @@ export async function GET(req: NextRequest) {
         
         const result = await query(sql, [schema, ...INTERNAL_TABLES]);
 
-        // Get row count estimates, filtered by project if specified
+        // Get row counts
         const tablesWithCounts = await Promise.all(
             result.rows.map(async (table: any) => {
                 try {
-                    if (projectId) {
-                        // Check if project_id column exists
-                        const colCheck = await query(
-                            'SELECT 1 FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2 AND column_name = $3',
-                            [schema, table.table_name, 'project_id']
-                        );
-
-                        if (colCheck.rows.length > 0) {
-                            // Table has project_id - filter by it
-                            const res = await query(
-                                'SELECT COUNT(*) as count FROM "' + schema + '"."' + table.table_name + '" WHERE project_id = $1',
-                                [projectId]
-                            );
-                            return { ...table, row_count_estimate: parseInt(res.rows[0].count), has_project_id: true };
-                        } else {
-                            // No project_id column - don't show in project view
-                            return null;
-                        }
-                    } else {
-                        // No project filter - show all with total counts
-                        const countResult = await query('SELECT COUNT(*) as count FROM "' + schema + '"."' + table.table_name + '"');
-                        return { ...table, row_count_estimate: parseInt(countResult.rows[0].count) };
-                    }
+                    const countResult = await query(`SELECT COUNT(*) as count FROM "${schema}"."${table.table_name}"`);
+                    return { ...table, row_count_estimate: parseInt(countResult.rows[0]?.count || '0') };
                 } catch {
-                    return null;
+                    return { ...table, row_count_estimate: 0 };
                 }
             })
         );
 
-        // Filter out nulls
-        const filteredTables = tablesWithCounts.filter(t => t !== null);
-
-        return NextResponse.json(filteredTables);
+        return NextResponse.json(tablesWithCounts);
     } catch (error: any) {
         console.error('Database introspection error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
     Table,
     Search,
@@ -31,10 +31,6 @@ export default function DataStudioPage() {
     const [loadingRows, setLoadingRows] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [pagination, setPagination] = useState({ total: 0, offset: 0, limit: 50 });
-    
-    // Prevent re-fetch loops
-    const lastProjectId = useRef<number | null>(null);
-    const isFetching = useRef(false);
 
     // Modal states
     const [showInsertModal, setShowInsertModal] = useState(false);
@@ -51,6 +47,11 @@ export default function DataStudioPage() {
     const [creatingTable, setCreatingTable] = useState(false);
     const [createTableError, setCreateTableError] = useState<string | null>(null);
     const COLUMN_TYPES = ['text', 'varchar', 'integer', 'bigint', 'uuid', 'boolean', 'timestamptz', 'jsonb', 'float8', 'bytea'];
+
+    // Delete Table Modal
+    const [showDeleteTableModal, setShowDeleteTableModal] = useState(false);
+    const [tableToDelete, setTableToDelete] = useState<string | null>(null);
+    const [deletingTable, setDeletingTable] = useState(false);
 
 
     // Fetch tables - simple and direct
@@ -255,6 +256,40 @@ export default function DataStudioPage() {
         }
     };
 
+    const handleDeleteTable = async () => {
+        if (!tableToDelete) return;
+        setDeletingTable(true);
+        
+        try {
+            const res = await fetch('/api/database/delete-table', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tableName: tableToDelete,
+                    projectId: currentProject?.id
+                })
+            });
+            const result = await res.json();
+            if (res.ok) {
+                setShowDeleteTableModal(false);
+                setTableToDelete(null);
+                // Remove from local state
+                setTables(prev => prev.filter(t => t.table_name !== tableToDelete));
+                // Select another table or clear
+                if (selectedTable === tableToDelete) {
+                    const remaining = tables.filter(t => t.table_name !== tableToDelete);
+                    setSelectedTable(remaining.length > 0 ? remaining[0].table_name : null);
+                }
+            } else {
+                alert(result.error || 'Failed to delete table');
+            }
+        } catch (e: any) {
+            alert(e.message);
+        } finally {
+            setDeletingTable(false);
+        }
+    };
+
 
     const handleDeleteSelected = async () => {
         if (!selectedTable || selectedRows.size === 0) return;
@@ -351,7 +386,7 @@ export default function DataStudioPage() {
                                 key={table.table_name}
                                 onClick={() => setSelectedTable(table.table_name)}
                                 className={cn(
-                                    "flex items-center justify-between px-4 py-2 text-[11px] font-medium cursor-pointer transition-all",
+                                    "group flex items-center justify-between px-4 py-2 text-[11px] font-medium cursor-pointer transition-all",
                                     table.table_name === selectedTable
                                         ? "bg-[#141414] text-white border-l-2 border-[#3ecf8e]"
                                         : "text-gray-500 hover:text-gray-200 border-l-2 border-transparent hover:bg-[#111]"
@@ -361,7 +396,20 @@ export default function DataStudioPage() {
                                     <Table size={14} className={cn("flex-shrink-0", table.table_name === selectedTable ? "text-[#3ecf8e]" : "text-gray-700")} />
                                     <span className="truncate">{table.table_name}</span>
                                 </div>
-                                <span className="text-[9px] text-gray-700">{table.row_count_estimate}</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[9px] text-gray-700">{table.row_count_estimate}</span>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setTableToDelete(table.table_name);
+                                            setShowDeleteTableModal(true);
+                                        }}
+                                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 rounded transition-all"
+                                        title="Delete table"
+                                    >
+                                        <Trash2 size={12} className="text-red-500" />
+                                    </button>
+                                </div>
                             </div>
                         ))
                     )}
@@ -650,6 +698,49 @@ export default function DataStudioPage() {
                             <button onClick={handleCreateTable} disabled={creatingTable} className="px-6 py-2 bg-[#3ecf8e] text-black text-[11px] font-bold rounded-lg hover:bg-[#34b27b] flex items-center gap-2">
                                 {creatingTable ? <Loader2 size={14} className="animate-spin" /> : <Table size={14} />}
                                 Create Table
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Table Confirmation Modal */}
+            {showDeleteTableModal && tableToDelete && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 animate-in fade-in duration-200">
+                    <div className="bg-[#0d0d0d] border border-[#222] rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+                        <div className="flex items-center justify-between p-6 border-b border-[#1a1a1a]">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-red-500/20 rounded-lg">
+                                    <Trash2 size={20} className="text-red-500" />
+                                </div>
+                                <h2 className="text-lg font-bold text-white">Delete Table</h2>
+                            </div>
+                            <button onClick={() => { setShowDeleteTableModal(false); setTableToDelete(null); }} className="text-gray-500 hover:text-white">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-gray-400 text-sm">
+                                Are you sure you want to delete the table <span className="font-mono text-white bg-[#1a1a1a] px-2 py-0.5 rounded">{tableToDelete}</span>?
+                            </p>
+                            <p className="text-red-400 text-xs mt-3">
+                                This action cannot be undone. All data in this table will be permanently deleted.
+                            </p>
+                        </div>
+                        <div className="p-6 border-t border-[#1a1a1a] flex justify-end gap-3">
+                            <button 
+                                onClick={() => { setShowDeleteTableModal(false); setTableToDelete(null); }} 
+                                className="px-4 py-2 text-[11px] font-bold text-gray-400 border border-[#222] rounded-lg hover:text-white"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={handleDeleteTable} 
+                                disabled={deletingTable} 
+                                className="px-6 py-2 bg-red-600 text-white text-[11px] font-bold rounded-lg hover:bg-red-500 flex items-center gap-2"
+                            >
+                                {deletingTable ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                                Delete Table
                             </button>
                         </div>
                     </div>
