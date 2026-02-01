@@ -5,6 +5,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useTheme } from '@/components/theme-provider';
+import { Button } from '@/components/ui/button';
 import GlowingLogo from '@/components/GlowingLogo';
 import ProductCard from '@/components/ProductCard';
 import { SEO, OrganizationSchema, WebsiteSchema } from '@/components/SEO';
