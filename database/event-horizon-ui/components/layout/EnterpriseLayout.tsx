@@ -422,7 +422,12 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
                                                     <div className="absolute -left-5 top-1/2 w-5 h-px bg-[#3ecf8e]/40 border-t border-[#3ecf8e]/20" />
 
                                                     <button
-                                                        onClick={() => setCurrentProject(p)}
+                                                        onClick={() => {
+                                                            setCurrentProject(p);
+                                                            if (currentOrg) {
+                                                                router.push(`/${currentOrg.name}/projects/${p.slug}`);
+                                                            }
+                                                        }}
                                                         className="w-full px-5 py-4 bg-[#080808] border border-[#1a1a1a] rounded-2xl text-[13px] text-gray-400 hover:text-[#3ecf8e] hover:border-[#3ecf8e]/30 hover:bg-[#3ecf8e]/5 transition-all flex items-center justify-between group shadow-xl"
                                                     >
                                                         <div className="flex items-center gap-3">

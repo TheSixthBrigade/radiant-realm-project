@@ -25,10 +25,11 @@ export default function ProjectDashboard() {
     }, [projectName, projects, currentProject, setCurrentProject]);
 
     const fetchMetrics = async () => {
+        // Don't fetch until we have a valid project
+        if (!currentProject?.id) return;
+        
         try {
-            const url = currentProject
-                ? `/api/database/metrics?projectId=${currentProject.id}`
-                : '/api/database/metrics';
+            const url = `/api/database/metrics?projectId=${currentProject.id}`;
             const res = await fetch(url);
             if (res.ok) {
                 const data = await res.json();
@@ -47,10 +48,13 @@ export default function ProjectDashboard() {
     };
 
     useEffect(() => {
+        // Only start fetching when we have a valid project
+        if (!currentProject?.id) return;
+        
         fetchMetrics();
         timerRef.current = setInterval(fetchMetrics, 5000);
         return () => clearInterval(timerRef.current);
-    }, []);
+    }, [currentProject?.id]);
 
     const formatValue = (val: any) => {
         if (val === undefined || val === null) return "---";

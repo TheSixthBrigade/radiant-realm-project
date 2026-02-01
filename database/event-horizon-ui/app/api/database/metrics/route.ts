@@ -36,29 +36,32 @@ export async function GET(req: NextRequest) {
             WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
         `);
 
-        // Get total row count estimate (project-scoped if possible)
+        // Get total row count estimate (project-scoped using _table_registry)
         let totalRows = 0;
+        let projectTableCount = 0;
+        
         if (projectId) {
-            // High-precision count: Find all tables that have a project_id column
-            const tablesWithProjectCol = await query(`
-                SELECT table_name 
-                FROM information_schema.columns 
-                WHERE table_schema = 'public' AND column_name = 'project_id'
-            `);
+            // ONLY count rows from tables registered to THIS project in _table_registry
+            const registeredTables = await query(`
+                SELECT table_name FROM _table_registry WHERE project_id = $1
+            `, [projectId]);
 
-            if (tablesWithProjectCol.rows.length > 0) {
-                for (const table of tablesWithProjectCol.rows) {
-                    try {
-                        const countRes = await query(`SELECT COUNT(*) as count FROM "${table.table_name}" WHERE project_id = $1`, [projectId]);
-                        totalRows += parseInt(countRes.rows[0].count);
-                    } catch (e) {
-                        // Skip if count fails (e.g. invalid table state)
-                    }
+            projectTableCount = registeredTables.rows.length;
+
+            for (const table of registeredTables.rows) {
+                try {
+                    // Count rows that belong to this project
+                    const countRes = await query(
+                        `SELECT COUNT(*) as count FROM "${table.table_name}" WHERE project_id = $1`, 
+                        [projectId]
+                    );
+                    totalRows += parseInt(countRes.rows[0].count);
+                } catch (e) {
+                    // Skip if count fails
                 }
-            } else {
-                totalRows = 0;
             }
         } else {
+            // No project filter - show global stats (admin view)
             const rowCountResult = await query(`
                 SELECT COALESCE(SUM(n_live_tup), 0) as total_rows
                 FROM pg_stat_user_tables
@@ -111,7 +114,7 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             database_size: dbSizeResult.rows[0]?.database_size || '0 MB',
-            table_count: parseInt(tableCountResult.rows[0]?.table_count || '0'),
+            table_count: projectId ? projectTableCount : parseInt(tableCountResult.rows[0]?.table_count || '0'),
             total_rows: totalRows,
             connections: connectionResult.rows[0] || {},
             index_usage: indexUsageResult.rows[0] || {},
