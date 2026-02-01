@@ -128,6 +128,7 @@ export default defineConfig(() => ({
             '@radix-ui/react-tabs',
             '@radix-ui/react-tooltip',
             '@radix-ui/react-popover',
+            'framer-motion',
           ],
           'vendor-query': ['@tanstack/react-query'],
           'vendor-supabase': ['@supabase/supabase-js'],
