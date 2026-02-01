@@ -94,6 +94,11 @@ export default defineConfig(() => ({
     host: "::",
     port: 8080,
   },
+  preview: {
+    host: "::",
+    port: 8080,
+    allowedHosts: ["vectabase.com", "www.vectabase.com", "localhost"],
+  },
   plugins: [react(), obfuscatorApiPlugin()],
   resolve: {
     alias: {
