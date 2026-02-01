@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyAccess } from '@/lib/auth';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/rateLimit';
 
 // System/internal tables that should NEVER be shown in the Table Editor
 const INTERNAL_TABLES = [
@@ -44,6 +45,12 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const schema = searchParams.get('schema') || 'public';
     const projectId = searchParams.get('projectId') || authProjectId;
+
+    // Rate limiting check (currently unlimited but tracks usage)
+    const rateCheck = await checkRateLimit(projectId || 0);
+    if (!rateCheck.allowed) {
+        return NextResponse.json({ error: rateCheck.reason }, { status: 429 });
+    }
 
     try {
         // If projectId is specified, only show tables owned by this project

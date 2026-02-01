@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyAccess } from '@/lib/auth';
+import { checkRateLimit, getRateLimitHeaders } from '@/lib/rateLimit';
 
 // GET: Fetch rows from a table with pagination
 export async function GET(req: NextRequest) {
-    const { authorized } = await verifyAccess(req);
-    if (!authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await verifyAccess(req);
+    if (!auth.authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // Rate limiting (unlimited but tracks usage)
+    const rateCheck = await checkRateLimit(auth.projectId || 0);
+    if (!rateCheck.allowed) {
+        return NextResponse.json({ error: rateCheck.reason }, { status: 429 });
+    }
 
     const { searchParams } = new URL(req.url);
     const table = searchParams.get('table');
@@ -66,8 +73,14 @@ export async function GET(req: NextRequest) {
 
 // POST: Insert a new row
 export async function POST(req: NextRequest) {
-    const { authorized } = await verifyAccess(req);
-    if (!authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await verifyAccess(req);
+    if (!auth.authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // Rate limiting (unlimited but tracks usage)
+    const rateCheck = await checkRateLimit(auth.projectId || 0);
+    if (!rateCheck.allowed) {
+        return NextResponse.json({ error: rateCheck.reason }, { status: 429 });
+    }
 
     try {
         const { table, schema = 'public', data } = await req.json();
@@ -100,8 +113,14 @@ export async function POST(req: NextRequest) {
 
 // PUT: Update an existing row
 export async function PUT(req: NextRequest) {
-    const { authorized } = await verifyAccess(req);
-    if (!authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await verifyAccess(req);
+    if (!auth.authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // Rate limiting (unlimited but tracks usage)
+    const rateCheck = await checkRateLimit(auth.projectId || 0);
+    if (!rateCheck.allowed) {
+        return NextResponse.json({ error: rateCheck.reason }, { status: 429 });
+    }
 
     try {
         const { table, schema = 'public', data, where } = await req.json();
@@ -132,8 +151,14 @@ export async function PUT(req: NextRequest) {
 
 // DELETE: Remove a row
 export async function DELETE(req: NextRequest) {
-    const { authorized } = await verifyAccess(req);
-    if (!authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await verifyAccess(req);
+    if (!auth.authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // Rate limiting (unlimited but tracks usage)
+    const rateCheck = await checkRateLimit(auth.projectId || 0);
+    if (!rateCheck.allowed) {
+        return NextResponse.json({ error: rateCheck.reason }, { status: 429 });
+    }
 
     try {
         const { table, schema = 'public', where } = await req.json();

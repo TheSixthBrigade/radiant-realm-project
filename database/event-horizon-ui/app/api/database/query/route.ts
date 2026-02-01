@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyAccess } from '@/lib/auth';
+import { checkRateLimit, trackEgress, getRateLimitHeaders } from '@/lib/rateLimit';
 
 // Dangerous SQL patterns that should be blocked
 const DANGEROUS_PATTERNS = [
@@ -18,6 +19,13 @@ function isSafeQuery(sql: string): boolean {
 export async function POST(req: NextRequest) {
     const auth = await verifyAccess(req);
     if (!auth.authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // Rate limiting check (currently unlimited but tracks usage)
+    const projectId = auth.projectId || 0;
+    const rateCheck = await checkRateLimit(projectId);
+    if (!rateCheck.allowed) {
+        return NextResponse.json({ error: rateCheck.reason }, { status: 429 });
+    }
 
     try {
         const { sql, params = [] } = await req.json();
@@ -104,6 +112,8 @@ export async function POST(req: NextRequest) {
             })),
             executionTime,
             command: isSelect ? 'SELECT' : (result.command || 'UNKNOWN'),
+        }, {
+            headers: getRateLimitHeaders(projectId)
         });
     } catch (error: any) {
         console.error('SQL execution error:', error);
@@ -112,6 +122,6 @@ export async function POST(req: NextRequest) {
             position: error.position,
             hint: error.hint,
             detail: error.detail,
-        }, { status: 400 });
+        }, { status: 400, headers: getRateLimitHeaders(projectId) });
     }
 }
