@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
     Database,
     Settings,
@@ -43,29 +43,44 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
     const [isCreatingProject, setIsCreatingProject] = useState(false);
     const [newOrgName, setNewOrgName] = useState("");
     const [newProjectName, setNewProjectName] = useState("");
+    const [isNavigating, setIsNavigating] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(false);
+    const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (navigationTimeoutRef.current) {
+                clearTimeout(navigationTimeoutRef.current);
+            }
+        };
+    }, []);
 
     useEffect(() => {
-        if (user) {
+        if (user && !isInitialized) {
             fetchWorkspaces();
         }
-    }, [user]);
+    }, [user, isInitialized]);
 
     useEffect(() => {
-        if (currentOrg) {
+        if (currentOrg && !isInitialized) {
             fetchProjects(currentOrg.id);
         }
-    }, [currentOrg]);
+    }, [currentOrg, isInitialized]);
 
     useEffect(() => {
         // Root redirect logic - centralized here where we have Org + Project context
-        if (pathname === '/' && currentOrg && projects.length > 0) {
+        // Only run once during initialization
+        if (pathname === '/' && currentOrg && projects.length > 0 && !isInitialized) {
+            setIsInitialized(true);
             // Check if we have a current project, otherwise default to first
             const targetProject = currentProject || projects[0];
             router.push(`/${currentOrg.name}/projects/${targetProject.slug}`);
-        } else if (pathname === '/' && currentOrg && projects.length === 0) {
+        } else if (pathname === '/' && currentOrg && projects.length === 0 && !isInitialized) {
+            setIsInitialized(true);
             // Org exists but no projects - stay on root (Initialize screen)
         }
-    }, [pathname, currentOrg, projects, currentProject]);
+    }, [pathname, currentOrg, projects, currentProject, isInitialized]);
 
     const fetchWorkspaces = async () => {
         try {
@@ -99,21 +114,19 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
             if (pRes.ok) {
                 const data = await pRes.json();
                 setProjects(data);
-                // Ensure no auto-selection, force landing page
-                // setCurrentProject(null); 
             }
         } catch (e) {
             console.error("Failed to fetch projects", e);
         }
     };
 
-    const handleSelectOrg = async (org: any) => {
-        if (currentOrg?.id === org.id) return; // Already selected
+    const handleSelectOrg = useCallback(async (org: any) => {
+        if (currentOrg?.id === org.id || isNavigating) return;
         
+        setIsNavigating(true);
         setCurrentOrg(org);
         setCurrentProject(null);
         
-        // Fetch projects for this org and navigate to first one
         try {
             const pRes = await fetch(`/api/projects?orgId=${org.id}`);
             if (pRes.ok) {
@@ -124,19 +137,38 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
                     setCurrentProject(firstProject);
                     router.push(`/${org.name}/projects/${firstProject.slug}`);
                 }
-                // If no projects, stay on current page - the UI will show "Create project"
             }
         } catch (e) {
             console.error("Failed to fetch projects for org", e);
+        } finally {
+            // Delay resetting navigation state to prevent rapid clicks
+            navigationTimeoutRef.current = setTimeout(() => {
+                setIsNavigating(false);
+            }, 500);
         }
-    };
+    }, [currentOrg?.id, isNavigating, router, setCurrentProject, setProjects]);
 
-    const handleSelectProject = (proj: any) => {
+    const handleSelectProject = useCallback((proj: any) => {
+        // Prevent multiple rapid clicks
+        if (isNavigating || currentProject?.id === proj.id) return;
+        
+        // Clear any pending timeout
+        if (navigationTimeoutRef.current) {
+            clearTimeout(navigationTimeoutRef.current);
+        }
+        
+        setIsNavigating(true);
         setCurrentProject(proj);
+        
         if (currentOrg) {
             router.push(`/${currentOrg.name}/projects/${proj.slug}`);
         }
-    };
+        
+        // Reset navigation state after a delay
+        navigationTimeoutRef.current = setTimeout(() => {
+            setIsNavigating(false);
+        }, 500);
+    }, [currentOrg, currentProject?.id, isNavigating, router, setCurrentProject]);
 
     const handleCreateOrg = async () => {
         if (!newOrgName) return;
@@ -422,20 +454,24 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
                                                     <div className="absolute -left-5 top-1/2 w-5 h-px bg-[#3ecf8e]/40 border-t border-[#3ecf8e]/20" />
 
                                                     <button
-                                                        onClick={() => {
-                                                            setCurrentProject(p);
-                                                            if (currentOrg) {
-                                                                router.push(`/${currentOrg.name}/projects/${p.slug}`);
-                                                            }
-                                                        }}
-                                                        className="w-full px-5 py-4 bg-[#080808] border border-[#1a1a1a] rounded-2xl text-[13px] text-gray-400 hover:text-[#3ecf8e] hover:border-[#3ecf8e]/30 hover:bg-[#3ecf8e]/5 transition-all flex items-center justify-between group shadow-xl"
+                                                        disabled={isNavigating}
+                                                        onClick={() => handleSelectProject(p)}
+                                                        className={cn(
+                                                            "w-full px-5 py-4 bg-[#080808] border border-[#1a1a1a] rounded-2xl text-[13px] text-gray-400 hover:text-[#3ecf8e] hover:border-[#3ecf8e]/30 hover:bg-[#3ecf8e]/5 transition-all flex items-center justify-between group shadow-xl",
+                                                            isNavigating && "opacity-50 cursor-not-allowed"
+                                                        )}
                                                     >
                                                         <div className="flex items-center gap-3">
-                                                            <div className="w-2 h-2 rounded-full bg-gray-800 group-hover:bg-[#3ecf8e] transition-colors" />
+                                                            <div className={cn(
+                                                                "w-2 h-2 rounded-full bg-gray-800 group-hover:bg-[#3ecf8e] transition-colors",
+                                                                isNavigating && "animate-pulse bg-[#3ecf8e]"
+                                                            )} />
                                                             <span className="font-mono tracking-tight">{p.name}</span>
                                                         </div>
                                                         <div className="flex items-center gap-3">
-                                                            <span className="text-[10px] font-bold text-gray-700 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Select Node</span>
+                                                            <span className="text-[10px] font-bold text-gray-700 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                {isNavigating ? "Loading..." : "Select Node"}
+                                                            </span>
                                                             <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-1" />
                                                         </div>
                                                     </button>
