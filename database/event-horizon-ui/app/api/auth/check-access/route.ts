@@ -41,8 +41,13 @@ export async function GET(req: NextRequest) {
             });
         }
 
-        // Get user from database
-        const userResult = await query('SELECT id, email FROM users WHERE identity_id = $1', [payload.id]);
+        // Get user from database - try by email first (more reliable), then by identity_id
+        let userResult = await query('SELECT id, email FROM users WHERE email = $1', [payload.email]);
+        
+        // Fallback to identity_id if email lookup fails
+        if (userResult.rows.length === 0 && payload.id) {
+            userResult = await query('SELECT id, email FROM users WHERE identity_id = $1', [payload.id]);
+        }
         
         if (userResult.rows.length === 0) {
             return NextResponse.json({ hasAccess: false, reason: 'user_not_found' });
