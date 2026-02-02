@@ -4,15 +4,40 @@ import { useProject } from "@/hooks/useProject";
 import { Database, Plus, ArrowRight, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function ProjectsPage() {
-    const { projects, setCurrentProject } = useProject();
+    const { projects, currentProject, setCurrentProject } = useProject();
     const router = useRouter();
+    const [currentOrg, setCurrentOrg] = useState<any>(null);
+
+    // Fetch current org to build correct URL
+    useEffect(() => {
+        const fetchOrg = async () => {
+            try {
+                const res = await fetch('/api/organizations');
+                if (res.ok) {
+                    const orgs = await res.json();
+                    if (orgs.length > 0) {
+                        setCurrentOrg(orgs[0]);
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to fetch org', e);
+            }
+        };
+        fetchOrg();
+    }, []);
 
     const handleSelectProject = (p: any) => {
         setCurrentProject(p);
-        router.push(`/projects/${p.slug}`);
+        // Navigate to the correct URL format: /{org}/projects/{project}
+        if (currentOrg) {
+            router.push(`/${currentOrg.name}/projects/${p.slug}`);
+        } else {
+            // Fallback to old format if org not loaded yet
+            router.push(`/projects/${p.slug}`);
+        }
     };
 
     return (

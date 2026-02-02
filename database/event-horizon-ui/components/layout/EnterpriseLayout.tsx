@@ -44,8 +44,9 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
     const [newOrgName, setNewOrgName] = useState("");
     const [newProjectName, setNewProjectName] = useState("");
     const [isNavigating, setIsNavigating] = useState(false);
-    const [isInitialized, setIsInitialized] = useState(false);
+    const [dataLoaded, setDataLoaded] = useState(false);
     const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const hasSetProjectFromUrl = useRef(false);
 
     // Cleanup timeout on unmount
     useEffect(() => {
@@ -56,45 +57,48 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
         };
     }, []);
 
+    // Load orgs when user is available
     useEffect(() => {
-        if (user && !isInitialized) {
+        if (user && !dataLoaded) {
             fetchWorkspaces();
         }
-    }, [user, isInitialized]);
+    }, [user, dataLoaded]);
 
+    // Load projects when org is set
     useEffect(() => {
-        if (currentOrg && !isInitialized) {
+        if (currentOrg && !dataLoaded) {
             fetchProjects(currentOrg.id);
         }
-    }, [currentOrg, isInitialized]);
+    }, [currentOrg, dataLoaded]);
 
-    // CRITICAL: Set currentProject from URL params on page load to prevent twitching
+    // CRITICAL FIX: Set currentProject from URL params ONCE after projects load
+    // This prevents the flickering loop
     useEffect(() => {
-        if (params?.project && projects.length > 0 && !currentProject) {
-            const projectSlug = decodeURIComponent(params.project as string);
-            const matchingProject = projects.find((p: any) => 
-                p.slug === projectSlug || p.name === projectSlug || String(p.id) === projectSlug
-            );
-            if (matchingProject) {
-                setCurrentProject(matchingProject);
-                setIsInitialized(true);
-            }
+        if (hasSetProjectFromUrl.current) return; // Only run once
+        if (!projects.length) return; // Wait for projects
+        if (!params?.project) return; // No project in URL
+        
+        const projectSlug = decodeURIComponent(params.project as string);
+        const matchingProject = projects.find((p: any) => 
+            p.slug === projectSlug || p.name === projectSlug || String(p.id) === projectSlug
+        );
+        
+        if (matchingProject) {
+            hasSetProjectFromUrl.current = true;
+            setCurrentProject(matchingProject);
+            setDataLoaded(true);
         }
-    }, [params?.project, projects, currentProject, setCurrentProject]);
+    }, [params?.project, projects, setCurrentProject]);
 
+    // Handle root redirect - only when on "/" and data is loaded
     useEffect(() => {
-        // Root redirect logic - centralized here where we have Org + Project context
-        // Only run once during initialization
-        if (pathname === '/' && currentOrg && projects.length > 0 && !isInitialized) {
-            setIsInitialized(true);
-            // Check if we have a current project, otherwise default to first
-            const targetProject = currentProject || projects[0];
-            router.push(`/${currentOrg.name}/projects/${targetProject.slug}`);
-        } else if (pathname === '/' && currentOrg && projects.length === 0 && !isInitialized) {
-            setIsInitialized(true);
-            // Org exists but no projects - stay on root (Initialize screen)
-        }
-    }, [pathname, currentOrg, projects, currentProject, isInitialized]);
+        if (pathname !== '/') return;
+        if (!currentOrg || !projects.length) return;
+        if (!dataLoaded) return;
+        
+        const targetProject = currentProject || projects[0];
+        router.replace(`/${currentOrg.name}/projects/${targetProject.slug}`);
+    }, [pathname, currentOrg, projects, currentProject, dataLoaded, router]);
 
     const fetchWorkspaces = async () => {
         try {
@@ -128,6 +132,11 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
             if (pRes.ok) {
                 const data = await pRes.json();
                 setProjects(data);
+                
+                // Mark data as loaded if no project in URL (we're on /projects page)
+                if (!params?.project) {
+                    setDataLoaded(true);
+                }
             }
         } catch (e) {
             console.error("Failed to fetch projects", e);

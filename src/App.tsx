@@ -103,14 +103,6 @@ const App = () => {
                     <Route path="/downloads" element={<Downloads />} />
                     <Route path="/payment-success" element={<PaymentSuccess />} />
                     <Route path="/payment-failure" element={<PaymentFailure />} />
-                    {/* Legacy /site routes - redirect to new direct URLs */}
-                    <Route path="/site/:slug" element={<UserSite />} />
-                    <Route path="/site/:slug/roadmap/:productId" element={<UserSite />} />
-                    <Route path="/site/:slug/:pageType" element={<UserSite />} />
-                    {/* Legacy /creator routes */}
-                    <Route path="/creator/:slug" element={<UserSite />} />
-                    <Route path="/creator/:slug/roadmap/:productId" element={<UserSite />} />
-                    <Route path="/creator/:slug/:pageType" element={<UserSite />} />
                     <Route path="/developer" element={<Developer />} />
                     <Route path="/developer/obfuscator" element={<DeveloperObfuscator />} />
                     <Route path="/developer/whitelist" element={<DeveloperWhitelist />} />
