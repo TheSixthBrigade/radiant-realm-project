@@ -21,6 +21,7 @@ services:
       - DB_NAME=postgres
       - DB_USER=postgres
       - DB_PASSWORD=your-super-secret-and-long-postgres-password
+      - LATTICE_MASTER_KEY=mahmoudwenthardforameliasnowden
     depends_on:
       - orchestrator
       - postgres
