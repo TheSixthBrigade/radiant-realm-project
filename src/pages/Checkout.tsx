@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Lock, ArrowLeft, CreditCard } from "lucide-react";
+import { Lock, ArrowLeft, CreditCard, Ticket, Check, X, Loader2 } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +19,12 @@ const Checkout = () => {
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  
+  // Discount code state
+  const [discountCode, setDiscountCode] = useState('');
+  const [appliedDiscount, setAppliedDiscount] = useState<any>(null);
+  const [validatingCode, setValidatingCode] = useState(false);
+  const [discountError, setDiscountError] = useState('');
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -88,6 +94,104 @@ const Checkout = () => {
     fetchProduct();
   }, [productId]);
 
+  // Validate and apply discount code
+  const validateDiscountCode = async () => {
+    if (!discountCode.trim()) return;
+    
+    setValidatingCode(true);
+    setDiscountError('');
+    
+    try {
+      const { data: discount, error } = await (supabase as any)
+        .from('discount_codes')
+        .select('*')
+        .eq('code', discountCode.trim().toUpperCase())
+        .eq('creator_id', product.creator_id)
+        .eq('is_active', true)
+        .maybeSingle();
+      
+      if (error) throw error;
+      
+      if (!discount) {
+        setDiscountError('Invalid discount code');
+        setAppliedDiscount(null);
+        return;
+      }
+      
+      // Check expiry
+      if (discount.expires_at && new Date(discount.expires_at) < new Date()) {
+        setDiscountError('This code has expired');
+        setAppliedDiscount(null);
+        return;
+      }
+      
+      // Check usage limit
+      if (discount.usage_limit && discount.usage_count >= discount.usage_limit) {
+        setDiscountError('This code has reached its usage limit');
+        setAppliedDiscount(null);
+        return;
+      }
+      
+      // Check minimum purchase
+      if (discount.min_purchase && product.price < discount.min_purchase) {
+        setDiscountError(`Minimum purchase of $${discount.min_purchase} required`);
+        setAppliedDiscount(null);
+        return;
+      }
+      
+      // Check if code applies to this product
+      if (discount.product_ids && discount.product_ids.length > 0) {
+        if (!discount.product_ids.includes(product.id)) {
+          setDiscountError('This code does not apply to this product');
+          setAppliedDiscount(null);
+          return;
+        }
+      }
+      
+      // Calculate discount amount
+      let discountAmount = 0;
+      if (discount.discount_type === 'percentage') {
+        discountAmount = product.price * (discount.discount_value / 100);
+        if (discount.max_discount && discountAmount > discount.max_discount) {
+          discountAmount = discount.max_discount;
+        }
+      } else {
+        discountAmount = discount.discount_value;
+      }
+      
+      // Don't allow discount to exceed product price
+      if (discountAmount > product.price) {
+        discountAmount = product.price;
+      }
+      
+      setAppliedDiscount({
+        ...discount,
+        calculatedAmount: discountAmount
+      });
+      toast.success('Discount applied!');
+    } catch (e) {
+      console.error('Error validating discount:', e);
+      setDiscountError('Failed to validate code');
+    } finally {
+      setValidatingCode(false);
+    }
+  };
+
+  const removeDiscount = () => {
+    setAppliedDiscount(null);
+    setDiscountCode('');
+    setDiscountError('');
+  };
+
+  // Calculate final price
+  const getFinalPrice = () => {
+    if (!product) return 0;
+    if (appliedDiscount) {
+      return Math.max(0, product.price - appliedDiscount.calculatedAmount);
+    }
+    return product.price;
+  };
+
   const handleStripeCheckout = async () => {
     try {
       setProcessing(true);
@@ -102,10 +206,15 @@ const Checkout = () => {
       
       console.log('Affiliate ref - URL:', urlRef, 'stored:', getAffiliateRef(), 'using:', validAffiliateRef);
 
+      const finalPrice = getFinalPrice();
+      
       console.log('Calling stripe-create-checkout with:', {
         productId: product.id,
         buyerId: user?.id,
-        affiliateRef: validAffiliateRef
+        affiliateRef: validAffiliateRef,
+        discountCode: appliedDiscount?.code,
+        discountAmount: appliedDiscount?.calculatedAmount,
+        finalPrice
       });
 
       // Call edge function to create Stripe checkout session
@@ -113,7 +222,9 @@ const Checkout = () => {
         body: {
           productId: product.id,
           buyerId: user?.id,
-          affiliateRef: validAffiliateRef
+          affiliateRef: validAffiliateRef,
+          discountCode: appliedDiscount?.code || null,
+          discountAmount: appliedDiscount?.calculatedAmount || 0
         }
       });
 
@@ -131,6 +242,14 @@ const Checkout = () => {
 
       if (!data?.url) {
         throw new Error('No checkout URL returned from server');
+      }
+
+      // Increment discount code usage if applied
+      if (appliedDiscount) {
+        await (supabase as any)
+          .from('discount_codes')
+          .update({ usage_count: (appliedDiscount.usage_count || 0) + 1 })
+          .eq('id', appliedDiscount.id);
       }
 
       console.log('Redirecting to Stripe checkout...');
@@ -259,6 +378,54 @@ const Checkout = () => {
                         </div>
                       </div>
                     </div>
+                    
+                    {/* Discount Code */}
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Ticket className="w-4 h-4" />
+                        Discount Code
+                      </Label>
+                      {appliedDiscount ? (
+                        <div className="flex items-center justify-between p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Check className="w-4 h-4 text-green-500" />
+                            <span className="font-mono font-medium text-green-400">{appliedDiscount.code}</span>
+                            <span className="text-sm text-green-400">
+                              -{appliedDiscount.discount_type === 'percentage' 
+                                ? `${appliedDiscount.discount_value}%` 
+                                : `$${appliedDiscount.discount_value}`}
+                            </span>
+                          </div>
+                          <button 
+                            onClick={removeDiscount}
+                            className="p-1 hover:bg-white/10 rounded transition-colors"
+                          >
+                            <X className="w-4 h-4 text-gray-400" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Enter code"
+                            value={discountCode}
+                            onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                            className="font-mono uppercase"
+                            onKeyDown={(e) => e.key === 'Enter' && validateDiscountCode()}
+                          />
+                          <Button 
+                            type="button"
+                            variant="outline"
+                            onClick={validateDiscountCode}
+                            disabled={validatingCode || !discountCode.trim()}
+                          >
+                            {validatingCode ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply'}
+                          </Button>
+                        </div>
+                      )}
+                      {discountError && (
+                        <p className="text-sm text-red-400">{discountError}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -325,19 +492,32 @@ const Checkout = () => {
                     <span>Product Price</span>
                     <span>${product.price.toFixed(2)}</span>
                   </div>
+                  {appliedDiscount && (
+                    <div className="flex justify-between text-green-400">
+                      <span>Discount ({appliedDiscount.code})</span>
+                      <span>-${appliedDiscount.calculatedAmount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>• To Creator (95%)</span>
-                    <span>${(product.price * 0.95).toFixed(2)}</span>
+                    <span>${(getFinalPrice() * 0.95).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>• Platform Fee (5%)</span>
-                    <span>${(product.price * 0.05).toFixed(2)}</span>
+                    <span>${(getFinalPrice() * 0.05).toFixed(2)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between font-semibold text-lg">
                     <span>Total</span>
-                    <span>${product.price.toFixed(2)}</span>
+                    <span className={appliedDiscount ? 'text-green-400' : ''}>
+                      ${getFinalPrice().toFixed(2)}
+                    </span>
                   </div>
+                  {appliedDiscount && (
+                    <div className="text-sm text-muted-foreground line-through text-right">
+                      Was ${product.price.toFixed(2)}
+                    </div>
+                  )}
                 </div>
 
                 <div className="bg-muted p-4 rounded-lg border border-border">

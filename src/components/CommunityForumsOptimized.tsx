@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { 
   MessageCircle, Plus, ArrowLeft, Send, Loader2, 
-  Pin, Lock, Eye, Clock, ChevronLeft, ChevronRight, X
+  Pin, Lock, Eye, Clock, ChevronLeft, ChevronRight, X,
+  ThumbsUp, Flame, Sparkles, Search, TrendingUp
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CommunitySettings, DEFAULT_COMMUNITY_SETTINGS } from '@/lib/communitySettings';
@@ -376,87 +377,123 @@ export const CommunityForumsOptimized = ({
   // View: Post list
   if (!selectedPost) {
     return (
-      <div className="max-w-4xl mx-auto space-y-4">
+      <div className="max-w-5xl mx-auto space-y-6 px-4">
         {effectiveSettings.showHeader && (
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold mb-1" style={{ color: effectiveSettings.textPrimary }}>
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4" 
+              style={{ backgroundColor: `${effectiveSettings.accentColor}20`, border: `1px solid ${effectiveSettings.accentColor}40` }}>
+              <Sparkles className="w-4 h-4" style={{ color: effectiveSettings.accentColor }} />
+              <span className="text-sm font-medium" style={{ color: effectiveSettings.accentColor }}>Community Hub</span>
+            </div>
+            <h2 className="text-3xl font-bold mb-2" style={{ color: effectiveSettings.textPrimary }}>
               {effectiveSettings.forumTitle}
             </h2>
-            <p className="text-sm" style={{ color: effectiveSettings.textSecondary }}>
+            <p className="text-base" style={{ color: effectiveSettings.textSecondary }}>
               {effectiveSettings.forumSubtitle}
             </p>
           </div>
         )}
         
-        <div className="flex gap-2 flex-wrap items-center">
-          <Input
-            placeholder="Search posts..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 min-w-[200px]"
-            style={cardStyle}
-          />
+        {/* Search and New Post */}
+        <div className="flex gap-3 flex-wrap items-center">
+          <div className="relative flex-1 min-w-[250px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: effectiveSettings.textSecondary }} />
+            <Input
+              placeholder="Search discussions..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-11"
+              style={{ 
+                ...cardStyle, 
+                backgroundColor: `rgba(30, 41, 59, ${effectiveSettings.cardOpacity * 0.7})` 
+              }}
+            />
+          </div>
           {user && (
             <Button
               onClick={() => setShowNewPost(true)}
               style={{ backgroundColor: effectiveSettings.accentColor }}
-              className="text-white"
+              className="text-white h-11 px-5 font-medium shadow-lg hover:shadow-xl transition-all"
             >
-              <Plus className="w-4 h-4 mr-1" />
-              New Post
+              <Plus className="w-4 h-4 mr-2" />
+              Start Discussion
             </Button>
           )}
         </div>
         
-        <div className="flex gap-2 flex-wrap">
-          <Button
-            variant={selectedCategory === null ? 'default' : 'outline'}
+        {/* Category Pills */}
+        <div className="flex gap-2 flex-wrap pb-2">
+          <button
             onClick={() => handleCategorySelect(null)}
-            size="sm"
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              selectedCategory === null ? 'shadow-lg' : 'hover:opacity-80'
+            }`}
+            style={{
+              backgroundColor: selectedCategory === null ? effectiveSettings.accentColor : `rgba(255,255,255,0.1)`,
+              color: selectedCategory === null ? '#fff' : effectiveSettings.textSecondary,
+              border: `1px solid ${selectedCategory === null ? effectiveSettings.accentColor : 'rgba(255,255,255,0.1)'}`
+            }}
           >
-            All
-          </Button>
+            <TrendingUp className="w-3.5 h-3.5 inline mr-1.5" />
+            All Posts
+          </button>
           {categories.map(cat => (
-            <Button
+            <button
               key={cat.id}
-              variant={selectedCategory === cat.id ? 'default' : 'outline'}
               onClick={() => handleCategorySelect(cat.id)}
-              size="sm"
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                selectedCategory === cat.id ? 'shadow-lg' : 'hover:opacity-80'
+              }`}
+              style={{
+                backgroundColor: selectedCategory === cat.id ? (cat.color || effectiveSettings.accentColor) : `rgba(255,255,255,0.1)`,
+                color: selectedCategory === cat.id ? '#fff' : effectiveSettings.textSecondary,
+                border: `1px solid ${selectedCategory === cat.id ? (cat.color || effectiveSettings.accentColor) : 'rgba(255,255,255,0.1)'}`
+              }}
             >
-              {cat.icon} {cat.name}
-            </Button>
+              <span className="mr-1.5">{cat.icon}</span>
+              {cat.name}
+            </button>
           ))}
         </div>
         
+        {/* New Post Form */}
         {showNewPost && (
-          <div className="p-4 space-y-3" style={cardStyle}>
+          <div className="p-5 space-y-4 animate-in slide-in-from-top-2" style={{
+            ...cardStyle,
+            boxShadow: `0 0 30px ${effectiveSettings.accentColor}30`
+          }}>
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold" style={{ color: effectiveSettings.textPrimary }}>Create New Post</h3>
-              <Button variant="ghost" size="sm" onClick={() => setShowNewPost(false)}>
+              <h3 className="text-lg font-semibold flex items-center gap-2" style={{ color: effectiveSettings.textPrimary }}>
+                <Flame className="w-5 h-5" style={{ color: effectiveSettings.accentColor }} />
+                Start a New Discussion
+              </h3>
+              <Button variant="ghost" size="sm" onClick={() => setShowNewPost(false)} className="hover:bg-white/10">
                 <X className="w-4 h-4" />
               </Button>
             </div>
             <Input
-              placeholder="Post title..."
+              placeholder="Give your post a catchy title..."
               value={newPostTitle}
               onChange={(e) => setNewPostTitle(e.target.value)}
-              style={cardStyle}
+              className="h-12 text-base"
+              style={{ ...cardStyle, backgroundColor: 'rgba(0,0,0,0.3)' }}
             />
             <Textarea
-              placeholder="What's on your mind?"
+              placeholder="Share your thoughts, questions, or ideas..."
               value={newPostContent}
               onChange={(e) => setNewPostContent(e.target.value)}
-              rows={4}
-              style={cardStyle}
+              rows={5}
+              className="text-base resize-none"
+              style={{ ...cardStyle, backgroundColor: 'rgba(0,0,0,0.3)' }}
             />
             {categories.length > 0 && (
               <select
                 value={newPostCategory}
                 onChange={(e) => setNewPostCategory(e.target.value)}
-                className="w-full p-2 rounded"
-                style={cardStyle}
+                className="w-full p-3 rounded-lg text-sm"
+                style={{ ...cardStyle, backgroundColor: 'rgba(0,0,0,0.3)' }}
               >
-                <option value="">Select category...</option>
+                <option value="">Choose a category...</option>
                 {categories.map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
                 ))}
@@ -464,75 +501,153 @@ export const CommunityForumsOptimized = ({
             )}
             <Button
               onClick={createPost}
-              disabled={submitting}
+              disabled={submitting || !newPostTitle.trim() || !newPostContent.trim()}
               style={{ backgroundColor: effectiveSettings.accentColor }}
-              className="w-full text-white"
+              className="w-full h-11 text-white font-medium"
             >
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Post'}
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+              Publish Post
             </Button>
           </div>
         )}
         
-        <div className="space-y-2">
-          {displayedPosts.map(post => (
-            <div
-              key={post.id}
-              onClick={() => handlePostSelect(post)}
-              className="p-3 cursor-pointer hover:opacity-80 transition-opacity"
-              style={cardStyle}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    {post.is_pinned && <Pin className="w-3 h-3" style={{ color: effectiveSettings.accentColor }} />}
-                    {post.is_locked && <Lock className="w-3 h-3" style={{ color: effectiveSettings.textSecondary }} />}
-                    <h3 className="font-semibold text-sm truncate" style={{ color: effectiveSettings.textPrimary }}>
+        {/* Posts List */}
+        <div className="space-y-3">
+          {displayedPosts.length === 0 ? (
+            <div className="text-center py-16" style={cardStyle}>
+              <MessageCircle className="w-12 h-12 mx-auto mb-4 opacity-30" style={{ color: effectiveSettings.textSecondary }} />
+              <p className="text-lg font-medium mb-2" style={{ color: effectiveSettings.textPrimary }}>No discussions yet</p>
+              <p className="text-sm" style={{ color: effectiveSettings.textSecondary }}>Be the first to start a conversation!</p>
+            </div>
+          ) : (
+            displayedPosts.map((post, index) => (
+              <div
+                key={post.id}
+                onClick={() => handlePostSelect(post)}
+                className="p-4 cursor-pointer transition-all hover:scale-[1.01] hover:shadow-lg group"
+                style={{
+                  ...cardStyle,
+                  animationDelay: `${index * 50}ms`,
+                  borderLeft: post.is_pinned ? `3px solid ${effectiveSettings.accentColor}` : undefined
+                }}
+              >
+                <div className="flex items-start gap-4">
+                  {/* Author Avatar */}
+                  <div 
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden"
+                    style={{ background: `linear-gradient(135deg, ${effectiveSettings.accentColor}, ${effectiveSettings.accentColor}aa)` }}
+                  >
+                    {post.author?.avatar_url ? (
+                      <img src={post.author.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      post.author?.display_name?.[0]?.toUpperCase() || '?'
+                    )}
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    {/* Title Row */}
+                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                      {post.is_pinned && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium"
+                          style={{ backgroundColor: `${effectiveSettings.accentColor}20`, color: effectiveSettings.accentColor }}>
+                          <Pin className="w-3 h-3" /> Pinned
+                        </span>
+                      )}
+                      {post.is_locked && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-500/20 text-red-400">
+                          <Lock className="w-3 h-3" /> Locked
+                        </span>
+                      )}
+                      {post.category && (
+                        <span className="px-2 py-0.5 rounded text-xs font-medium"
+                          style={{ backgroundColor: `${post.category.color || effectiveSettings.accentColor}20`, color: post.category.color || effectiveSettings.accentColor }}>
+                          {post.category.icon} {post.category.name}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <h3 className="font-semibold text-base mb-1.5 group-hover:underline" style={{ color: effectiveSettings.textPrimary }}>
                       {post.title}
                     </h3>
-                  </div>
-                  <p className="text-xs line-clamp-2 mb-2" style={{ color: effectiveSettings.textSecondary }}>
-                    {post.content}
-                  </p>
-                  <div className="flex items-center gap-3 text-xs" style={{ color: effectiveSettings.textSecondary }}>
-                    <span className="flex items-center gap-1">
-                      <MessageCircle className="w-3 h-3" />
-                      {post.reply_count || 0}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Eye className="w-3 h-3" />
-                      {post.view_count || 0}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {new Date(post.created_at).toLocaleDateString()}
-                    </span>
+                    
+                    <p className="text-sm line-clamp-2 mb-3" style={{ color: effectiveSettings.textSecondary }}>
+                      {post.content}
+                    </p>
+                    
+                    {/* Meta Row */}
+                    <div className="flex items-center gap-4 text-xs" style={{ color: effectiveSettings.textSecondary }}>
+                      <span className="font-medium" style={{ color: effectiveSettings.accentColor }}>
+                        @{post.author?.display_name || 'Anonymous'}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        {post.reply_count || 0} replies
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Eye className="w-3.5 h-3.5" />
+                        {post.view_count || 0}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        {new Date(post.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
         
+        {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-4">
+          <div className="flex items-center justify-center gap-3 mt-6 pt-4" style={{ borderTop: `1px solid ${effectiveSettings.cardBorder}` }}>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
+              className="h-9"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Previous
             </Button>
-            <span className="text-sm" style={{ color: effectiveSettings.textSecondary }}>
-              Page {currentPage} of {totalPages}
-            </span>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className="w-9 h-9 rounded-lg text-sm font-medium transition-all"
+                    style={{
+                      backgroundColor: currentPage === pageNum ? effectiveSettings.accentColor : 'transparent',
+                      color: currentPage === pageNum ? '#fff' : effectiveSettings.textSecondary
+                    }}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
+              className="h-9"
             >
-              <ChevronRight className="w-4 h-4" />
+              Next
+              <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
         )}
@@ -542,83 +657,190 @@ export const CommunityForumsOptimized = ({
   
   // View: Post detail with replies
   return (
-    <div className="max-w-4xl mx-auto space-y-4">
+    <div className="max-w-5xl mx-auto space-y-6 px-4">
       <Button
         variant="ghost"
         onClick={() => {
           setSelectedPost(null);
           setRepliesPage(1);
         }}
-        size="sm"
+        className="hover:bg-white/10"
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to posts
+        Back to discussions
       </Button>
       
-      <div className="p-4" style={cardStyle}>
-        <h2 className="text-xl font-bold mb-3" style={{ color: effectiveSettings.textPrimary }}>
+      {/* Main Post */}
+      <div className="p-6" style={{
+        ...cardStyle,
+        boxShadow: `0 0 30px ${effectiveSettings.accentColor}20`
+      }}>
+        {/* Author Header */}
+        <div className="flex items-center gap-3 mb-4">
+          <div 
+            className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold overflow-hidden"
+            style={{ background: `linear-gradient(135deg, ${effectiveSettings.accentColor}, ${effectiveSettings.accentColor}aa)` }}
+          >
+            {selectedPost.author?.avatar_url ? (
+              <img src={selectedPost.author.avatar_url} alt="" className="w-full h-full object-cover" />
+            ) : (
+              selectedPost.author?.display_name?.[0]?.toUpperCase() || '?'
+            )}
+          </div>
+          <div>
+            <p className="font-semibold" style={{ color: effectiveSettings.accentColor }}>
+              @{selectedPost.author?.display_name || 'Anonymous'}
+            </p>
+            <p className="text-xs" style={{ color: effectiveSettings.textSecondary }}>
+              {new Date(selectedPost.created_at).toLocaleString()}
+            </p>
+          </div>
+        </div>
+        
+        {/* Badges */}
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          {selectedPost.is_pinned && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
+              style={{ backgroundColor: `${effectiveSettings.accentColor}20`, color: effectiveSettings.accentColor }}>
+              <Pin className="w-3 h-3" /> Pinned
+            </span>
+          )}
+          {selectedPost.is_locked && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400">
+              <Lock className="w-3 h-3" /> Locked
+            </span>
+          )}
+          {selectedPost.category && (
+            <span className="px-2.5 py-1 rounded-full text-xs font-medium"
+              style={{ backgroundColor: `${selectedPost.category.color || effectiveSettings.accentColor}20`, color: selectedPost.category.color || effectiveSettings.accentColor }}>
+              {selectedPost.category.icon} {selectedPost.category.name}
+            </span>
+          )}
+        </div>
+        
+        <h2 className="text-2xl font-bold mb-4" style={{ color: effectiveSettings.textPrimary }}>
           {selectedPost.title}
         </h2>
-        <p className="whitespace-pre-wrap mb-3 text-sm" style={{ color: effectiveSettings.textSecondary }}>
+        
+        <div className="whitespace-pre-wrap text-base leading-relaxed mb-4" style={{ color: effectiveSettings.textSecondary }}>
           {selectedPost.content}
-        </p>
-        <div className="flex items-center gap-3 text-xs" style={{ color: effectiveSettings.textSecondary }}>
-          <span>{selectedPost.author?.display_name || 'Anonymous'}</span>
-          <span>•</span>
-          <span>{new Date(selectedPost.created_at).toLocaleString()}</span>
+        </div>
+        
+        {/* Stats */}
+        <div className="flex items-center gap-4 pt-4 text-sm" style={{ borderTop: `1px solid ${effectiveSettings.cardBorder}`, color: effectiveSettings.textSecondary }}>
+          <span className="flex items-center gap-1.5">
+            <Eye className="w-4 h-4" />
+            {selectedPost.view_count} views
+          </span>
+          <span className="flex items-center gap-1.5" style={{ color: effectiveSettings.accentColor }}>
+            <MessageCircle className="w-4 h-4" />
+            {totalReplies} replies
+          </span>
         </div>
       </div>
       
-      <div className="space-y-3">
-        <h3 className="text-base font-semibold" style={{ color: effectiveSettings.textPrimary }}>
+      {/* Replies Section */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold flex items-center gap-2" style={{ color: effectiveSettings.textPrimary }}>
+          <MessageCircle className="w-5 h-5" style={{ color: effectiveSettings.accentColor }} />
           Replies ({totalReplies})
         </h3>
         
+        {/* Reply Form */}
         {user && !selectedPost.is_locked && (
-          <div className="p-3 space-y-2" style={cardStyle}>
+          <div className="p-4 space-y-3" style={cardStyle}>
             <Textarea
-              placeholder="Write a reply..."
+              placeholder="Share your thoughts..."
               value={replyContent}
               onChange={(e) => setReplyContent(e.target.value)}
               rows={3}
-              style={cardStyle}
+              className="resize-none"
+              style={{ ...cardStyle, backgroundColor: 'rgba(0,0,0,0.3)' }}
             />
-            <Button
-              onClick={createReply}
-              disabled={submitting}
-              style={{ backgroundColor: effectiveSettings.accentColor }}
-              className="text-white"
-              size="sm"
-            >
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3 h-3 mr-1" />Reply</>}
-            </Button>
+            <div className="flex justify-end">
+              <Button
+                onClick={createReply}
+                disabled={submitting || !replyContent.trim()}
+                style={{ backgroundColor: effectiveSettings.accentColor }}
+                className="text-white"
+              >
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                Post Reply
+              </Button>
+            </div>
           </div>
         )}
         
-        {replies.map(reply => (
-          <div key={reply.id} className="p-3" style={cardStyle}>
-            <p className="whitespace-pre-wrap mb-2 text-sm" style={{ color: effectiveSettings.textSecondary }}>
-              {reply.content}
-            </p>
-            <div className="flex items-center gap-2 text-xs" style={{ color: effectiveSettings.textSecondary }}>
-              <span>{reply.author?.display_name || 'Anonymous'}</span>
-              <span>•</span>
-              <span>{new Date(reply.created_at).toLocaleString()}</span>
-            </div>
+        {selectedPost.is_locked && (
+          <div className="p-4 text-center rounded-lg" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+            <Lock className="w-5 h-5 mx-auto mb-2 text-red-400" />
+            <p className="text-sm text-red-400">This discussion is locked and no longer accepting replies.</p>
           </div>
-        ))}
+        )}
         
+        {/* Replies List */}
+        {replies.length === 0 ? (
+          <div className="text-center py-12" style={cardStyle}>
+            <MessageCircle className="w-10 h-10 mx-auto mb-3 opacity-30" style={{ color: effectiveSettings.textSecondary }} />
+            <p className="text-sm" style={{ color: effectiveSettings.textSecondary }}>No replies yet. Be the first to respond!</p>
+          </div>
+        ) : (
+          replies.map((reply, index) => (
+            <div 
+              key={reply.id} 
+              className="p-4 transition-all hover:shadow-md"
+              style={{
+                ...cardStyle,
+                animationDelay: `${index * 30}ms`
+              }}
+            >
+              <div className="flex items-start gap-3">
+                <div 
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden"
+                  style={{ background: `linear-gradient(135deg, ${effectiveSettings.accentColor}aa, ${effectiveSettings.accentColor}66)` }}
+                >
+                  {reply.author?.avatar_url ? (
+                    <img src={reply.author.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    reply.author?.display_name?.[0]?.toUpperCase() || '?'
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="font-medium text-sm" style={{ color: effectiveSettings.accentColor }}>
+                      @{reply.author?.display_name || 'Anonymous'}
+                    </span>
+                    <span className="text-xs" style={{ color: effectiveSettings.textSecondary }}>
+                      {new Date(reply.created_at).toLocaleString()}
+                    </span>
+                    {reply.is_solution && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
+                        ✓ Solution
+                      </span>
+                    )}
+                  </div>
+                  <p className="whitespace-pre-wrap text-sm" style={{ color: effectiveSettings.textSecondary }}>
+                    {reply.content}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+        
+        {/* Replies Pagination */}
         {totalRepliesPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-3">
+          <div className="flex items-center justify-center gap-3 mt-4 pt-4" style={{ borderTop: `1px solid ${effectiveSettings.cardBorder}` }}>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setRepliesPage(p => Math.max(1, p - 1))}
               disabled={repliesPage === 1}
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Previous
             </Button>
-            <span className="text-sm" style={{ color: effectiveSettings.textSecondary }}>
+            <span className="text-sm px-3" style={{ color: effectiveSettings.textSecondary }}>
               Page {repliesPage} of {totalRepliesPages}
             </span>
             <Button
@@ -627,7 +849,8 @@ export const CommunityForumsOptimized = ({
               onClick={() => setRepliesPage(p => Math.min(totalRepliesPages, p + 1))}
               disabled={repliesPage === totalRepliesPages}
             >
-              <ChevronRight className="w-4 h-4" />
+              Next
+              <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </div>
         )}

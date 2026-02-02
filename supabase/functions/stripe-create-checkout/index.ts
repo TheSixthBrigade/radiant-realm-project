@@ -44,9 +44,9 @@ serve(async (req) => {
   }
 
   try {
-    const { productId, buyerId, affiliateRef } = await req.json()
+    const { productId, buyerId, affiliateRef, discountCode, discountAmount } = await req.json()
 
-    console.log('Creating Stripe checkout for product:', productId, 'buyer:', buyerId, 'affiliate:', affiliateRef)
+    console.log('Creating Stripe checkout for product:', productId, 'buyer:', buyerId, 'affiliate:', affiliateRef, 'discount:', discountCode, 'discountAmount:', discountAmount)
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -100,7 +100,11 @@ serve(async (req) => {
     })
 
     // Calculate amounts - Payhip style (buyer pays Stripe fees, platform collects them)
-    const productPriceCents = Math.round(product.price * 100)
+    // Apply discount if provided
+    const originalPriceCents = Math.round(product.price * 100)
+    const discountCents = discountAmount ? Math.round(discountAmount * 100) : 0
+    const productPriceCents = Math.max(0, originalPriceCents - discountCents)
+    
     const platformFeePercent = Math.round(productPriceCents * 0.05) // 5% platform fee
     const stripeFee = calculateStripeFee(productPriceCents + platformFeePercent) // Stripe processing fee on total
     const totalAmountCents = productPriceCents + stripeFee // Buyer pays product + Stripe fees
@@ -110,7 +114,7 @@ serve(async (req) => {
     // Seller receives exactly: productPrice - 5% platform fee
     const totalPlatformFeeCents = platformFeePercent + stripeFee
 
-    console.log('Amounts - Product:', productPriceCents / 100, 'Platform 5%:', platformFeePercent / 100, 'Stripe fee:', stripeFee / 100, 'Total platform fee:', totalPlatformFeeCents / 100, 'Total charge:', totalAmountCents / 100)
+    console.log('Amounts - Original:', originalPriceCents / 100, 'Discount:', discountCents / 100, 'Product:', productPriceCents / 100, 'Platform 5%:', platformFeePercent / 100, 'Stripe fee:', stripeFee / 100, 'Total platform fee:', totalPlatformFeeCents / 100, 'Total charge:', totalAmountCents / 100)
 
     // Create Stripe Checkout Session with destination charges (marketplace split)
     // Customized with Vectabase branding
@@ -121,33 +125,53 @@ serve(async (req) => {
       productImages = [product.image_url];
     }
     
+    // Build line items - include discount as negative line item if applied
+    const lineItems: any[] = [
+      {
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: product.title.substring(0, 100), // Stripe limits name to 100 chars
+            ...(product.description && { description: product.description.substring(0, 500) }), // Limit description
+            ...(productImages.length > 0 && { images: productImages }),
+          },
+          unit_amount: originalPriceCents,
+        },
+        quantity: 1,
+      },
+    ]
+    
+    // Add discount line item if applicable
+    if (discountCents > 0 && discountCode) {
+      lineItems.push({
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: `Discount (${discountCode})`,
+            description: 'Promotional discount applied',
+          },
+          unit_amount: -discountCents, // Negative amount for discount
+        },
+        quantity: 1,
+      })
+    }
+    
+    // Add processing fee
+    lineItems.push({
+      price_data: {
+        currency: 'usd',
+        product_data: {
+          name: 'Processing Fee',
+          description: 'Secure payment processing',
+        },
+        unit_amount: stripeFee,
+      },
+      quantity: 1,
+    })
+    
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: product.title.substring(0, 100), // Stripe limits name to 100 chars
-              ...(product.description && { description: product.description.substring(0, 500) }), // Limit description
-              ...(productImages.length > 0 && { images: productImages }),
-            },
-            unit_amount: productPriceCents,
-          },
-          quantity: 1,
-        },
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: 'Processing Fee',
-              description: 'Secure payment processing',
-            },
-            unit_amount: stripeFee,
-          },
-          quantity: 1,
-        },
-      ],
+      line_items: lineItems,
       mode: 'payment',
       success_url: `${req.headers.get('origin')}/payment-success?session_id={CHECKOUT_SESSION_ID}&product_id=${productId}`,
       cancel_url: `${req.headers.get('origin')}/checkout?product_id=${productId}`,
@@ -163,6 +187,8 @@ serve(async (req) => {
           buyer_id: buyerId || 'guest',
           seller_id: product.creator_id,
           affiliate_ref: affiliateRef || '',
+          discount_code: discountCode || '',
+          discount_amount: discountAmount ? discountAmount.toString() : '0',
         },
       },
       metadata: {
@@ -170,6 +196,8 @@ serve(async (req) => {
         buyer_id: buyerId || 'guest',
         seller_id: product.creator_id,
         affiliate_ref: affiliateRef || '',
+        discount_code: discountCode || '',
+        discount_amount: discountAmount ? discountAmount.toString() : '0',
       },
     })
 
