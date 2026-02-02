@@ -3,7 +3,7 @@ import { query } from '@/lib/db';
 import { verifyAccess } from '@/lib/auth';
 import { checkRateLimit, getRateLimitHeaders } from '@/lib/rateLimit';
 
-// GET: Fetch rows from a table with pagination
+// GET: Fetch rows from a table with pagination (filtered by project_id)
 export async function GET(req: NextRequest) {
     const auth = await verifyAccess(req);
     if (!auth.authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -21,6 +21,10 @@ export async function GET(req: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
     const orderBy = searchParams.get('orderBy') || '';
     const orderDir = searchParams.get('orderDir') === 'desc' ? 'DESC' : 'ASC';
+    const projectIdParam = searchParams.get('projectId');
+
+    // Use projectId from query param or from auth
+    const projectId = projectIdParam || auth.projectId;
 
     if (!table) {
         return NextResponse.json({ error: 'Table name is required' }, { status: 400 });
@@ -37,19 +41,49 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Table not found' }, { status: 404 });
         }
 
-        // Build query with optional ordering
-        let sql = `SELECT * FROM "${schema}"."${table}"`;
-        if (orderBy) {
-            sql += ` ORDER BY "${orderBy}" ${orderDir}`;
-        }
-        sql += ` LIMIT $1 OFFSET $2`;
+        // Check if table has project_id column for filtering
+        const hasProjectId = await query(`
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_schema = $1 AND table_name = $2 AND column_name = 'project_id'
+        `, [schema, table]);
 
-        console.log('Fetching rows with SQL:', sql, 'Params:', [limit, offset]);
-        const result = await query(sql, [limit, offset]);
-        console.log('Rows result:', result.rows.length, 'rows', 'Data:', JSON.stringify(result.rows));
+        let sql: string;
+        let countSql: string;
+        let params: any[];
+        let countParams: any[];
+
+        if (hasProjectId.rows.length > 0 && projectId) {
+            // Table has project_id - filter by it for data isolation
+            sql = `SELECT * FROM "${schema}"."${table}" WHERE project_id = $1`;
+            countSql = `SELECT COUNT(*) as total FROM "${schema}"."${table}" WHERE project_id = $1`;
+            params = [projectId];
+            countParams = [projectId];
+
+            if (orderBy) {
+                sql += ` ORDER BY "${orderBy}" ${orderDir}`;
+            }
+            sql += ` LIMIT $2 OFFSET $3`;
+            params.push(limit, offset);
+        } else {
+            // No project_id column or no projectId - return all rows (legacy behavior)
+            sql = `SELECT * FROM "${schema}"."${table}"`;
+            countSql = `SELECT COUNT(*) as total FROM "${schema}"."${table}"`;
+            params = [];
+            countParams = [];
+
+            if (orderBy) {
+                sql += ` ORDER BY "${orderBy}" ${orderDir}`;
+            }
+            sql += ` LIMIT $1 OFFSET $2`;
+            params.push(limit, offset);
+        }
+
+        console.log('Fetching rows with SQL:', sql, 'Params:', params);
+        const result = await query(sql, params);
+        console.log('Rows result:', result.rows.length, 'rows');
 
         // Get total count
-        const countResult = await query(`SELECT COUNT(*) as total FROM "${schema}"."${table}"`);
+        const countResult = await query(countSql, countParams);
         const total = parseInt(countResult.rows[0]?.total || '0');
         console.log('Total count:', total);
 

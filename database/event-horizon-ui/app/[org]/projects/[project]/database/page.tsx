@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useParams } from "next/navigation";
 import {
     Database,
     Table,
@@ -33,10 +34,28 @@ import {
     Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useProject } from "@/hooks/useProject";
 
 export default function DatabasePage() {
     const [selectedSchema, setSelectedSchema] = useState("public");
     const [activeSection, setActiveSection] = useState("Database Overview");
+    const { currentProject, projects } = useProject();
+    const params = useParams();
+
+    // Get project ID - try currentProject first, then find from projects list by URL slug
+    const getProjectId = () => {
+        if (currentProject?.id) return currentProject.id;
+        if (params?.project && projects.length > 0) {
+            const slug = params.project as string;
+            const found = projects.find((p: any) => 
+                p.slug === slug || p.name === slug || String(p.id) === slug
+            );
+            return found?.id;
+        }
+        return null;
+    };
+
+    const projectId = getProjectId();
 
     return (
         <div className="flex h-full bg-[#0d0d0d] overflow-hidden">
@@ -97,9 +116,9 @@ export default function DatabasePage() {
                     </div>
                 </header>
 
-                <div className="flex-1 overflow-auto relative bg-[#090909]">
-                    {activeSection === "Database Overview" && <SchemaVisualizer />}
-                    {activeSection === "Tables" && <TablesListView />}
+                <div className="flex-1 overflow-auto relative bg-[#1a1a1a]">
+                    {activeSection === "Database Overview" && <SchemaVisualizer projectId={projectId} />}
+                    {activeSection === "Tables" && <TablesListView projectId={projectId} />}
                     {activeSection === "Functions" && <GenericListView title="Functions" items={["handle_new_user()", "authorize_request()", "check_pqc_signature()"]} type="PL/pgSQL" />}
                     {activeSection === "Policies" && <PoliciesView />}
                     {activeSection === "Security Advisor" && <SecurityAdvisorView />}
@@ -125,7 +144,7 @@ export default function DatabasePage() {
 
 import { useEffect, useRef, useCallback } from "react";
 
-function SchemaVisualizer() {
+function SchemaVisualizer({ projectId }: { projectId: number | null }) {
     const [tables, setTables] = useState<any[]>([]);
     const [tableData, setTableData] = useState<Record<string, any[]>>({});
     const [positions, setPositions] = useState<Record<string, { x: number, y: number }>>({});
@@ -136,7 +155,11 @@ function SchemaVisualizer() {
     const fetchSchema = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/database/tables?schema=public');
+            const timestamp = Date.now();
+            const url = projectId
+                ? `/api/database/tables?schema=public&projectId=${projectId}&_t=${timestamp}`
+                : `/api/database/tables?schema=public&_t=${timestamp}`;
+            const res = await fetch(url, { cache: 'no-store' });
             if (res.ok) {
                 const tablesList = await res.json();
                 setTables(tablesList);
@@ -157,15 +180,6 @@ function SchemaVisualizer() {
                     };
                 }));
 
-                // Add auth.users manually as requested
-                data['auth.users'] = [
-                    { column_name: 'id', udt_name: 'uuid', is_primary_key: true },
-                    { column_name: 'email', udt_name: 'text' },
-                    { column_name: 'pqc_verified', udt_name: 'bool' },
-                    { column_name: 'created_at', udt_name: 'timestamptz' }
-                ];
-                initialPositions['auth.users'] = { x: 400, y: 50 };
-
                 setTableData(data);
                 setPositions(initialPositions);
             }
@@ -174,7 +188,7 @@ function SchemaVisualizer() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [projectId]);
 
     useEffect(() => {
         fetchSchema();
@@ -246,12 +260,13 @@ function SchemaVisualizer() {
             className="absolute inset-0 p-10 cursor-default select-none overflow-auto"
             style={{ 
                 backgroundImage: `
-                    linear-gradient(rgba(62, 207, 142, 0.03) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(62, 207, 142, 0.03) 1px, transparent 1px),
-                    radial-gradient(circle at 50% 50%, rgba(62, 207, 142, 0.05) 0%, transparent 50%),
-                    radial-gradient(#1a1a1a 1px, transparent 1px)
+                    linear-gradient(rgba(62, 207, 142, 0.05) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(62, 207, 142, 0.05) 1px, transparent 1px),
+                    radial-gradient(circle at 50% 50%, rgba(62, 207, 142, 0.08) 0%, transparent 50%),
+                    radial-gradient(#2a2a2a 1px, transparent 1px)
                 `, 
                 backgroundSize: '64px 64px, 64px 64px, 100% 100%, 16px 16px',
+                backgroundColor: '#1e1e1e',
                 minWidth: '1500px', 
                 minHeight: '1200px' 
             }}>
@@ -426,7 +441,7 @@ function ColumnRow({ name, type, pk, fk }: any) {
     )
 }
 
-function TablesListView() {
+function TablesListView({ projectId }: { projectId: number | null }) {
     const [tables, setTables] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -440,7 +455,11 @@ function TablesListView() {
     const fetchTables = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/database/tables?schema=public');
+            const timestamp = Date.now();
+            const url = projectId
+                ? `/api/database/tables?schema=public&projectId=${projectId}&_t=${timestamp}`
+                : `/api/database/tables?schema=public&_t=${timestamp}`;
+            const res = await fetch(url, { cache: 'no-store' });
             if (res.ok) {
                 setTables(await res.json());
             }
@@ -453,7 +472,7 @@ function TablesListView() {
 
     useEffect(() => {
         fetchTables();
-    }, []);
+    }, [projectId]);
 
     const handleAddColumn = () => {
         setCustomColumns([...customColumns, { name: '', type: 'text', nullable: true }]);
