@@ -3,18 +3,30 @@ import { query } from '@/lib/db';
 import { verifyAccess } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
-    const { authorized } = await verifyAccess(req);
-    if (!authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await verifyAccess(req);
+    if (!auth.authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
     const tableName = searchParams.get('table');
     const schema = searchParams.get('schema') || 'public';
+    const projectIdParam = searchParams.get('projectId');
+    const projectId = projectIdParam || auth.projectId;
 
     if (!tableName) {
         return NextResponse.json({ error: 'Table name is required' }, { status: 400 });
     }
 
     try {
+        // Verify table belongs to this project via _table_registry
+        if (projectId) {
+            const ownerCheck = await query(`
+                SELECT project_id FROM _table_registry WHERE table_name = $1
+            `, [tableName]);
+            
+            if (ownerCheck.rows.length > 0 && ownerCheck.rows[0].project_id != projectId) {
+                return NextResponse.json({ error: 'Table belongs to another project' }, { status: 403 });
+            }
+        }
         const result = await query(`
             SELECT 
                 c.column_name,

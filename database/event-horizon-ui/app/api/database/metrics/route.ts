@@ -1,29 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { jwtVerify } from 'jose';
+import { verifyAccess } from '@/lib/auth';
 
-async function verifyAccess(req: NextRequest) {
-    const token = req.cookies.get('pqc_session')?.value;
-    if (!token) return { authorized: false };
-    try {
-        const secret = new TextEncoder().encode(process.env.DB_PASSWORD || 'postgres');
-        const { payload } = await jwtVerify(token, secret);
-        if (payload.email === 'thecheesemanatyou@gmail.com' || payload.email === 'maxedwardcheetham@gmail.com') {
-            return { authorized: true };
-        }
-        return { authorized: true };
-    } catch {
-        return { authorized: false };
-    }
-}
-
-// GET: Get database metrics and infrastructure stats
+// GET: Get database metrics and infrastructure stats (project-scoped)
 export async function GET(req: NextRequest) {
-    const { authorized } = await verifyAccess(req);
-    if (!authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await verifyAccess(req);
+    if (!auth.authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
-    const projectId = searchParams.get('projectId');
+    const projectIdParam = searchParams.get('projectId');
+    const projectId = projectIdParam || auth.projectId;
 
     try {
         // Get database size (global)
