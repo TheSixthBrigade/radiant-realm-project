@@ -149,25 +149,38 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
     }, [currentOrg?.id, isNavigating, router, setCurrentProject, setProjects]);
 
     const handleSelectProject = useCallback((proj: any) => {
-        // Prevent multiple rapid clicks
-        if (isNavigating || currentProject?.id === proj.id) return;
+        // Prevent multiple rapid clicks - strict check
+        if (isNavigating) {
+            console.log('Navigation in progress, ignoring click');
+            return;
+        }
+        
+        // Don't navigate if already on this project
+        if (currentProject?.id === proj.id) {
+            console.log('Already on this project');
+            return;
+        }
         
         // Clear any pending timeout
         if (navigationTimeoutRef.current) {
             clearTimeout(navigationTimeoutRef.current);
         }
         
+        // Set navigating immediately to block further clicks
         setIsNavigating(true);
+        
+        // Set the project
         setCurrentProject(proj);
         
+        // Navigate
         if (currentOrg) {
             router.push(`/${currentOrg.name}/projects/${proj.slug}`);
         }
         
-        // Reset navigation state after a delay
+        // Reset navigation state after navigation completes (longer delay)
         navigationTimeoutRef.current = setTimeout(() => {
             setIsNavigating(false);
-        }, 500);
+        }, 1000);
     }, [currentOrg, currentProject?.id, isNavigating, router, setCurrentProject]);
 
     const handleCreateOrg = async () => {
@@ -337,10 +350,11 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
                         {projects.map(proj => (
                             <div
                                 key={proj.id}
-                                onClick={() => handleSelectProject(proj)}
+                                onClick={() => !isNavigating && handleSelectProject(proj)}
                                 className={cn(
                                     "px-3 py-1.5 rounded-md text-[13px] transition-all cursor-pointer flex items-center gap-2 group/proj",
-                                    currentProject?.id === proj.id ? "bg-[#3ecf8e]/10 text-[#3ecf8e]" : "text-gray-500 hover:text-gray-300 hover:bg-[#111]"
+                                    currentProject?.id === proj.id ? "bg-[#3ecf8e]/10 text-[#3ecf8e]" : "text-gray-500 hover:text-gray-300 hover:bg-[#111]",
+                                    isNavigating && "pointer-events-none opacity-50"
                                 )}
                             >
                                 <div className={cn("w-1.5 h-1.5 rounded-full", currentProject?.id === proj.id ? "bg-[#3ecf8e] shadow-[0_0_8px_#3ecf8e]" : "bg-gray-700")} />
@@ -458,7 +472,7 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
                                                         onClick={() => handleSelectProject(p)}
                                                         className={cn(
                                                             "w-full px-5 py-4 bg-[#080808] border border-[#1a1a1a] rounded-2xl text-[13px] text-gray-400 hover:text-[#3ecf8e] hover:border-[#3ecf8e]/30 hover:bg-[#3ecf8e]/5 transition-all flex items-center justify-between group shadow-xl",
-                                                            isNavigating && "opacity-50 cursor-not-allowed"
+                                                            isNavigating && "opacity-50 cursor-not-allowed pointer-events-none"
                                                         )}
                                                     >
                                                         <div className="flex items-center gap-3">

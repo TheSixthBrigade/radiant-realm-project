@@ -116,7 +116,7 @@ export default function DatabasePage() {
                     </div>
                 </header>
 
-                <div className="flex-1 overflow-auto relative bg-[#1E201E]">
+                <div className="flex-1 overflow-auto relative bg-[#131513]">
                     {activeSection === "Database Overview" && <SchemaVisualizer projectId={projectId} />}
                     {activeSection === "Tables" && <TablesListView projectId={projectId} />}
                     {activeSection === "Functions" && <GenericListView title="Functions" items={["handle_new_user()", "authorize_request()", "check_pqc_signature()"]} type="PL/pgSQL" />}
@@ -259,14 +259,9 @@ function SchemaVisualizer({ projectId }: { projectId: number | null }) {
             onMouseLeave={handleMouseUp}
             className="absolute inset-0 p-10 cursor-default select-none overflow-auto"
             style={{ 
-                backgroundImage: `
-                    linear-gradient(rgba(62, 207, 142, 0.03) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(62, 207, 142, 0.03) 1px, transparent 1px),
-                    radial-gradient(circle at 50% 50%, rgba(62, 207, 142, 0.05) 0%, transparent 50%),
-                    radial-gradient(#252725 1px, transparent 1px)
-                `, 
-                backgroundSize: '64px 64px, 64px 64px, 100% 100%, 16px 16px',
-                backgroundColor: '#1E201E',
+                backgroundImage: `radial-gradient(#252725 1px, transparent 1px)`, 
+                backgroundSize: '20px 20px',
+                backgroundColor: '#131513',
                 minWidth: '1500px', 
                 minHeight: '1200px' 
             }}>
