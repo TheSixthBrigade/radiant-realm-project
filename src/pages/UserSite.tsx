@@ -39,7 +39,8 @@ const DEFAULT_PAGES: StorePage[] = [
 ];
 
 const UserSite = () => {
-  const { slug, pageType, productId: urlProductId } = useParams();
+  const { slug, username, pageType, productId: urlProductId } = useParams();
+  const actualSlug = slug || username; // Support both /site/:slug and /:username routes
   const navigate = useNavigate();
   const { user } = useAuth();
   const [website, setWebsite] = useState<any>(null);
@@ -137,8 +138,8 @@ const UserSite = () => {
   });
 
   useEffect(() => {
-    if (slug) fetchWebsite();
-  }, [slug, user]);
+    if (actualSlug) fetchWebsite();
+  }, [actualSlug, user]);
 
   // Track affiliate referral clicks
   useEffect(() => {
@@ -221,7 +222,7 @@ const UserSite = () => {
       const { data: profiles } = await supabase.from('profiles').select('*').eq('is_creator', true);
       const profile = profiles?.find(p => {
         const profileSlug = p.display_name?.toLowerCase().replace(/\s+/g, '-');
-        return profileSlug === slug || p.user_id === slug;
+        return profileSlug === actualSlug || p.user_id === actualSlug;
       });
 
       if (!profile) throw new Error('Not found');
@@ -241,7 +242,7 @@ const UserSite = () => {
       // Check if user is john/john-cheetah (for testing) or has paid tier
       const displayName = profile.display_name?.toLowerCase() || '';
       const profileSlug = displayName.replace(/\s+/g, '-');
-      const isTestUser = profileSlug === 'john-cheetah' || displayName === 'john-cheetah' || slug === 'john-cheetah' || slug === 'john' || displayName === 'john';
+      const isTestUser = profileSlug === 'john-cheetah' || displayName === 'john-cheetah' || actualSlug === 'john-cheetah' || actualSlug === 'john' || displayName === 'john';
       const tier = subData?.tier || 'free';
       setOwnerSubscriptionTier(isTestUser ? 'pro' : tier);
 
@@ -492,7 +493,7 @@ const UserSite = () => {
       <SiteHeader
         config={headerConfig}
         currentPageSlug={pageType || ''}
-        baseUrl={`/site/${slug}`}
+        baseUrl={`/${actualSlug}`}
         storeName={website.profiles?.display_name || 'Store'}
         isOwner={isOwner}
       />
@@ -528,7 +529,7 @@ const UserSite = () => {
           setCurrentPageId(pageId);
           const page = storePages.find(p => p.id === pageId);
           if (page) {
-            navigate(`/site/${slug}${page.slug ? `/${page.slug}` : ''}`);
+            navigate(`/${actualSlug}${page.slug ? `/${page.slug}` : ''}`);
           }
         }}
         onAddPage={(type) => {
@@ -555,7 +556,7 @@ const UserSite = () => {
           setStorePages(storePages.filter(p => p.id !== pageId));
           if (currentPageId === pageId) {
             setCurrentPageId('home');
-            navigate(`/site/${slug}`);
+            navigate(`/${actualSlug}`);
           }
         }}
         onUpdatePage={(updatedPage) => {
@@ -624,7 +625,7 @@ const UserSite = () => {
                 storeName={website.profiles?.display_name}
                 storeLogo={pageSections.find(s => s.type === 'header')?.settings?.logo || pageSections.find(s => s.type === 'header')?.logo_url}
                 productId={selectedRoadmapProductId || urlProductId}
-                storeSlug={slug}
+                storeSlug={actualSlug}
                 globalBackground={{
                   enabled: editSettings.global_background_enabled,
                   type: editSettings.global_background_type as 'solid' | 'gradient' | 'image',
@@ -636,7 +637,7 @@ const UserSite = () => {
                 }}
                 onBack={() => {
                   setSelectedRoadmapProductId(null);
-                  navigate(`/site/${slug}/roadmap`);
+                  navigate(`/${actualSlug}/roadmap`);
                 }}
               />
             ) : (
@@ -645,10 +646,10 @@ const UserSite = () => {
                 isOwner={isOwner}
                 storeName={website.profiles?.display_name}
                 storeLogo={pageSections.find(s => s.type === 'header')?.settings?.logo || pageSections.find(s => s.type === 'header')?.logo_url}
-                storeSlug={slug}
+                storeSlug={actualSlug}
                 onSelectRoadmap={(productId) => {
                   setSelectedRoadmapProductId(productId);
-                  navigate(`/site/${slug}/roadmap/${productId}`);
+                  navigate(`/${actualSlug}/roadmap/${productId}`);
                 }}
               />
             )}
@@ -1845,9 +1846,9 @@ const UserSite = () => {
                     isOwner={isOwner}
                     storeName={website.profiles?.display_name}
                     storeLogo={pageSections.find(s => s.type === 'header')?.settings?.logo || pageSections.find(s => s.type === 'header')?.logo_url}
-                    storeSlug={slug}
+                    storeSlug={actualSlug}
                     onSelectRoadmap={(productId) => {
-                      navigate(`/site/${slug}/roadmap/${productId}`);
+                      navigate(`/${actualSlug}/roadmap/${productId}`);
                     }}
                     customStyles={{
                       cardBackgroundColor: hexToRgba(cardBackgroundColor, cardOpacity),

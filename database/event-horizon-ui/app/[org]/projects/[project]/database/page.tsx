@@ -119,13 +119,13 @@ export default function DatabasePage() {
                 <div className="flex-1 overflow-auto relative bg-[#131513]">
                     {activeSection === "Database Overview" && <SchemaVisualizer projectId={projectId} />}
                     {activeSection === "Tables" && <TablesListView projectId={projectId} />}
-                    {activeSection === "Functions" && <GenericListView title="Functions" items={["handle_new_user()", "authorize_request()", "check_pqc_signature()"]} type="PL/pgSQL" />}
+                    {activeSection === "Functions" && <FunctionsListView projectId={projectId} />}
                     {activeSection === "Policies" && <PoliciesView />}
                     {activeSection === "Security Advisor" && <SecurityAdvisorView />}
-                    {activeSection === "Indexes" && <GenericListView title="Indexes" items={["users_email_idx", "profiles_pkey", "posts_author_id_idx"]} type="Index" />}
-                    {activeSection === "Extensions" && <GenericListView title="Extensions" items={["pg_pqc", "pgcrypto", "pg_stat_statements"]} type="Extension" />}
-                    {activeSection === "Publications" && <GenericListView title="Publications" items={["realtime_broadcast", "auth_sync"]} type="CDC" />}
-                    {activeSection === "Triggers" && <GenericListView title="Triggers" items={["on_auth_user_created", "on_post_updated"]} type="Trigger" />}
+                    {activeSection === "Indexes" && <IndexesListView projectId={projectId} />}
+                    {activeSection === "Extensions" && <ExtensionsListView />}
+                    {activeSection === "Publications" && <PublicationsListView />}
+                    {activeSection === "Triggers" && <TriggersListView projectId={projectId} />}
 
                     {["Roles", "Settings", "Replication", "Backups", "Migrations", "Enumerated Types"].includes(activeSection) && activeSection !== "Schema Visualizer" && (
                         <div className="p-8 flex items-center justify-center h-full">
@@ -674,4 +674,498 @@ function TablesListView({ projectId }: { projectId: number | null }) {
             )}
         </div>
     )
+}
+
+// Functions List View - Fetches real functions from PostgreSQL
+function FunctionsListView({ projectId }: { projectId: number | null }) {
+    const [functions, setFunctions] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [newFunction, setNewFunction] = useState({ name: '', returns: 'void', language: 'plpgsql', args: '', body: '' });
+    const [creating, setCreating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const fetchFunctions = async () => {
+        setLoading(true);
+        try {
+            const url = projectId
+                ? `/api/database/functions?schema=public&projectId=${projectId}`
+                : `/api/database/functions?schema=public`;
+            const res = await fetch(url);
+            if (res.ok) {
+                setFunctions(await res.json());
+            }
+        } catch (e) {
+            console.error("Failed to fetch functions", e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchFunctions();
+    }, [projectId]);
+
+    const handleCreate = async () => {
+        if (!newFunction.name.trim() || !newFunction.body.trim()) {
+            setError('Function name and body are required');
+            return;
+        }
+        setError(null);
+        setCreating(true);
+        try {
+            const res = await fetch('/api/database/functions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newFunction)
+            });
+            if (res.ok) {
+                setShowCreateModal(false);
+                setNewFunction({ name: '', returns: 'void', language: 'plpgsql', args: '', body: '' });
+                fetchFunctions();
+            } else {
+                const err = await res.json();
+                setError(err.error || 'Failed to create function');
+            }
+        } catch (e: any) {
+            setError(e.message);
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    const handleDelete = async (name: string, args: string) => {
+        if (!confirm(`Delete function ${name}?`)) return;
+        try {
+            const res = await fetch(`/api/database/functions?name=${name}&args=${encodeURIComponent(args)}`, { method: 'DELETE' });
+            if (res.ok) fetchFunctions();
+        } catch (e) {
+            console.error('Failed to delete function', e);
+        }
+    };
+
+    if (loading) return <div className="p-20 flex justify-center"><Loader2 className="animate-spin text-[#3ecf8e]" size={32} /></div>;
+
+    return (
+        <div className="p-8 space-y-6 max-w-4xl animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white tracking-tight">Functions</h2>
+                <button onClick={() => setShowCreateModal(true)} className="px-4 py-2 bg-[#3ecf8e] text-black text-xs font-bold rounded hover:bg-[#34b27b] transition-colors flex items-center gap-2">
+                    <Plus size={14} /> NEW FUNCTION
+                </button>
+            </div>
+            
+            {functions.length === 0 ? (
+                <div className="panel rounded-lg p-12 bg-[#080808] border-[#1a1a1a] text-center">
+                    <Zap size={40} className="mx-auto text-gray-700 mb-4" />
+                    <p className="text-gray-500 text-sm">No functions found in this schema.</p>
+                    <p className="text-gray-600 text-xs mt-2">Create your first PL/pgSQL function to get started.</p>
+                </div>
+            ) : (
+                <div className="panel rounded-lg overflow-hidden border-[#1a1a1a] bg-[#080808]">
+                    <table className="w-full text-left text-sm">
+                        <thead>
+                            <tr className="border-b border-[#1a1a1a] bg-[#0c0c0c]">
+                                <th className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Name</th>
+                                <th className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Returns</th>
+                                <th className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Language</th>
+                                <th className="px-6 py-3 text-right text-[10px] font-bold text-gray-500 uppercase tracking-widest">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#151515]">
+                            {functions.map((fn: any, i: number) => (
+                                <tr key={i} className="hover:bg-[#0c0c0c] transition-colors">
+                                    <td className="px-6 py-4 flex items-center gap-3">
+                                        <div className="p-1.5 bg-[#141414] rounded border border-[#222]">
+                                            <Zap size={14} className="text-yellow-500" />
+                                        </div>
+                                        <div>
+                                            <span className="text-gray-200 font-mono text-xs">{fn.function_name}({fn.arguments || ''})</span>
+                                            {fn.description && <p className="text-[10px] text-gray-600 mt-0.5">{fn.description}</p>}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="text-xs text-gray-400 font-mono">{fn.return_type}</span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="text-[10px] font-bold text-gray-600 bg-black/40 px-2 py-0.5 rounded border border-[#222]">{fn.language}</span>
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <button onClick={() => handleDelete(fn.function_name, fn.arguments || '')} className="text-red-500 hover:text-red-400 p-1">
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
+            {showCreateModal && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 animate-in fade-in duration-200">
+                    <div className="bg-[#0d0d0d] border border-[#222] rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden shadow-2xl">
+                        <div className="flex items-center justify-between p-6 border-b border-[#1a1a1a]">
+                            <h2 className="text-lg font-bold text-white">Create Function</h2>
+                            <button onClick={() => setShowCreateModal(false)} className="text-gray-500 hover:text-white"><X size={20} /></button>
+                        </div>
+                        <div className="p-6 space-y-4 overflow-y-auto max-h-[55vh]">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Function Name</label>
+                                    <input value={newFunction.name} onChange={(e) => setNewFunction({...newFunction, name: e.target.value})} placeholder="my_function" className="w-full mt-1 bg-black/40 border border-[#222] rounded-lg px-4 py-2.5 text-sm text-gray-300 font-mono focus:outline-none focus:border-[#3ecf8e]" />
+                                </div>
+                                <div>
+                                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Returns</label>
+                                    <select value={newFunction.returns} onChange={(e) => setNewFunction({...newFunction, returns: e.target.value})} className="w-full mt-1 bg-black/40 border border-[#222] rounded-lg px-4 py-2.5 text-sm text-gray-300 font-mono focus:outline-none focus:border-[#3ecf8e]">
+                                        <option value="void">void</option>
+                                        <option value="trigger">trigger</option>
+                                        <option value="boolean">boolean</option>
+                                        <option value="integer">integer</option>
+                                        <option value="text">text</option>
+                                        <option value="jsonb">jsonb</option>
+                                        <option value="uuid">uuid</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Arguments</label>
+                                <input value={newFunction.args} onChange={(e) => setNewFunction({...newFunction, args: e.target.value})} placeholder="arg1 text, arg2 integer" className="w-full mt-1 bg-black/40 border border-[#222] rounded-lg px-4 py-2.5 text-sm text-gray-300 font-mono focus:outline-none focus:border-[#3ecf8e]" />
+                            </div>
+                            <div>
+                                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Function Body</label>
+                                <textarea value={newFunction.body} onChange={(e) => setNewFunction({...newFunction, body: e.target.value})} placeholder="BEGIN&#10;  -- Your code here&#10;  RETURN;&#10;END;" rows={8} className="w-full mt-1 bg-black/40 border border-[#222] rounded-lg px-4 py-2.5 text-sm text-gray-300 font-mono focus:outline-none focus:border-[#3ecf8e]" />
+                            </div>
+                        </div>
+                        {error && <div className="mx-6 mb-4 p-4 bg-red-950/30 border border-red-500/30 rounded-lg"><p className="text-red-400 text-sm">{error}</p></div>}
+                        <div className="p-6 border-t border-[#1a1a1a] flex justify-end gap-3">
+                            <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-[11px] font-bold text-gray-400 border border-[#222] rounded-lg hover:text-white">Cancel</button>
+                            <button onClick={handleCreate} disabled={creating} className="px-6 py-2 bg-[#3ecf8e] text-black text-[11px] font-bold rounded-lg hover:bg-[#34b27b] flex items-center gap-2">
+                                {creating ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />} Create Function
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// Triggers List View - Fetches real triggers from PostgreSQL
+function TriggersListView({ projectId }: { projectId: number | null }) {
+    const [triggers, setTriggers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchTriggers = async () => {
+        setLoading(true);
+        try {
+            const url = projectId
+                ? `/api/database/triggers?schema=public&projectId=${projectId}`
+                : `/api/database/triggers?schema=public`;
+            const res = await fetch(url);
+            if (res.ok) {
+                setTriggers(await res.json());
+            }
+        } catch (e) {
+            console.error("Failed to fetch triggers", e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchTriggers();
+    }, [projectId]);
+
+    const handleDelete = async (name: string, table: string) => {
+        if (!confirm(`Delete trigger ${name} on ${table}?`)) return;
+        try {
+            const res = await fetch(`/api/database/triggers?name=${name}&table=${table}`, { method: 'DELETE' });
+            if (res.ok) fetchTriggers();
+        } catch (e) {
+            console.error('Failed to delete trigger', e);
+        }
+    };
+
+    if (loading) return <div className="p-20 flex justify-center"><Loader2 className="animate-spin text-[#3ecf8e]" size={32} /></div>;
+
+    return (
+        <div className="p-8 space-y-6 max-w-4xl animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white tracking-tight">Triggers</h2>
+                <button className="px-4 py-2 bg-[#3ecf8e] text-black text-xs font-bold rounded hover:bg-[#34b27b] transition-colors flex items-center gap-2">
+                    <Plus size={14} /> NEW TRIGGER
+                </button>
+            </div>
+            
+            {triggers.length === 0 ? (
+                <div className="panel rounded-lg p-12 bg-[#080808] border-[#1a1a1a] text-center">
+                    <Zap size={40} className="mx-auto text-gray-700 mb-4" />
+                    <p className="text-gray-500 text-sm">No triggers found in this schema.</p>
+                    <p className="text-gray-600 text-xs mt-2">Triggers execute functions automatically on table events.</p>
+                </div>
+            ) : (
+                <div className="panel rounded-lg overflow-hidden border-[#1a1a1a] bg-[#080808]">
+                    <table className="w-full text-left text-sm">
+                        <thead>
+                            <tr className="border-b border-[#1a1a1a] bg-[#0c0c0c]">
+                                <th className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Trigger</th>
+                                <th className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Table</th>
+                                <th className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Events</th>
+                                <th className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Function</th>
+                                <th className="px-6 py-3 text-right text-[10px] font-bold text-gray-500 uppercase tracking-widest">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#151515]">
+                            {triggers.map((trig: any, i: number) => (
+                                <tr key={i} className="hover:bg-[#0c0c0c] transition-colors">
+                                    <td className="px-6 py-4 flex items-center gap-3">
+                                        <div className="p-1.5 bg-[#141414] rounded border border-[#222]">
+                                            <Zap size={14} className="text-orange-500" />
+                                        </div>
+                                        <span className="text-gray-200 font-mono text-xs">{trig.trigger_name}</span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="text-xs text-gray-400 font-mono">{trig.table_name}</span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="text-[10px] font-bold text-gray-600 bg-black/40 px-2 py-0.5 rounded border border-[#222]">
+                                            {trig.trigger_timing} {trig.events?.join(', ')}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="text-xs text-[#3ecf8e] font-mono">{trig.function_name}()</span>
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <button onClick={() => handleDelete(trig.trigger_name, trig.table_name)} className="text-red-500 hover:text-red-400 p-1">
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// Indexes List View - Fetches real indexes from PostgreSQL
+function IndexesListView({ projectId }: { projectId: number | null }) {
+    const [indexes, setIndexes] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchIndexes = async () => {
+        setLoading(true);
+        try {
+            const url = projectId
+                ? `/api/database/indexes?schema=public&projectId=${projectId}`
+                : `/api/database/indexes?schema=public`;
+            const res = await fetch(url);
+            if (res.ok) {
+                setIndexes(await res.json());
+            }
+        } catch (e) {
+            console.error("Failed to fetch indexes", e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchIndexes();
+    }, [projectId]);
+
+    if (loading) return <div className="p-20 flex justify-center"><Loader2 className="animate-spin text-[#3ecf8e]" size={32} /></div>;
+
+    return (
+        <div className="p-8 space-y-6 max-w-4xl animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white tracking-tight">Indexes</h2>
+                <button className="px-4 py-2 bg-[#3ecf8e] text-black text-xs font-bold rounded hover:bg-[#34b27b] transition-colors flex items-center gap-2">
+                    <Plus size={14} /> NEW INDEX
+                </button>
+            </div>
+            
+            {indexes.length === 0 ? (
+                <div className="panel rounded-lg p-12 bg-[#080808] border-[#1a1a1a] text-center">
+                    <Layers size={40} className="mx-auto text-gray-700 mb-4" />
+                    <p className="text-gray-500 text-sm">No indexes found in this schema.</p>
+                    <p className="text-gray-600 text-xs mt-2">Indexes improve query performance on frequently accessed columns.</p>
+                </div>
+            ) : (
+                <div className="panel rounded-lg overflow-hidden border-[#1a1a1a] bg-[#080808]">
+                    <table className="w-full text-left text-sm">
+                        <thead>
+                            <tr className="border-b border-[#1a1a1a] bg-[#0c0c0c]">
+                                <th className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Index Name</th>
+                                <th className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Table</th>
+                                <th className="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Type</th>
+                                <th className="px-6 py-3 text-right text-[10px] font-bold text-gray-500 uppercase tracking-widest">Size</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#151515]">
+                            {indexes.map((idx: any, i: number) => (
+                                <tr key={i} className="hover:bg-[#0c0c0c] transition-colors">
+                                    <td className="px-6 py-4 flex items-center gap-3">
+                                        <div className="p-1.5 bg-[#141414] rounded border border-[#222]">
+                                            <Layers size={14} className="text-blue-500" />
+                                        </div>
+                                        <span className="text-gray-200 font-mono text-xs">{idx.index_name}</span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="text-xs text-gray-400 font-mono">{idx.table_name}</span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="text-[10px] font-bold text-gray-600 bg-black/40 px-2 py-0.5 rounded border border-[#222]">
+                                            {idx.is_unique ? 'UNIQUE' : 'INDEX'} {idx.is_primary ? '(PK)' : ''}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <span className="text-xs text-gray-500 font-mono">{idx.index_size || '-'}</span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// Extensions List View - Fetches real extensions from PostgreSQL
+function ExtensionsListView() {
+    const [extensions, setExtensions] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchExtensions = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch('/api/database/extensions');
+            if (res.ok) {
+                setExtensions(await res.json());
+            }
+        } catch (e) {
+            console.error("Failed to fetch extensions", e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchExtensions();
+    }, []);
+
+    if (loading) return <div className="p-20 flex justify-center"><Loader2 className="animate-spin text-[#3ecf8e]" size={32} /></div>;
+
+    return (
+        <div className="p-8 space-y-6 max-w-4xl animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white tracking-tight">Extensions</h2>
+                <button className="px-4 py-2 bg-[#3ecf8e] text-black text-xs font-bold rounded hover:bg-[#34b27b] transition-colors flex items-center gap-2">
+                    <Plus size={14} /> ENABLE EXTENSION
+                </button>
+            </div>
+            
+            {extensions.length === 0 ? (
+                <div className="panel rounded-lg p-12 bg-[#080808] border-[#1a1a1a] text-center">
+                    <Box size={40} className="mx-auto text-gray-700 mb-4" />
+                    <p className="text-gray-500 text-sm">No extensions enabled.</p>
+                    <p className="text-gray-600 text-xs mt-2">Extensions add extra functionality to PostgreSQL.</p>
+                </div>
+            ) : (
+                <div className="panel rounded-lg overflow-hidden border-[#1a1a1a] bg-[#080808]">
+                    <table className="w-full text-left text-sm">
+                        <tbody className="divide-y divide-[#151515]">
+                            {extensions.map((ext: any, i: number) => (
+                                <tr key={i} className="hover:bg-[#0c0c0c] transition-colors">
+                                    <td className="px-6 py-4 flex items-center gap-3">
+                                        <div className="p-1.5 bg-[#141414] rounded border border-[#222]">
+                                            <Box size={14} className="text-purple-500" />
+                                        </div>
+                                        <div>
+                                            <span className="text-gray-200 font-mono text-xs">{ext.extname}</span>
+                                            {ext.comment && <p className="text-[10px] text-gray-600 mt-0.5">{ext.comment}</p>}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="text-[10px] font-bold text-gray-600 bg-black/40 px-2 py-0.5 rounded border border-[#222]">v{ext.extversion}</span>
+                                    </td>
+                                    <td className="px-6 py-4 text-right text-[10px] text-green-500 font-bold uppercase tracking-widest">Enabled</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// Publications List View - Fetches real publications from PostgreSQL
+function PublicationsListView() {
+    const [publications, setPublications] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchPublications = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch('/api/database/publications');
+            if (res.ok) {
+                setPublications(await res.json());
+            }
+        } catch (e) {
+            console.error("Failed to fetch publications", e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchPublications();
+    }, []);
+
+    if (loading) return <div className="p-20 flex justify-center"><Loader2 className="animate-spin text-[#3ecf8e]" size={32} /></div>;
+
+    return (
+        <div className="p-8 space-y-6 max-w-4xl animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white tracking-tight">Publications</h2>
+                <button className="px-4 py-2 bg-[#3ecf8e] text-black text-xs font-bold rounded hover:bg-[#34b27b] transition-colors flex items-center gap-2">
+                    <Plus size={14} /> NEW PUBLICATION
+                </button>
+            </div>
+            
+            {publications.length === 0 ? (
+                <div className="panel rounded-lg p-12 bg-[#080808] border-[#1a1a1a] text-center">
+                    <FileText size={40} className="mx-auto text-gray-700 mb-4" />
+                    <p className="text-gray-500 text-sm">No publications found.</p>
+                    <p className="text-gray-600 text-xs mt-2">Publications are used for logical replication and CDC.</p>
+                </div>
+            ) : (
+                <div className="panel rounded-lg overflow-hidden border-[#1a1a1a] bg-[#080808]">
+                    <table className="w-full text-left text-sm">
+                        <tbody className="divide-y divide-[#151515]">
+                            {publications.map((pub: any, i: number) => (
+                                <tr key={i} className="hover:bg-[#0c0c0c] transition-colors">
+                                    <td className="px-6 py-4 flex items-center gap-3">
+                                        <div className="p-1.5 bg-[#141414] rounded border border-[#222]">
+                                            <FileText size={14} className="text-cyan-500" />
+                                        </div>
+                                        <span className="text-gray-200 font-mono text-xs">{pub.pubname}</span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="text-[10px] font-bold text-gray-600 bg-black/40 px-2 py-0.5 rounded border border-[#222]">CDC</span>
+                                    </td>
+                                    <td className="px-6 py-4 text-right text-[10px] text-green-500 font-bold uppercase tracking-widest">Active</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </div>
+    );
 }

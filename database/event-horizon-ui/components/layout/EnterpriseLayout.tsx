@@ -68,6 +68,20 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
         }
     }, [currentOrg, isInitialized]);
 
+    // CRITICAL: Set currentProject from URL params on page load to prevent twitching
+    useEffect(() => {
+        if (params?.project && projects.length > 0 && !currentProject) {
+            const projectSlug = decodeURIComponent(params.project as string);
+            const matchingProject = projects.find((p: any) => 
+                p.slug === projectSlug || p.name === projectSlug || String(p.id) === projectSlug
+            );
+            if (matchingProject) {
+                setCurrentProject(matchingProject);
+                setIsInitialized(true);
+            }
+        }
+    }, [params?.project, projects, currentProject, setCurrentProject]);
+
     useEffect(() => {
         // Root redirect logic - centralized here where we have Org + Project context
         // Only run once during initialization

@@ -45,6 +45,7 @@ const DeveloperBotDashboard = lazy(() => import("./pages/DeveloperBotDashboard")
 const StoreAnalytics = lazy(() => import("./pages/StoreAnalytics"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const DynamicUserRoute = lazy(() => import("./pages/DynamicUserRoute"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 
 // Loading fallback component
@@ -102,9 +103,11 @@ const App = () => {
                     <Route path="/downloads" element={<Downloads />} />
                     <Route path="/payment-success" element={<PaymentSuccess />} />
                     <Route path="/payment-failure" element={<PaymentFailure />} />
+                    {/* Legacy /site routes - redirect to new direct URLs */}
                     <Route path="/site/:slug" element={<UserSite />} />
                     <Route path="/site/:slug/roadmap/:productId" element={<UserSite />} />
                     <Route path="/site/:slug/:pageType" element={<UserSite />} />
+                    {/* Legacy /creator routes */}
                     <Route path="/creator/:slug" element={<UserSite />} />
                     <Route path="/creator/:slug/roadmap/:productId" element={<UserSite />} />
                     <Route path="/creator/:slug/:pageType" element={<UserSite />} />
@@ -118,6 +121,10 @@ const App = () => {
                     <Route path="/onboarding" element={<Onboarding />} />
                     <Route path="/tos" element={<TermsOfService />} />
                     <Route path="/privacy" element={<PrivacyPolicy />} />
+                    {/* Direct username routes (like Payhip) - must be after all system routes */}
+                    <Route path="/:username" element={<DynamicUserRoute />} />
+                    <Route path="/:username/roadmap/:productId" element={<DynamicUserRoute />} />
+                    <Route path="/:username/:pageType" element={<DynamicUserRoute />} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
