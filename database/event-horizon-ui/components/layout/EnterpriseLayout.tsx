@@ -44,10 +44,12 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
     const [isNavigating, setIsNavigating] = useState(false);
     const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     
-    // CRITICAL: Track initialization state to prevent showing project picker prematurely
-    const [initState, setInitState] = useState<'loading' | 'ready'>('loading');
-    const hasInitialized = useRef(false);
+    // CRITICAL: Get URL params directly - this is the SOURCE OF TRUTH
+    const urlOrgName = params?.org ? decodeURIComponent(params.org as string) : null;
     const urlProjectSlug = params?.project ? decodeURIComponent(params.project as string) : null;
+    
+    // Track if we've done initial data load
+    const [dataLoaded, setDataLoaded] = useState(false);
     
     // CRITICAL FIX: Use refs to always have latest values in callbacks (avoids stale closure issues)
     const currentOrgRef = useRef<any>(null);
@@ -71,52 +73,67 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
         };
     }, []);
 
-    // Load orgs when user is available
+    // SINGLE data loading effect - loads orgs, projects, and sets current based on URL
     useEffect(() => {
-        if (user && !hasInitialized.current) {
-            fetchWorkspaces();
-        }
-    }, [user]);
-
-    // Load projects when org is set
-    useEffect(() => {
-        if (currentOrg && !hasInitialized.current) {
-            fetchProjects(currentOrg.id);
-        }
-    }, [currentOrg]);
-
-    // CRITICAL FIX: Set currentProject from URL params ONCE after projects load
-    // This runs BEFORE we show any UI, preventing the flicker
-    useEffect(() => {
-        if (hasInitialized.current) return;
-        if (!projects.length) return;
+        if (!user || dataLoaded) return;
         
-        // If there's a project in the URL, we MUST set it before showing UI
-        if (urlProjectSlug) {
-            const matchingProject = projects.find((p: any) => 
-                p.slug === urlProjectSlug || p.name === urlProjectSlug || String(p.id) === urlProjectSlug
-            );
-            
-            if (matchingProject) {
-                hasInitialized.current = true;
-                setCurrentProject(matchingProject);
-                setInitState('ready');
-                return;
+        const loadData = async () => {
+            try {
+                // 1. Load orgs
+                const orgRes = await fetch('/api/organizations');
+                if (!orgRes.ok) return;
+                const orgsData = await orgRes.json();
+                setOrgs(orgsData);
+                
+                // 2. Find the org from URL or use first
+                let targetOrg = null;
+                if (urlOrgName) {
+                    targetOrg = orgsData.find((o: any) => o.name === urlOrgName);
+                }
+                if (!targetOrg && orgsData.length > 0) {
+                    targetOrg = orgsData[0];
+                }
+                
+                if (!targetOrg) {
+                    setDataLoaded(true);
+                    return;
+                }
+                
+                setCurrentOrg(targetOrg);
+                
+                // 3. Load projects for this org
+                const projRes = await fetch(`/api/projects?orgId=${targetOrg.id}`);
+                if (!projRes.ok) {
+                    setDataLoaded(true);
+                    return;
+                }
+                const projectsData = await projRes.json();
+                setProjects(projectsData);
+                
+                // 4. Find the project from URL
+                if (urlProjectSlug && projectsData.length > 0) {
+                    const targetProject = projectsData.find((p: any) => 
+                        p.slug === urlProjectSlug || p.name === urlProjectSlug || String(p.id) === urlProjectSlug
+                    );
+                    if (targetProject) {
+                        setCurrentProject(targetProject);
+                    }
+                }
+                
+                setDataLoaded(true);
+            } catch (e) {
+                console.error("Failed to load data", e);
+                setDataLoaded(true);
             }
-        }
+        };
         
-        // No project in URL - mark as ready only when we have currentOrg
-        // (so root redirect can happen)
-        if (currentOrg) {
-            hasInitialized.current = true;
-            setInitState('ready');
-        }
-    }, [urlProjectSlug, projects, setCurrentProject, currentOrg]);
+        loadData();
+    }, [user, dataLoaded, urlOrgName, urlProjectSlug, setCurrentProject, setProjects]);
 
     // Handle root redirect - redirect to first project when on "/" and data is loaded
     useEffect(() => {
         if (pathname !== '/') return;
-        if (!currentOrg || !projects.length) return;
+        if (!dataLoaded || !currentOrg || !projects.length) return;
         
         const targetProject = currentProject || projects[0];
         const targetUrl = `/${encodeURIComponent(currentOrg.name)}/projects/${targetProject.slug}`;
@@ -125,45 +142,7 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
         if (typeof window !== 'undefined') {
             window.location.href = targetUrl;
         }
-    }, [pathname, currentOrg, projects, currentProject]);
-
-    const fetchWorkspaces = async () => {
-        try {
-            const res = await fetch('/api/organizations');
-            if (res.ok) {
-                const data = await res.json();
-                setOrgs(data);
-
-                // Prioritize URL param for org selection
-                if (params?.org) {
-                    const orgName = decodeURIComponent(params.org as string);
-                    const matchingOrg = data.find((o: any) => o.name === orgName);
-                    if (matchingOrg) {
-                        setCurrentOrg(matchingOrg);
-                        return;
-                    }
-                }
-
-                if (data.length > 0 && !currentOrg) {
-                    setCurrentOrg(data[0]);
-                }
-            }
-        } catch (e) {
-            console.error("Failed to fetch workspaces", e);
-        }
-    };
-
-    const fetchProjects = async (orgId: number) => {
-        try {
-            const pRes = await fetch(`/api/projects?orgId=${orgId}`);
-            if (pRes.ok) {
-                const data = await pRes.json();
-                setProjects(data);
-            }
-        } catch (e) {
-            console.error("Failed to fetch projects", e);
-        }
-    };
+    }, [pathname, dataLoaded, currentOrg, projects, currentProject]);
 
     const handleSelectOrg = useCallback(async (org: any) => {
         if (currentOrg?.id === org.id || isNavigating) return;
@@ -480,14 +459,19 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
                     </div>
                 </header>
                 <main className="flex-1 overflow-auto bg-[#0d0d0d] relative p-0">
-                    {/* CRITICAL: Show loading while initializing if there's a project in URL */}
-                    {initState === 'loading' && urlProjectSlug ? (
-                        <div className="h-full flex items-center justify-center bg-[#0a0a0a]">
-                            <div className="flex flex-col items-center gap-4">
-                                <div className="w-12 h-12 border-2 border-[#3ecf8e]/20 border-t-[#3ecf8e] rounded-full animate-spin" />
-                                <p className="text-xs font-mono uppercase tracking-widest text-gray-600">Loading project...</p>
+                    {/* CRITICAL FIX: If URL has a project slug, NEVER show project picker - show loading or children */}
+                    {urlProjectSlug ? (
+                        // URL has project - either show loading or children, NEVER project picker
+                        !dataLoaded || !currentProject ? (
+                            <div className="h-full flex items-center justify-center bg-[#0a0a0a]">
+                                <div className="flex flex-col items-center gap-4">
+                                    <div className="w-12 h-12 border-2 border-[#3ecf8e]/20 border-t-[#3ecf8e] rounded-full animate-spin" />
+                                    <p className="text-xs font-mono uppercase tracking-widest text-gray-600">Loading project...</p>
+                                </div>
                             </div>
-                        </div>
+                        ) : (
+                            children
+                        )
                     ) : !currentProject ? (
                         <div className="h-full flex flex-col items-center justify-center p-8 bg-[#0a0a0a]/50">
                             <div className="max-w-md w-full text-center space-y-8 animate-in fade-in zoom-in-95 duration-500">
