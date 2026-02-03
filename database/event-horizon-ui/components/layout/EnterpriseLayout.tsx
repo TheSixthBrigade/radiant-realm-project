@@ -185,8 +185,14 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
             return;
         }
         
-        // CRITICAL FIX: Use refs to get latest values (avoids stale closure)
-        let orgName = currentOrgRef.current?.name;
+        // Get org name from multiple sources - try state first, then refs, then URL
+        let orgName = currentOrg?.name;
+        if (!orgName) {
+            orgName = currentOrgRef.current?.name;
+        }
+        if (!orgName && orgs.length > 0) {
+            orgName = orgs[0].name;
+        }
         if (!orgName && orgsRef.current.length > 0) {
             orgName = orgsRef.current[0].name;
         }
@@ -194,9 +200,14 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
             orgName = decodeURIComponent(params.org as string);
         }
         
-        // If still no org name, don't navigate - this shouldn't happen
+        // If still no org name, log and return
         if (!orgName) {
-            console.error('Cannot navigate: no org name available. currentOrgRef:', currentOrgRef.current, 'orgsRef:', orgsRef.current, 'params.org:', params?.org);
+            console.error('Cannot navigate: no org name available');
+            console.error('currentOrg:', currentOrg);
+            console.error('currentOrgRef:', currentOrgRef.current);
+            console.error('orgs:', orgs);
+            console.error('orgsRef:', orgsRef.current);
+            console.error('params.org:', params?.org);
             return;
         }
         
@@ -208,16 +219,14 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
         // Set navigating immediately to block further clicks
         setIsNavigating(true);
         
-        // Set the project
+        // Set the project in context
         setCurrentProject(proj);
         
-        // Navigate using window.location for more reliable navigation
+        // Navigate using window.location for reliable navigation
         const targetUrl = `/${encodeURIComponent(orgName)}/projects/${proj.slug}`;
-        console.log('Navigating to:', targetUrl, 'orgName:', orgName, 'currentOrgRef:', currentOrgRef.current);
-        
-        // Use window.location.href for more reliable navigation (prevents React Router issues)
+        console.log('Navigating to:', targetUrl);
         window.location.href = targetUrl;
-    }, [currentProject?.id, isNavigating, setCurrentProject, params?.org]);
+    }, [currentOrg, currentProject?.id, isNavigating, orgs, params?.org, setCurrentProject]);
 
     const handleCreateOrg = async () => {
         if (!newOrgName) return;
