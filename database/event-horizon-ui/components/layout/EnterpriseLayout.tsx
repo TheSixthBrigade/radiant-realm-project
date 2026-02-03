@@ -77,7 +77,6 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (hasInitialized.current) return;
         if (!projects.length) return;
-        if (!currentOrg) return; // Wait for org to be set too
         
         // If there's a project in the URL, we MUST set it before showing UI
         if (urlProjectSlug) {
@@ -93,22 +92,23 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
             }
         }
         
-        // No project in URL - we're on /projects page, mark as ready
-        hasInitialized.current = true;
-        setInitState('ready');
+        // No project in URL - mark as ready only when we have currentOrg
+        // (so root redirect can happen)
+        if (currentOrg) {
+            hasInitialized.current = true;
+            setInitState('ready');
+        }
     }, [urlProjectSlug, projects, setCurrentProject, currentOrg]);
 
-    // Handle root redirect - only when on "/" and fully initialized
+    // Handle root redirect - redirect to first project when on "/" and data is loaded
     useEffect(() => {
         if (pathname !== '/') return;
-        if (initState !== 'ready') return;
         if (!currentOrg || !projects.length) return;
         
         const targetProject = currentProject || projects[0];
         const targetUrl = `/${encodeURIComponent(currentOrg.name)}/projects/${targetProject.slug}`;
-        console.log('Root redirect to:', targetUrl);
         router.replace(targetUrl);
-    }, [pathname, currentOrg, projects, currentProject, initState, router]);
+    }, [pathname, currentOrg, projects, currentProject, router]);
 
     const fetchWorkspaces = async () => {
         try {
