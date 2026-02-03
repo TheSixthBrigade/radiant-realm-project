@@ -107,8 +107,12 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
         
         const targetProject = currentProject || projects[0];
         const targetUrl = `/${encodeURIComponent(currentOrg.name)}/projects/${targetProject.slug}`;
-        router.replace(targetUrl);
-    }, [pathname, currentOrg, projects, currentProject, router]);
+        
+        // Use window.location for more reliable redirect
+        if (typeof window !== 'undefined') {
+            window.location.href = targetUrl;
+        }
+    }, [pathname, currentOrg, projects, currentProject]);
 
     const fetchWorkspaces = async () => {
         try {
