@@ -105,7 +105,9 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
         if (!currentOrg || !projects.length) return;
         
         const targetProject = currentProject || projects[0];
-        router.replace(`/${currentOrg.name}/projects/${targetProject.slug}`);
+        const targetUrl = `/${encodeURIComponent(currentOrg.name)}/projects/${targetProject.slug}`;
+        console.log('Root redirect to:', targetUrl);
+        router.replace(targetUrl);
     }, [pathname, currentOrg, projects, currentProject, initState, router]);
 
     const fetchWorkspaces = async () => {
@@ -187,6 +189,21 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
             return;
         }
         
+        // MUST have org name to navigate
+        let orgName = currentOrg?.name;
+        if (!orgName && orgs.length > 0) {
+            orgName = orgs[0].name;
+        }
+        if (!orgName && params?.org) {
+            orgName = decodeURIComponent(params.org as string);
+        }
+        
+        // If still no org name, don't navigate - this shouldn't happen
+        if (!orgName) {
+            console.error('Cannot navigate: no org name available');
+            return;
+        }
+        
         // Clear any pending timeout
         if (navigationTimeoutRef.current) {
             clearTimeout(navigationTimeoutRef.current);
@@ -198,20 +215,9 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
         // Set the project
         setCurrentProject(proj);
         
-        // Navigate - MUST have org name. Use currentOrg first, then try to get from orgs array or URL
-        let orgName = currentOrg?.name;
-        if (!orgName && orgs.length > 0) {
-            orgName = orgs[0].name;
-        }
-        if (!orgName && params?.org) {
-            orgName = decodeURIComponent(params.org as string);
-        }
-        if (!orgName) {
-            orgName = 'Default%20Org'; // Last resort fallback
-        }
-        
+        // Navigate
         const targetUrl = `/${encodeURIComponent(orgName)}/projects/${proj.slug}`;
-        console.log('Navigating to:', targetUrl);
+        console.log('Navigating to:', targetUrl, 'orgName:', orgName, 'currentOrg:', currentOrg);
         router.push(targetUrl);
         
         // Reset navigation state after navigation completes (longer delay)
