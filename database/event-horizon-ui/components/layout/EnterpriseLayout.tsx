@@ -77,6 +77,7 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (hasInitialized.current) return;
         if (!projects.length) return;
+        if (!currentOrg) return; // Wait for org to be set too
         
         // If there's a project in the URL, we MUST set it before showing UI
         if (urlProjectSlug) {
@@ -95,7 +96,7 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
         // No project in URL - we're on /projects page, mark as ready
         hasInitialized.current = true;
         setInitState('ready');
-    }, [urlProjectSlug, projects, setCurrentProject]);
+    }, [urlProjectSlug, projects, setCurrentProject, currentOrg]);
 
     // Handle root redirect - only when on "/" and fully initialized
     useEffect(() => {
@@ -197,9 +198,21 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
         // Set the project
         setCurrentProject(proj);
         
-        // Navigate - use currentOrg or fallback to first org or URL param
-        const orgName = currentOrg?.name || orgs[0]?.name || (params?.org ? decodeURIComponent(params.org as string) : 'Default%20Org');
-        router.push(`/${orgName}/projects/${proj.slug}`);
+        // Navigate - MUST have org name. Use currentOrg first, then try to get from orgs array or URL
+        let orgName = currentOrg?.name;
+        if (!orgName && orgs.length > 0) {
+            orgName = orgs[0].name;
+        }
+        if (!orgName && params?.org) {
+            orgName = decodeURIComponent(params.org as string);
+        }
+        if (!orgName) {
+            orgName = 'Default%20Org'; // Last resort fallback
+        }
+        
+        const targetUrl = `/${encodeURIComponent(orgName)}/projects/${proj.slug}`;
+        console.log('Navigating to:', targetUrl);
+        router.push(targetUrl);
         
         // Reset navigation state after navigation completes (longer delay)
         navigationTimeoutRef.current = setTimeout(() => {
