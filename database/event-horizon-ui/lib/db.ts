@@ -23,7 +23,8 @@ export async function healthCheck(): Promise<boolean> {
     try {
         const client = await pool.connect();
         try {
-            await client.query({ text: 'SELECT 1', timeout: 3000 });
+            await client.query('SET statement_timeout = 3000');
+            await client.query('SELECT 1');
             return true;
         } finally {
             client.release();
