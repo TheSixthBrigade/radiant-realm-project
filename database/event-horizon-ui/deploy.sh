@@ -146,6 +146,8 @@ DB_PORT=5432
 DB_NAME=postgres
 DB_USER=postgres
 DB_PASSWORD=your-super-secret-and-long-postgres-password
+JWT_SECRET=your-super-secret-jwt-signing-key-change-me
+LATTICE_MASTER_KEY=mahmoudwenthardforameliasnowden
 ENVFILE
 
 # Append Google credentials if we have them
