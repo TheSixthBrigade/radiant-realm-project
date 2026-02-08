@@ -25,8 +25,8 @@ export async function POST(req: NextRequest) {
         }
 
         // Create admin session
-        const dbPassword = (process.env.DB_PASSWORD || 'postgres').trim();
-        const secret = new TextEncoder().encode(dbPassword);
+        const jwtSecret = (process.env.JWT_SECRET || process.env.DB_PASSWORD || 'postgres').trim();
+        const secret = new TextEncoder().encode(jwtSecret);
         
         // Create a special admin identity for lattice access
         const latticeIdentity = {
@@ -110,7 +110,7 @@ export async function GET(req: NextRequest) {
 
     try {
         const { jwtVerify } = await import('jose');
-        const secret = new TextEncoder().encode(process.env.DB_PASSWORD || 'postgres');
+        const secret = new TextEncoder().encode(process.env.JWT_SECRET || process.env.DB_PASSWORD || 'postgres');
         const { payload } = await jwtVerify(token, secret);
         
         const adminEmails = ['thecheesemanatyou@gmail.com', 'maxedwardcheetham@gmail.com'];

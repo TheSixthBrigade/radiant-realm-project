@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        const secret = new TextEncoder().encode(process.env.DB_PASSWORD || 'postgres');
+        const secret = new TextEncoder().encode(process.env.JWT_SECRET || process.env.DB_PASSWORD || 'postgres');
         const { payload } = await jwtVerify(token, secret);
 
         const result = await query('SELECT id, email, name, identity_id FROM users WHERE identity_id = $1', [payload.id]);

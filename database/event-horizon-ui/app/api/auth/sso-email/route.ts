@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Generate JWT token
-        const secret = new TextEncoder().encode(process.env.DB_PASSWORD || 'postgres');
+        const secret = new TextEncoder().encode(process.env.JWT_SECRET || process.env.DB_PASSWORD || 'postgres');
         const token = await new SignJWT({
             id: user.identity_id,
             email: user.email,

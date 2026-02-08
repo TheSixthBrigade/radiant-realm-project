@@ -58,11 +58,11 @@ export async function verifyAccess(req: NextRequest, projectId?: string) {
         const token = req.cookies.get('pqc_session')?.value;
         if (!token) return { authorized: false };
 
-        if (!process.env.JWT_SECRET) {
+        if (!process.env.JWT_SECRET && !process.env.DB_PASSWORD) {
             return { authorized: false, error: 'JWT_SECRET not configured' };
         }
 
-        const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+        const secret = new TextEncoder().encode(process.env.JWT_SECRET || process.env.DB_PASSWORD);
         const { payload } = await jwtVerify(token, secret);
 
         // Check if this is a Lattice admin JWT

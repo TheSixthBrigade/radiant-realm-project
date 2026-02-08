@@ -244,7 +244,7 @@ export async function POST(req: NextRequest) {
 }
 
 async function createSSOSession(email: string, name: string, ssoDomain: string) {
-    const secret = new TextEncoder().encode(process.env.DB_PASSWORD || 'postgres');
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET || process.env.DB_PASSWORD || 'postgres');
     const jwt = await new SignJWT({ 
         email,
         id: `sso:${email}`,

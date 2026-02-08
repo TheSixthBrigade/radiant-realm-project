@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     }
 
     const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').trim();
-    const dbPassword = (process.env.DB_PASSWORD || 'postgres').trim();
+    const jwtSecret = (process.env.JWT_SECRET || process.env.DB_PASSWORD || 'postgres').trim();
 
     if (!code) {
         return NextResponse.redirect(`${siteUrl}/login?error=no_code`);
@@ -248,7 +248,7 @@ export async function GET(req: NextRequest) {
         }
 
         // 4. Create Session JWT
-        const secret = new TextEncoder().encode(dbPassword);
+        const secret = new TextEncoder().encode(jwtSecret);
         const jwt = await new SignJWT({ email: userData.email, id: userData.id })
             .setProtectedHeader({ alg: 'HS256' })
             .setIssuedAt()
