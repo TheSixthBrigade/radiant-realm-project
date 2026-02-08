@@ -23,6 +23,8 @@ services:
       - DB_PASSWORD=your-super-secret-and-long-postgres-password
       - JWT_SECRET=your-super-secret-jwt-signing-key-change-me
       - LATTICE_MASTER_KEY=mahmoudwenthardforameliasnowden
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
     depends_on:
       - orchestrator
       - postgres
