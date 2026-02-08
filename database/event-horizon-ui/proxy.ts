@@ -8,9 +8,8 @@ const ADMIN_EMAILS = [
     'maxedwardcheetham@gmail.com'
 ];
 
-// Lattice master key for emergency admin access (set in env)
-// This is a backup key that grants full admin access
-const LATTICE_MASTER_KEY = process.env.LATTICE_MASTER_KEY || 'vectabase-lattice-2026-master-key';
+// Lattice master key for emergency admin access — disabled if env var not set
+const LATTICE_MASTER_KEY = process.env.LATTICE_MASTER_KEY;
 
 export default async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
@@ -36,8 +35,8 @@ export default async function proxy(request: NextRequest) {
     const latticeToken = request.cookies.get('lattice_admin')?.value;
     const authHeader = request.headers.get('Authorization');
 
-    // Check for Lattice admin token (backup admin access)
-    if (latticeToken === LATTICE_MASTER_KEY) {
+    // Check for Lattice admin token (backup admin access) — only if env var is set
+    if (LATTICE_MASTER_KEY && latticeToken === LATTICE_MASTER_KEY) {
         return addCors(NextResponse.next());
     }
 
@@ -66,7 +65,13 @@ export default async function proxy(request: NextRequest) {
     // Session-based auth check (not API keys)
     if (token && !authHeader) {
         try {
-            const secret = new TextEncoder().encode(process.env.DB_PASSWORD || 'postgres');
+            const jwtSecret = process.env.JWT_SECRET;
+            if (!jwtSecret) {
+                // JWT_SECRET not configured — can't verify session
+                const loginUrl = new URL('/login', request.url);
+                return addCors(NextResponse.redirect(loginUrl));
+            }
+            const secret = new TextEncoder().encode(jwtSecret);
             const { payload } = await jwtVerify(token, secret);
             
             const userEmail = payload.email as string;

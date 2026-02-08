@@ -27,5 +27,13 @@ export function useProject() {
     if (context === undefined) {
         throw new Error('useProject must be used within a ProjectProvider');
     }
-    return context;
+
+    const getProjectApiParams = () => {
+        if (!context.currentProject?.id) {
+            throw new Error('No project selected');
+        }
+        return `projectId=${context.currentProject.id}`;
+    };
+
+    return { ...context, getProjectApiParams };
 }

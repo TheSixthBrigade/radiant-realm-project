@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { EnterpriseLayout } from "@/components/layout/EnterpriseLayout";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ProjectProvider } from "@/hooks/useProject";
 
 const inter = Inter({ subsets: ["latin"] });
 const jetbrainsMono = JetBrains_Mono({
@@ -15,8 +17,6 @@ export const metadata: Metadata = {
   robots: "noindex, nofollow",
 };
 
-import { ProjectProvider } from "@/hooks/useProject";
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -25,11 +25,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={jetbrainsMono.variable}>
-        <ProjectProvider>
-          <EnterpriseLayout>
-            {children}
-          </EnterpriseLayout>
-        </ProjectProvider>
+        <ErrorBoundary>
+          <ProjectProvider>
+            <EnterpriseLayout>
+              {children}
+            </EnterpriseLayout>
+          </ProjectProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

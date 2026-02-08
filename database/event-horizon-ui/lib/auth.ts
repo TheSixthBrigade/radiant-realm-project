@@ -3,26 +3,29 @@ import { query } from '@/lib/db';
 import { jwtVerify } from 'jose';
 import { sha256 } from '@/lib/crypto';
 
-// Lattice master key for emergency admin access
-const LATTICE_MASTER_KEY = process.env.LATTICE_MASTER_KEY || 'vectabase-lattice-2026-master-key';
+// Lattice master key for emergency admin access — disabled if env var not set
+const LATTICE_MASTER_KEY = process.env.LATTICE_MASTER_KEY;
 
 export async function verifyAccess(req: NextRequest, projectId?: string) {
     try {
         // Check for Lattice admin cookie first (bypass all other checks)
-        const latticeToken = req.cookies.get('lattice_admin')?.value;
-        if (latticeToken === LATTICE_MASTER_KEY) {
-            // Return lattice admin session
-            const userRes = await query(`
-                SELECT id FROM users WHERE email = 'lattice-admin@vectabase.internal' LIMIT 1
-            `).catch(() => ({ rows: [] }));
-            
-            return {
-                authorized: true,
-                userId: userRes.rows[0]?.id || 0,
-                isAdmin: true,
-                isLatticeAdmin: true,
-                method: 'session'
-            };
+        // Only if LATTICE_MASTER_KEY env var is set — otherwise skip entirely
+        if (LATTICE_MASTER_KEY) {
+            const latticeToken = req.cookies.get('lattice_admin')?.value;
+            if (latticeToken === LATTICE_MASTER_KEY) {
+                // Return lattice admin session
+                const userRes = await query(`
+                    SELECT id FROM users WHERE email = 'lattice-admin@vectabase.internal' LIMIT 1
+                `).catch(() => ({ rows: [] }));
+                
+                return {
+                    authorized: true,
+                    userId: userRes.rows[0]?.id || 0,
+                    isAdmin: true,
+                    isLatticeAdmin: true,
+                    method: 'session'
+                };
+            }
         }
 
         const authHeader = req.headers.get('Authorization');
@@ -55,7 +58,11 @@ export async function verifyAccess(req: NextRequest, projectId?: string) {
         const token = req.cookies.get('pqc_session')?.value;
         if (!token) return { authorized: false };
 
-        const secret = new TextEncoder().encode(process.env.DB_PASSWORD || 'postgres');
+        if (!process.env.JWT_SECRET) {
+            return { authorized: false, error: 'JWT_SECRET not configured' };
+        }
+
+        const secret = new TextEncoder().encode(process.env.JWT_SECRET);
         const { payload } = await jwtVerify(token, secret);
 
         // Check if this is a Lattice admin JWT

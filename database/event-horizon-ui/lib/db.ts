@@ -18,4 +18,19 @@ const pool = globalForDb.pool ?? new Pool({
 if (process.env.NODE_ENV !== 'production') globalForDb.pool = pool;
 
 export const query = (text: string, params?: any[]) => pool.query(text, params);
+
+export async function healthCheck(): Promise<boolean> {
+    try {
+        const client = await pool.connect();
+        try {
+            await client.query({ text: 'SELECT 1', timeout: 3000 });
+            return true;
+        } finally {
+            client.release();
+        }
+    } catch {
+        return false;
+    }
+}
+
 export default pool;

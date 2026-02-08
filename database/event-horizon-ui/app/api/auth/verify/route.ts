@@ -3,7 +3,25 @@ import { query } from '@/lib/db';
 import { verifyAccess } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
-    const auth = await verifyAccess(req);
+    let auth;
+    try {
+        const authPromise = verifyAccess(req);
+        const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Auth verification timeout')), 5000)
+        );
+        auth = await Promise.race([authPromise, timeoutPromise]);
+    } catch (error: any) {
+        if (error.message === 'Auth verification timeout') {
+            return NextResponse.json(
+                { authorized: false, error: 'Service temporarily unavailable' },
+                { status: 503 }
+            );
+        }
+        return NextResponse.json(
+            { authorized: false, error: error.message || 'Auth verification failed' },
+            { status: 500 }
+        );
+    }
 
     if (!auth.authorized) {
         return NextResponse.json({
@@ -63,8 +81,18 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({ authorized: true, method: auth.method });
     } catch (error: any) {
-        console.error('[Verify API] 500 Error:', error.message);
+        console.error('[Verify API] Error:', error.message);
         console.error(error.stack);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        // Return 503 for database connection failures, 500 for other errors
+        const isConnectionError = error.message?.includes('connect') ||
+            error.message?.includes('timeout') ||
+            error.message?.includes('ECONNREFUSED') ||
+            error.code === 'ECONNREFUSED' ||
+            error.code === 'ETIMEDOUT';
+        const status = isConnectionError ? 503 : 500;
+        return NextResponse.json(
+            { authorized: false, error: isConnectionError ? 'Service temporarily unavailable' : error.message },
+            { status }
+        );
     }
 }

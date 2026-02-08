@@ -30,9 +30,10 @@ import { useUser } from "@/hooks/useUser";
 import { useProject } from "@/hooks/useProject";
 
 export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
-    const { user, loading } = useUser();
-    const { currentProject, setCurrentProject, projects, setProjects } = useProject();
     const pathname = usePathname();
+    const isPublicRoute = pathname === '/login' || pathname.startsWith('/api/auth');
+    const { user, loading } = useUser({ skip: isPublicRoute });
+    const { currentProject, setCurrentProject, projects, setProjects } = useProject();
     const router = useRouter();
     const params = useParams();
     const [orgs, setOrgs] = useState<any[]>([]);
@@ -51,6 +52,22 @@ export function EnterpriseLayout({ children }: { children: React.ReactNode }) {
     // Track if we've done initial data load
     const [dataLoaded, setDataLoaded] = useState(false);
     
+    // Safety timeout: if on root page and data hasn't loaded in 10s, redirect to login
+    useEffect(() => {
+        if (pathname !== '/') return;
+        
+        const safetyTimeout = setTimeout(() => {
+            if (!dataLoaded) {
+                console.warn('Safety timeout: redirecting to login after 10s');
+                if (typeof window !== 'undefined') {
+                    window.location.href = '/login';
+                }
+            }
+        }, 10000);
+        
+        return () => clearTimeout(safetyTimeout);
+    }, [pathname, dataLoaded]);
+
     // CRITICAL FIX: Use refs to always have latest values in callbacks (avoids stale closure issues)
     const currentOrgRef = useRef<any>(null);
     const orgsRef = useRef<any[]>([]);

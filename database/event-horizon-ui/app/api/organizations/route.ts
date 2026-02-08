@@ -2,20 +2,26 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { jwtVerify } from 'jose';
 
-// Lattice master key for emergency admin access
-const LATTICE_MASTER_KEY = process.env.LATTICE_MASTER_KEY || 'vectabase-lattice-2026-master-key';
+// Lattice master key for emergency admin access — no hardcoded default
+const LATTICE_MASTER_KEY = process.env.LATTICE_MASTER_KEY;
 
 async function getUser(req: NextRequest) {
-    // Check for Lattice admin first
-    const latticeToken = req.cookies.get('lattice_admin')?.value;
-    if (latticeToken === LATTICE_MASTER_KEY) {
-        return { id: 0, email: 'lattice-admin@vectabase.internal', isLatticeAdmin: true };
+    // Check for Lattice admin first — only if env var is set
+    if (LATTICE_MASTER_KEY) {
+        const latticeToken = req.cookies.get('lattice_admin')?.value;
+        if (latticeToken === LATTICE_MASTER_KEY) {
+            return { id: 0, email: 'lattice-admin@vectabase.internal', isLatticeAdmin: true };
+        }
     }
 
     const token = req.cookies.get('pqc_session')?.value;
     if (!token) return null;
+
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) return null;
+
     try {
-        const secret = new TextEncoder().encode(process.env.DB_PASSWORD || 'postgres');
+        const secret = new TextEncoder().encode(jwtSecret);
         const { payload } = await jwtVerify(token, secret);
         
         // Check if JWT is for Lattice admin
@@ -23,8 +29,9 @@ async function getUser(req: NextRequest) {
             return { id: 0, email: payload.email as string, isLatticeAdmin: true };
         }
         
-        const result = await query('SELECT id, email FROM users WHERE identity_id = $1', [payload.id]);
-        return result.rows[0];
+        // FIXED: Look up by email, not identity_id, to match verifyAccess()
+        const result = await query('SELECT id, email FROM users WHERE email = $1', [payload.email]);
+        return result.rows[0] || null;
     } catch {
         return null;
     }

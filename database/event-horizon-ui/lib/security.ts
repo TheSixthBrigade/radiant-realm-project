@@ -12,7 +12,7 @@ import crypto from 'crypto';
 // CONSTANTS
 // ============================================
 
-const JWT_SECRET = new TextEncoder().encode(process.env.DB_PASSWORD || 'postgres');
+const JWT_SECRET = process.env.JWT_SECRET ? new TextEncoder().encode(process.env.JWT_SECRET) : null;
 const MASTER_ENCRYPTION_KEY = process.env.MASTER_ENCRYPTION_KEY || process.env.DB_PASSWORD || 'default-key-change-me';
 
 // Rate limit configs per endpoint type
@@ -115,6 +115,10 @@ export interface AuthUser {
 }
 
 export async function verifyAuth(req: NextRequest): Promise<{ user: AuthUser | null; error?: string }> {
+    if (!JWT_SECRET) {
+        return { user: null, error: 'JWT_SECRET not configured' };
+    }
+
     const token = req.cookies.get('pqc_session')?.value;
     
     if (!token) {
@@ -167,6 +171,10 @@ export async function verifyAuth(req: NextRequest): Promise<{ user: AuthUser | n
 
 // Create new JWT token
 export async function createAuthToken(user: AuthUser, expiresIn: string = '7d'): Promise<string> {
+    if (!JWT_SECRET) {
+        throw new Error('JWT_SECRET not configured');
+    }
+
     return new SignJWT({
         id: user.id,
         email: user.email,

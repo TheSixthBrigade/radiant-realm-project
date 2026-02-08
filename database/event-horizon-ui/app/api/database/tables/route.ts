@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { verifyAccess } from '@/lib/auth';
-import { checkRateLimit, getRateLimitHeaders } from '@/lib/rateLimit';
+import { checkRateLimit } from '@/lib/rateLimit';
+import { sanitizeSqlIdentifier, checkProjectAccess } from '@/lib/security';
 
 // System/internal tables that should NEVER be shown in the Table Editor
 const INTERNAL_TABLES = [
@@ -39,12 +40,50 @@ const INTERNAL_TABLES = [
 ];
 
 export async function GET(req: NextRequest) {
-    const { authorized, projectId: authProjectId } = await verifyAccess(req);
+    const { authorized, projectId: authProjectId, userId, method } = await verifyAccess(req);
     if (!authorized) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
-    const schema = searchParams.get('schema') || 'public';
-    const projectId = searchParams.get('projectId') || authProjectId;
+    const schemaRaw = searchParams.get('schema') || 'public';
+    const projectIdParam = searchParams.get('projectId');
+
+    // Sanitize the schema parameter
+    const schema = sanitizeSqlIdentifier(schemaRaw);
+
+    // Determine projectId: use authProjectId (API key) or query param (session)
+    let projectId: number | null = authProjectId || null;
+
+    // For session auth without authProjectId, require projectId query param
+    if (method === 'session' && !authProjectId) {
+        if (!projectIdParam) {
+            return NextResponse.json(
+                { error: 'Project ID is required for session-based access' },
+                { status: 400 }
+            );
+        }
+
+        const pid = parseInt(projectIdParam, 10);
+        if (isNaN(pid)) {
+            return NextResponse.json(
+                { error: 'Project ID is required for session-based access' },
+                { status: 400 }
+            );
+        }
+
+        // Verify user has access to this project
+        const hasAccess = await checkProjectAccess(pid, userId);
+        if (!hasAccess) {
+            return NextResponse.json(
+                { error: 'Access denied to this project' },
+                { status: 403 }
+            );
+        }
+
+        projectId = pid;
+    } else if (projectIdParam && !authProjectId) {
+        // Fallback: use projectIdParam if available
+        projectId = parseInt(projectIdParam, 10) || null;
+    }
 
     // Rate limiting check (currently unlimited but tracks usage)
     const rateCheck = await checkRateLimit(projectId || 0);
@@ -62,8 +101,9 @@ export async function GET(req: NextRequest) {
             `);
 
             if (registryExists.rows.length === 0) {
-                // Registry doesn't exist - fall back to showing all tables with project_id column
-                console.log('_table_registry not found, falling back to legacy mode');
+                // Registry doesn't exist - fall back to showing only tables that have
+                // a project_id column with matching rows (not all tables)
+                console.log('_table_registry not found, falling back to legacy mode with project_id filtering');
                 const placeholders = INTERNAL_TABLES.map((_, i) => `$${i + 2}`).join(', ');
                 const sql = `
                     SELECT t.table_name, t.table_type
@@ -73,19 +113,38 @@ export async function GET(req: NextRequest) {
                     AND t.table_name NOT IN (${placeholders})
                     ORDER BY t.table_name
                 `;
-                const result = await query(sql, [schema, ...INTERNAL_TABLES]);
-                
-                const tablesWithCounts = await Promise.all(
-                    result.rows.map(async (table: any) => {
+                const allTables = await query(sql, [schema, ...INTERNAL_TABLES]);
+
+                // Filter to only tables that have a project_id column
+                const tablesWithProjectId: any[] = [];
+                for (const table of allTables.rows) {
+                    const safeTableName = sanitizeSqlIdentifier(table.table_name);
+                    const hasProjectIdCol = await query(`
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_schema = $1 AND table_name = $2 AND column_name = 'project_id'
+                    `, [schema, safeTableName]);
+
+                    if (hasProjectIdCol.rows.length > 0) {
+                        // Check if this table has rows matching the current projectId
                         try {
-                            const countResult = await query(`SELECT COUNT(*) as count FROM "${schema}"."${table.table_name}"`);
-                            return { ...table, row_count_estimate: parseInt(countResult.rows[0]?.count || '0') };
+                            const rowCheck = await query(
+                                `SELECT COUNT(*) as count FROM "${schema}"."${safeTableName}" WHERE project_id = $1`,
+                                [projectId]
+                            );
+                            const count = parseInt(rowCheck.rows[0]?.count || '0');
+                            if (count > 0) {
+                                tablesWithProjectId.push({
+                                    ...table,
+                                    row_count_estimate: count
+                                });
+                            }
                         } catch {
-                            return { ...table, row_count_estimate: 0 };
+                            // Skip tables that error on query
                         }
-                    })
-                );
-                return NextResponse.json(tablesWithCounts);
+                    }
+                }
+
+                return NextResponse.json(tablesWithProjectId);
             }
 
             // Registry exists - get tables from registry for this project
@@ -102,16 +161,17 @@ export async function GET(req: NextRequest) {
             // Get details for owned tables only
             const tablesWithCounts = await Promise.all(
                 ownedTables.map(async (tableName: string) => {
+                    const safeTableName = sanitizeSqlIdentifier(tableName);
                     try {
                         // Verify table still exists
                         const exists = await query(`
                             SELECT 1 FROM information_schema.tables 
                             WHERE table_schema = $1 AND table_name = $2
-                        `, [schema, tableName]);
+                        `, [schema, safeTableName]);
 
                         if (exists.rows.length === 0) {
                             // Table was deleted externally, clean up registry
-                            await query(`DELETE FROM _table_registry WHERE table_name = $1`, [tableName]);
+                            await query(`DELETE FROM _table_registry WHERE table_name = $1`, [safeTableName]);
                             return null;
                         }
 
@@ -119,22 +179,22 @@ export async function GET(req: NextRequest) {
                         const colCount = await query(`
                             SELECT COUNT(*) as count FROM information_schema.columns 
                             WHERE table_schema = $1 AND table_name = $2
-                        `, [schema, tableName]);
+                        `, [schema, safeTableName]);
 
                         // Get row count for this project
                         const rowCount = await query(
-                            `SELECT COUNT(*) as count FROM "${schema}"."${tableName}" WHERE project_id = $1`,
+                            `SELECT COUNT(*) as count FROM "${schema}"."${safeTableName}" WHERE project_id = $1`,
                             [projectId]
                         );
 
                         return {
-                            table_name: tableName,
+                            table_name: safeTableName,
                             table_type: 'BASE TABLE',
                             column_count: parseInt(colCount.rows[0]?.count || '0'),
                             row_count_estimate: parseInt(rowCount.rows[0]?.count || '0')
                         };
                     } catch (e) {
-                        console.error(`Error getting table ${tableName}:`, e);
+                        console.error(`Error getting table ${safeTableName}:`, e);
                         return null;
                     }
                 })
@@ -167,8 +227,9 @@ export async function GET(req: NextRequest) {
         // Get row counts
         const tablesWithCounts = await Promise.all(
             result.rows.map(async (table: any) => {
+                const safeTableName = sanitizeSqlIdentifier(table.table_name);
                 try {
-                    const countResult = await query(`SELECT COUNT(*) as count FROM "${schema}"."${table.table_name}"`);
+                    const countResult = await query(`SELECT COUNT(*) as count FROM "${schema}"."${safeTableName}"`);
                     return { ...table, row_count_estimate: parseInt(countResult.rows[0]?.count || '0') };
                 } catch {
                     return { ...table, row_count_estimate: 0 };
