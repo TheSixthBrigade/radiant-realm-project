@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ShoppingCart, Star, Download, Edit3, Settings } from 'lucide-react';
+import { ShoppingCart, Star, Download, Edit3, Settings, Smartphone, Tablet, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { PageBuilderSidebar } from '@/components/PageBuilderSidebar';
@@ -25,6 +25,8 @@ import { SiteHeader, HeaderConfig, DEFAULT_HEADER_CONFIG, NavLink } from '@/comp
 import { DEFAULT_ROADMAP_SETTINGS } from '@/lib/roadmapThemes';
 import { DEFAULT_COMMUNITY_SETTINGS, CommunitySettings } from '@/lib/communitySettings';
 import { DEFAULT_ABOUT_SETTINGS, DEFAULT_TOS_SETTINGS, AboutPageSettings, TosPageSettings } from '@/lib/pageSettings';
+import { STORE_TEMPLATES, TEMPLATE_CATEGORIES } from '@/lib/storeTemplates';
+import { applyTemplate } from '@/lib/applyTemplate';
 
 const DEFAULT_PAGES: StorePage[] = [
   {
@@ -79,6 +81,10 @@ const UserSite = () => {
     { id: 'products', type: 'product_grid', order: 2, title: 'Products', columns: 4, show_all: true },
     { id: 'footer', type: 'footer', order: 3, text: 'Powered by Vectabse Marketplace', show_social: true },
   ]);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [templateCategory, setTemplateCategory] = useState<string>('all');
+  const [templateSearch, setTemplateSearch] = useState<string>('');
+  const [previewWidth, setPreviewWidth] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
   const [currentSlide, setCurrentSlide] = useState<Record<string, number>>({});
   const [selectedCollections, setSelectedCollections] = useState<Record<string, string | null>>({});
 
@@ -219,10 +225,26 @@ const UserSite = () => {
 
   const fetchWebsite = async () => {
     try {
-      const { data: profiles } = await supabase.from('profiles').select('*').eq('is_creator', true);
-      const profile = profiles?.find(p => {
-        const profileSlug = p.display_name?.toLowerCase().replace(/\s+/g, '-');
-        return profileSlug === actualSlug || p.user_id === actualSlug;
+      const slug = (actualSlug || '').toLowerCase();
+      const nameFromSlug = slug.replace(/-/g, ' ');
+
+      // Use % wildcards for ilike — exact match without % only works if display_name === value exactly.
+      // Wildcard search fetches candidates, then we match client-side by slug.
+      const { data: candidates } = await supabase
+        .from('profiles')
+        .select('*')
+        .ilike('display_name', `%${nameFromSlug}%`)
+        .limit(20);
+
+      const profile = (candidates || []).find(p => {
+        if (!p.display_name) return false;
+        const dn = p.display_name.toLowerCase();
+        const profileSlug = dn.replace(/\s+/g, '-');
+        return (
+          profileSlug === slug ||
+          dn === slug ||
+          dn === nameFromSlug
+        );
       });
 
       if (!profile) throw new Error('Not found');
@@ -316,6 +338,9 @@ const UserSite = () => {
       // Load saved page sections if they exist
       if (websiteSettings.page_sections && Array.isArray(websiteSettings.page_sections)) {
         setPageSections(websiteSettings.page_sections);
+      } else if (user && profile && user.id === profile.user_id) {
+        // Owner with no saved sections — show template picker
+        setShowTemplatePicker(true);
       }
 
       // Load multi-page settings
@@ -361,6 +386,7 @@ const UserSite = () => {
   };
 
   const handleSave = async () => {
+    if (!isOwner) return;
     setSaving(true);
     try {
       const { error } = await supabase
@@ -382,11 +408,11 @@ const UserSite = () => {
 
       if (error) throw error;
 
-      toast.success("Changes saved! Refreshing...");
-      setTimeout(() => window.location.reload(), 500);
+      toast.success("Saved!");
+      setSaving(false);
     } catch (error) {
       console.error('Error saving:', error);
-      toast.error("Failed to save changes");
+      toast.error("Failed to save changes. Your edits are still here.");
       setSaving(false);
     }
   };
@@ -399,6 +425,11 @@ const UserSite = () => {
     // Navigate to checkout page with product ID and affiliate ref using robust utility
     window.location.href = buildCheckoutUrl(productId);
   };
+
+  const buyButtonProps = !sellerStripeVerified ? {
+    title: "Seller hasn't connected Stripe — purchases unavailable",
+    style: { opacity: 0.5, cursor: 'not-allowed' },
+  } : {};
 
   if (loading) return <div className='min-h-screen flex items-center justify-center'><div className='animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600'></div></div>;
   if (!website) return <div className='min-h-screen flex items-center justify-center'><div className='text-center'><h1 className='text-4xl font-bold mb-4'>Website Not Found</h1></div></div>;
@@ -500,9 +531,124 @@ const UserSite = () => {
 
       {/* Editor button - LEFT side for ALL pages (home and roadmap) */}
       {isOwner && !editorOpen && (
-        <button onClick={() => setEditorOpen(true)} className='fixed left-0 top-1/2 -translate-y-1/2 bg-green-600 text-white p-3 rounded-r-lg shadow-lg z-50 hover:bg-green-700'>
+        <button onClick={() => setEditorOpen(true)} className='fixed left-0 top-1/2 -translate-y-1/2 bg-violet-600 text-white p-3 rounded-r-lg shadow-lg z-50 hover:bg-violet-700'>
           <Edit3 className='w-5 h-5' />
         </button>
+      )}
+
+      {/* Preview width toolbar - shown when editor is open */}
+      {isOwner && editorOpen && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-[#0a0a0a] border border-white/10 rounded-xl p-1 shadow-xl">
+          {([
+            { id: 'mobile', icon: Smartphone, label: '375px' },
+            { id: 'tablet', icon: Tablet, label: '768px' },
+            { id: 'desktop', icon: Monitor, label: 'Full' },
+          ] as const).map(({ id, icon: Icon, label }) => (
+            <button
+              key={id}
+              onClick={() => setPreviewWidth(id)}
+              title={label}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                previewWidth === id ? 'bg-violet-600 text-white' : 'text-white/40 hover:text-white'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Template picker modal */}
+      {showTemplatePicker && isOwner && (
+        <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4">
+          <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="p-6 border-b border-white/10 flex items-start justify-between">
+              <div>
+                <h2 className="text-2xl font-black text-white">Choose a Template</h2>
+                <p className="text-white/40 text-sm mt-1">40 unique designs — pick one and customise everything.</p>
+              </div>
+              <button onClick={() => setShowTemplatePicker(false)} className="text-white/40 hover:text-white transition-colors text-sm">
+                Skip →
+              </button>
+            </div>
+
+            {/* Filters */}
+            <div className="px-6 pt-4 pb-3 border-b border-white/[0.06] space-y-3">
+              {/* Search */}
+              <input
+                type="text"
+                placeholder="Search templates..."
+                value={templateSearch}
+                onChange={e => setTemplateSearch(e.target.value)}
+                className="w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-white text-sm placeholder-white/30 outline-none focus:border-violet-500/50"
+              />
+              {/* Category tabs */}
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                {TEMPLATE_CATEGORIES.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setTemplateCategory(cat)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all capitalize ${
+                      templateCategory === cat
+                        ? 'bg-violet-600 text-white'
+                        : 'bg-white/[0.05] text-white/50 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Template Grid */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {STORE_TEMPLATES
+                  .filter(t => templateCategory === 'all' || t.category === templateCategory)
+                  .filter(t => !templateSearch || t.name.toLowerCase().includes(templateSearch.toLowerCase()) || t.description.toLowerCase().includes(templateSearch.toLowerCase()))
+                  .map(template => (
+                    <button
+                      key={template.id}
+                      onClick={() => {
+                        const { sections, settings } = applyTemplate(template, editSettings);
+                        setPageSections(sections);
+                        setEditSettings(prev => ({ ...prev, ...settings }));
+                        setShowTemplatePicker(false);
+                        setTemplateCategory('all');
+                        setTemplateSearch('');
+                      }}
+                      className="group text-left rounded-xl overflow-hidden border border-white/10 hover:border-violet-500/60 transition-all hover:scale-[1.02]"
+                    >
+                      {/* Preview */}
+                      <div className="h-24 w-full relative" style={{ background: template.preview }}>
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+                          <span className="opacity-0 group-hover:opacity-100 transition-all bg-violet-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg">
+                            Apply
+                          </span>
+                        </div>
+                      </div>
+                      {/* Info */}
+                      <div className="p-3 bg-[#111]">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <p className="text-white text-sm font-semibold truncate">{template.name}</p>
+                          <span className="text-[10px] text-white/30 capitalize ml-1 shrink-0">{template.category}</span>
+                        </div>
+                        <p className="text-white/40 text-xs line-clamp-1">{template.description}</p>
+                      </div>
+                    </button>
+                  ))}
+              </div>
+              {STORE_TEMPLATES
+                .filter(t => templateCategory === 'all' || t.category === templateCategory)
+                .filter(t => !templateSearch || t.name.toLowerCase().includes(templateSearch.toLowerCase()) || t.description.toLowerCase().includes(templateSearch.toLowerCase()))
+                .length === 0 && (
+                <div className="text-center py-12 text-white/30">No templates match your search.</div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* PageBuilderSidebar - LEFT side for both home and roadmap pages */}
@@ -615,7 +761,17 @@ const UserSite = () => {
       {currentPageId === 'roadmap' || pageType === 'roadmap' ? (
         // Check subscription tier - only Pro, Pro+, Enterprise can use roadmap
         ['pro', 'pro_plus', 'enterprise'].includes(ownerSubscriptionTier) ? (
-          <div className={isOwner && editorOpen ? 'ml-[340px] pl-4 transition-all' : ''}>
+          <div
+            className="transition-all overflow-hidden"
+            style={{
+              marginLeft: isOwner && editorOpen ? '340px' : undefined,
+              width: isOwner && editorOpen
+                ? previewWidth === 'mobile' ? '375px'
+                  : previewWidth === 'tablet' ? '768px'
+                  : undefined
+                : undefined,
+            }}
+          >
             {/* Check if viewing specific product roadmap or dashboard */}
             {selectedRoadmapProductId || urlProductId ? (
               <RoadmapPage 
@@ -683,7 +839,17 @@ const UserSite = () => {
         )
       ) : (currentPageId === 'about' || pageType === 'about') ? (
         // About Page
-        <div className={isOwner && editorOpen ? 'ml-[340px] pl-4 transition-all' : ''}>
+        <div
+          className="transition-all mx-auto"
+          style={{
+            marginLeft: isOwner && editorOpen ? '340px' : undefined,
+            maxWidth: isOwner && editorOpen
+              ? previewWidth === 'mobile' ? '375px'
+                : previewWidth === 'tablet' ? '768px'
+                : undefined
+              : undefined,
+          }}
+        >
           <AboutPage 
             settings={aboutSettings}
             storeName={website.profiles?.display_name}
@@ -691,7 +857,17 @@ const UserSite = () => {
         </div>
       ) : (currentPageId === 'tos' || pageType === 'tos') ? (
         // Terms of Service Page
-        <div className={isOwner && editorOpen ? 'ml-[340px] pl-4 transition-all' : ''}>
+        <div
+          className="transition-all mx-auto"
+          style={{
+            marginLeft: isOwner && editorOpen ? '340px' : undefined,
+            maxWidth: isOwner && editorOpen
+              ? previewWidth === 'mobile' ? '375px'
+                : previewWidth === 'tablet' ? '768px'
+                : undefined
+              : undefined,
+          }}
+        >
           <TosPage 
             settings={tosSettings}
             storeName={website.profiles?.display_name}
@@ -699,7 +875,17 @@ const UserSite = () => {
         </div>
       ) : (currentPageId === 'affiliate' || pageType === 'affiliate') ? (
         // Affiliate Program Page
-        <div className={isOwner && editorOpen ? 'ml-[340px] pl-4 transition-all' : ''}>
+        <div
+          className="transition-all mx-auto"
+          style={{
+            marginLeft: isOwner && editorOpen ? '340px' : undefined,
+            maxWidth: isOwner && editorOpen
+              ? previewWidth === 'mobile' ? '375px'
+                : previewWidth === 'tablet' ? '768px'
+                : undefined
+              : undefined,
+          }}
+        >
           <div className="min-h-screen py-12 px-4" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)' }}>
             <div className="max-w-4xl mx-auto">
               <AffiliateManager 
@@ -711,11 +897,21 @@ const UserSite = () => {
           </div>
         </div>
       ) : (
-        <div className={isOwner && editorOpen ? 'ml-64 transition-all' : ''}>
+        <div
+          className="transition-all mx-auto"
+          style={{
+            marginLeft: isOwner && editorOpen ? '340px' : undefined,
+            maxWidth: isOwner && editorOpen
+              ? previewWidth === 'mobile' ? '375px'
+                : previewWidth === 'tablet' ? '768px'
+                : undefined
+              : undefined,
+          }}
+        >
           {currentPageId === 'community' || pageType === 'community' ? (
           // Community Forums Page - Pro feature
           ['pro', 'pro_plus', 'enterprise'].includes(ownerSubscriptionTier) ? (
-            <div className={isOwner && editorOpen ? 'ml-[340px] pl-4 transition-all' : ''}>
+            <div>
               <CommunityForums 
                 creatorId={website.user_id}
                 isOwner={isOwner}
@@ -1042,7 +1238,15 @@ const UserSite = () => {
                   )}
                   {products.length === 0 ? (
                     <div className='text-center py-16 rounded-lg' style={{ backgroundColor: cardBgColor }}>
-                      <p className='text-lg' style={{ color: textColor }}>No products available yet.</p>
+                      <p className='text-lg mb-4' style={{ color: textColor }}>No products yet.</p>
+                      {isOwner && (
+                        <a
+                          href="/add-product"
+                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold transition-colors"
+                        >
+                          + Add your first product
+                        </a>
+                      )}
                     </div>
                   ) : (
                     <div className={`grid grid-cols-1 ${gridColsClass} ${cardSpacing}`}>
@@ -1538,7 +1742,12 @@ const UserSite = () => {
                       <h2 className='text-4xl font-bold mb-4'>{featuredProduct.title}</h2>
                       <p className='text-lg mb-6 opacity-80'>{featuredProduct.description}</p>
                       <div className='text-5xl font-bold mb-8'>${featuredProduct.price.toFixed(2)}</div>
-                      <Button onClick={() => handlePurchase(featuredProduct.id)} className={`primary-btn ${buttonSize}`}>
+                      <Button
+                        onClick={() => handlePurchase(featuredProduct.id)}
+                        className={`primary-btn ${buttonSize}`}
+                        disabled={!sellerStripeVerified}
+                        title={!sellerStripeVerified ? "Seller hasn't connected Stripe — purchases unavailable" : undefined}
+                      >
                         <ShoppingCart className='w-5 h-5 mr-2' />Buy Now
                       </Button>
                     </div>

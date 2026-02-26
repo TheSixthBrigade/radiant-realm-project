@@ -14,123 +14,82 @@ import { toast } from "sonner";
 // Animated gradient canvas component - Dark Grey with subtle accents
 const GradientCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     let animationId: number;
     let time = 0;
-    
+
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     };
-    
     resize();
     window.addEventListener('resize', resize);
-    
+
     const animate = () => {
       time += 0.002;
-      
-      // Create gradient - dark greys with visible green accents
-      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      
-      // Animated offsets for flowing effect
-      const offset1 = (Math.sin(time * 0.8) + 1) / 2;
-      const offset2 = (Math.sin(time * 0.8 + 2) + 1) / 2;
-      
-      // Very dark charcoal base
-      gradient.addColorStop(0, `hsl(160, 20%, ${6 + Math.sin(time) * 2}%)`);
-      // Dark grey with green tint
-      gradient.addColorStop(0.2, `hsl(155, 25%, ${10 + Math.sin(time + 1) * 2}%)`);
-      // More visible green zone
-      gradient.addColorStop(offset1 * 0.2 + 0.35, `hsl(${152 + Math.sin(time) * 8}, ${35 + Math.sin(time) * 10}%, ${16 + Math.sin(time) * 4}%)`);
-      // Green-grey blend
-      gradient.addColorStop(0.55, `hsl(${155 + Math.sin(time + 2) * 10}, ${25 + Math.sin(time) * 8}%, ${14 + Math.sin(time) * 3}%)`);
-      // Dark grey with hint of green
-      gradient.addColorStop(offset2 * 0.15 + 0.7, `hsl(160, 15%, ${9 + Math.sin(time + 3) * 2}%)`);
-      // Almost black with green undertone
-      gradient.addColorStop(1, `hsl(155, 20%, ${5 + Math.sin(time + 4) * 2}%)`);
-      
-      ctx.fillStyle = gradient;
+
+      // Pure black base
+      ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Flowing waves with prominent green accents
+
+      // Subtle violet radial glow — bottom left
       ctx.globalCompositeOperation = 'screen';
-      for (let i = 0; i < 5; i++) {
-        ctx.beginPath();
-        ctx.moveTo(0, canvas.height);
-        
-        for (let x = 0; x <= canvas.width; x += 6) {
-          const y = canvas.height * (0.35 + i * 0.12) + 
-            Math.sin(x * 0.002 + time * 1.5 + i * 0.8) * 100 +
-            Math.sin(x * 0.004 + time * 1.2 + i * 1.2) * 50 +
-            Math.cos(x * 0.001 + time + i) * 70;
-          ctx.lineTo(x, y);
-        }
-        
-        ctx.lineTo(canvas.width, canvas.height);
-        ctx.closePath();
-        
-        // Much more visible green waves
-        const alpha = 0.12 - i * 0.02;
-        ctx.fillStyle = i % 2 === 0 
-          ? `rgba(34, 197, 94, ${alpha})` // bright green
-          : `rgba(16, 185, 129, ${alpha})`; // emerald
-        ctx.fill();
-      }
-      
-      // Add glowing green orbs
-      ctx.globalCompositeOperation = 'screen';
-      for (let i = 0; i < 50; i++) {
+      const glow1 = ctx.createRadialGradient(
+        canvas.width * 0.15, canvas.height * 0.85, 0,
+        canvas.width * 0.15, canvas.height * 0.85, canvas.width * 0.55
+      );
+      glow1.addColorStop(0, `rgba(124, 58, 237, ${0.08 + Math.sin(time) * 0.02})`);
+      glow1.addColorStop(0.5, `rgba(109, 40, 217, ${0.03 + Math.sin(time + 1) * 0.01})`);
+      glow1.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow1;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Subtle violet radial glow — top right
+      const glow2 = ctx.createRadialGradient(
+        canvas.width * 0.85, canvas.height * 0.15, 0,
+        canvas.width * 0.85, canvas.height * 0.15, canvas.width * 0.45
+      );
+      glow2.addColorStop(0, `rgba(139, 92, 246, ${0.06 + Math.sin(time * 0.7 + 2) * 0.02})`);
+      glow2.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow2;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Floating violet particles
+      for (let i = 0; i < 40; i++) {
         const x = (Math.sin(time * 0.3 + i * 47) + 1) / 2 * canvas.width;
         const y = (Math.cos(time * 0.2 + i * 31) + 1) / 2 * canvas.height;
-        const size = 2 + Math.sin(time + i) * 1.5;
-        const alpha = 0.25 + Math.sin(time * 2 + i) * 0.15;
-        
+        const size = 1 + Math.sin(time + i) * 0.8;
+        const alpha = 0.08 + Math.sin(time * 2 + i) * 0.04;
         ctx.beginPath();
         ctx.arc(x, y, size, 0, Math.PI * 2);
-        // Mostly green particles with some grey
-        ctx.fillStyle = i % 4 === 0 
-          ? `rgba(34, 197, 94, ${alpha})` // green
-          : i % 4 === 1
-          ? `rgba(16, 185, 129, ${alpha})` // emerald
-          : i % 4 === 2
-          ? `rgba(52, 211, 153, ${alpha})` // light emerald
-          : `rgba(100, 116, 139, ${alpha * 0.5})`; // subtle grey
+        ctx.fillStyle = i % 3 === 0
+          ? `rgba(139, 92, 246, ${alpha})`
+          : i % 3 === 1
+          ? `rgba(124, 58, 237, ${alpha})`
+          : `rgba(167, 139, 250, ${alpha * 0.6})`;
         ctx.fill();
       }
-      
-      // Add a subtle green glow in corners
-      const glowGradient = ctx.createRadialGradient(
-        canvas.width * 0.1, canvas.height * 0.9, 0,
-        canvas.width * 0.1, canvas.height * 0.9, canvas.width * 0.5
-      );
-      glowGradient.addColorStop(0, `rgba(34, 197, 94, ${0.15 + Math.sin(time) * 0.05})`);
-      glowGradient.addColorStop(0.5, `rgba(16, 185, 129, ${0.05 + Math.sin(time + 1) * 0.02})`);
-      glowGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = glowGradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
+
       ctx.globalCompositeOperation = 'source-over';
       animationId = requestAnimationFrame(animate);
     };
-    
+
     animate();
-    
     return () => {
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', resize);
     };
   }, []);
-  
+
   return (
-    <canvas 
-      ref={canvasRef} 
+    <canvas
+      ref={canvasRef}
       className="fixed inset-0 w-full h-full"
       style={{ zIndex: 0 }}
     />
@@ -475,8 +434,8 @@ const DeveloperObfuscator = () => {
 
                       {/* Daily Remaining */}
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                          <Zap className="w-5 h-5 text-green-400" />
+                        <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                          <Zap className="w-5 h-5 text-violet-400" />
                         </div>
                         <div>
                           <p className="text-white/50 text-xs">Daily Remaining</p>
@@ -484,7 +443,7 @@ const DeveloperObfuscator = () => {
                             {tier === 'free' ? (
                               <span className="text-white/40">Credits only</span>
                             ) : dailyRemaining === -1 ? (
-                              <span className="text-green-400">Unlimited</span>
+                              <span className="text-violet-400">Unlimited</span>
                             ) : (
                               <>{dailyRemaining} / {dailyLimit}</>
                             )}
@@ -551,9 +510,9 @@ const DeveloperObfuscator = () => {
                 onDrop={handleDrop}
                 className={`relative rounded-2xl border-2 border-dashed transition-all duration-300 cursor-pointer ${
                   isDragging 
-                    ? 'border-green-400 bg-green-400/10' 
+                    ? 'border-violet-400 bg-violet-400/10' 
                     : uploadedFile 
-                    ? 'border-green-500/50 bg-green-500/5' 
+                    ? 'border-violet-500/50 bg-violet-500/5' 
                     : 'border-white/20 bg-black/30 hover:border-white/40 hover:bg-black/40'
                 } backdrop-blur-xl`}
               >
@@ -561,8 +520,8 @@ const DeveloperObfuscator = () => {
                   <div className="p-8">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-xl bg-green-500/20 flex items-center justify-center">
-                          <Code className="w-7 h-7 text-green-400" />
+                        <div className="w-14 h-14 rounded-xl bg-violet-500/20 flex items-center justify-center">
+                          <Code className="w-7 h-7 text-violet-400" />
                         </div>
                         <div>
                           <p className="text-white font-semibold text-lg">{uploadedFile.name}</p>
@@ -580,7 +539,7 @@ const DeveloperObfuscator = () => {
                 ) : (
                   <div className="p-12 text-center">
                     <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center mx-auto mb-4">
-                      <Upload className={`w-8 h-8 ${isDragging ? 'text-green-400' : 'text-white/60'}`} />
+                      <Upload className={`w-8 h-8 ${isDragging ? 'text-violet-400' : 'text-white/60'}`} />
                     </div>
                     <p className="text-white font-semibold text-lg mb-1">
                       {isDragging ? 'Drop your file here' : 'Upload your Lua file'}
@@ -632,7 +591,7 @@ const DeveloperObfuscator = () => {
                 onClick={handleObfuscate}
                 disabled={isProcessing || !uploadedFile}
                 size="lg"
-                className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-10 py-6 rounded-xl font-semibold text-lg disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white px-10 py-6 rounded-xl font-semibold text-lg disabled:opacity-50"
               >
                 {isProcessing ? (
                   <>

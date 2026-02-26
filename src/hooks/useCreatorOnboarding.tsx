@@ -31,7 +31,8 @@ export const useCreatorOnboarding = () => {
     }
 
     checkOnboardingStatus();
-  }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const checkOnboardingStatus = async () => {
     try {
@@ -40,7 +41,7 @@ export const useCreatorOnboarding = () => {
       // Check if user is a creator and if profile is completed
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('is_creator, profile_completed, avatar_url, creator_type')
+        .select('is_creator, avatar_url, business_name, onboarding_completed_at')
         .eq('user_id', user?.id)
         .single();
 
@@ -56,8 +57,8 @@ export const useCreatorOnboarding = () => {
         return;
       }
 
-      // If profile is completed, no onboarding needed
-      if (profile?.profile_completed) {
+      // If profile is completed (has business name or onboarding timestamp), no onboarding needed
+      if (profile?.onboarding_completed_at || profile?.business_name) {
         setNeedsOnboarding(false);
         setOnboardingStatus(prev => ({ ...prev, isCompleted: true }));
         setLoading(false);

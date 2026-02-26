@@ -25,22 +25,33 @@ const GradientCanvas = () => {
     window.addEventListener('resize', resize);
     const animate = () => {
       time += 0.002;
-      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      gradient.addColorStop(0, `hsl(160, 20%, ${6 + Math.sin(time) * 2}%)`);
-      gradient.addColorStop(0.3, `hsl(155, 25%, ${10 + Math.sin(time + 1) * 2}%)`);
-      gradient.addColorStop(0.6, `hsl(${152 + Math.sin(time) * 8}, ${30 + Math.sin(time) * 10}%, ${14 + Math.sin(time) * 3}%)`);
-      gradient.addColorStop(1, `hsl(155, 20%, ${5 + Math.sin(time + 4) * 2}%)`);
-      ctx.fillStyle = gradient;
+      ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.globalCompositeOperation = 'screen';
+      const glow1 = ctx.createRadialGradient(
+        canvas.width * 0.15, canvas.height * 0.85, 0,
+        canvas.width * 0.15, canvas.height * 0.85, canvas.width * 0.55
+      );
+      glow1.addColorStop(0, `rgba(124, 58, 237, ${0.08 + Math.sin(time) * 0.02})`);
+      glow1.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow1;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const glow2 = ctx.createRadialGradient(
+        canvas.width * 0.85, canvas.height * 0.15, 0,
+        canvas.width * 0.85, canvas.height * 0.15, canvas.width * 0.45
+      );
+      glow2.addColorStop(0, `rgba(139, 92, 246, ${0.06 + Math.sin(time * 0.7 + 2) * 0.02})`);
+      glow2.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow2;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       for (let i = 0; i < 30; i++) {
         const x = (Math.sin(time * 0.3 + i * 47) + 1) / 2 * canvas.width;
         const y = (Math.cos(time * 0.2 + i * 31) + 1) / 2 * canvas.height;
-        const size = 2 + Math.sin(time + i) * 1.5;
-        const alpha = 0.2 + Math.sin(time * 2 + i) * 0.1;
+        const size = 1 + Math.sin(time + i) * 0.8;
+        const alpha = 0.07 + Math.sin(time * 2 + i) * 0.03;
         ctx.beginPath();
         ctx.arc(x, y, size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(34, 197, 94, ${alpha})`;
+        ctx.fillStyle = i % 2 === 0 ? `rgba(139, 92, 246, ${alpha})` : `rgba(124, 58, 237, ${alpha})`;
         ctx.fill();
       }
       ctx.globalCompositeOperation = 'source-over';
@@ -50,7 +61,7 @@ const GradientCanvas = () => {
     return () => { cancelAnimationFrame(animationId); window.removeEventListener('resize', resize); };
   }, []);
   return <canvas ref={canvasRef} className="fixed inset-0 w-full h-full" style={{ zIndex: 0 }} />;
-};
+}
 
 interface Product {
   id: string;
@@ -1027,7 +1038,7 @@ const DeveloperBotDashboard = () => {
                       </div>
                       {discordUsername && (
                         <p className="text-white/30 text-xs mt-4">
-                          Linked as <span className="text-green-400">{discordUsername}</span>
+                          Linked as <span className="text-violet-400">{discordUsername}</span>
                         </p>
                       )}
                     </div>
@@ -1061,7 +1072,7 @@ const DeveloperBotDashboard = () => {
                                 {server.products.length} products
                               </p>
                             </div>
-                            <div className={`w-2 h-2 rounded-full ${selectedServer?.id === server.id ? 'bg-green-600' : 'bg-green-400'}`} />
+                            <div className={`w-2 h-2 rounded-full ${selectedServer?.id === server.id ? 'bg-violet-600' : 'bg-violet-400'}`} />
                           </button>
                         </div>
                       ))}
@@ -1084,7 +1095,7 @@ const DeveloperBotDashboard = () => {
                       {discordLinked && (
                         <div className="mt-4 pt-4 border-t border-white/10">
                           <p className="text-white/30 text-xs mb-2 text-center">
-                            Linked as <span className="text-green-400">{discordUsername}</span>
+                            Linked as <span className="text-violet-400">{discordUsername}</span>
                           </p>
                           <Button 
                             size="sm" 
@@ -1108,7 +1119,7 @@ const DeveloperBotDashboard = () => {
                     {/* Server Stats */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                       <div className="p-4 rounded-xl bg-black/30 backdrop-blur-xl border border-white/10">
-                        <Users className="w-5 h-5 text-green-400 mb-2" />
+                        <Users className="w-5 h-5 text-violet-400 mb-2" />
                         {isLoading && !selectedServer.member_count ? (
                           <div className="h-8 w-12 bg-white/10 rounded animate-pulse mb-1" />
                         ) : (
@@ -1117,12 +1128,12 @@ const DeveloperBotDashboard = () => {
                         <p className="text-xs text-white/40">Members</p>
                       </div>
                       <div className="p-4 rounded-xl bg-black/30 backdrop-blur-xl border border-white/10">
-                        <Shield className="w-5 h-5 text-green-400 mb-2" />
+                        <Shield className="w-5 h-5 text-violet-400 mb-2" />
                         <p className="text-2xl font-bold text-white">{selectedServer.products.length}</p>
                         <p className="text-xs text-white/40">Products</p>
                       </div>
                       <div className="p-4 rounded-xl bg-black/30 backdrop-blur-xl border border-white/10">
-                        <UserCheck className="w-5 h-5 text-green-400 mb-2" />
+                        <UserCheck className="w-5 h-5 text-violet-400 mb-2" />
                         {isRefreshing ? (
                           <p className="text-2xl font-bold text-white">
                             {selectedServer.products.reduce((sum, p) => sum + (p.whitelisted_count || 0), 0)}
@@ -1135,10 +1146,10 @@ const DeveloperBotDashboard = () => {
                         <p className="text-xs text-white/40">Whitelisted</p>
                       </div>
                       <div className="p-4 rounded-xl bg-black/30 backdrop-blur-xl border border-white/10">
-                        <Settings className="w-5 h-5 text-green-400 mb-2" />
+                        <Settings className="w-5 h-5 text-violet-400 mb-2" />
                         <button 
                           onClick={() => setShowPermissions(true)}
-                          className="text-sm text-green-400 hover:text-green-300 underline"
+                          className="text-sm text-violet-400 hover:text-violet-300 underline"
                         >
                           Permissions
                         </button>
@@ -1155,7 +1166,7 @@ const DeveloperBotDashboard = () => {
                         <Button 
                           size="sm" 
                           onClick={() => setShowAddProduct(true)}
-                          className="bg-green-500 hover:bg-green-600 text-white"
+                          className="bg-violet-500 hover:bg-violet-600 text-white"
                         >
                           <Plus className="w-4 h-4 mr-1" /> Add Product
                         </Button>
@@ -1180,14 +1191,14 @@ const DeveloperBotDashboard = () => {
                             <div 
                               key={product.id}
                               onClick={() => handleViewProductDetails(product)}
-                              className="p-4 rounded-lg bg-black/30 border border-white/10 hover:border-green-500/50 hover:bg-black/40 transition-all cursor-pointer"
+                              className="p-4 rounded-lg bg-black/30 border border-white/10 hover:border-violet-500/50 hover:bg-black/40 transition-all cursor-pointer"
                             >
                               <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-2">
                                     <h4 className="font-semibold text-white">{product.name}</h4>
                                     {product.role_id && (
-                                      <span className="px-2 py-0.5 rounded text-xs bg-green-500/20 text-green-400 border border-green-500/30">
+                                      <span className="px-2 py-0.5 rounded text-xs bg-violet-500/20 text-violet-400 border border-violet-500/30">
                                         Role Assigned
                                       </span>
                                     )}
@@ -1203,7 +1214,7 @@ const DeveloperBotDashboard = () => {
                                     </div>
                                     <div>
                                       <p className="text-white/40 text-xs">Whitelisted</p>
-                                      <p className="text-green-400 font-semibold">{product.whitelisted_count || 0}</p>
+                                      <p className="text-violet-400 font-semibold">{product.whitelisted_count || 0}</p>
                                     </div>
                                   </div>
                                   <p className="text-white/30 text-xs mt-2">Click to view whitelisted users</p>
@@ -1233,11 +1244,11 @@ const DeveloperBotDashboard = () => {
                         <h4 className="text-sm font-medium text-white/60 mb-3">User Commands</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                           <div className="p-3 rounded-lg bg-black/30 border border-white/10">
-                            <code className="text-green-400">/redeem</code>
+                            <code className="text-violet-400">/redeem</code>
                             <p className="text-white/50 text-xs mt-1">Users redeem their license key</p>
                           </div>
                           <div className="p-3 rounded-lg bg-black/30 border border-white/10">
-                            <code className="text-green-400">/update</code>
+                            <code className="text-violet-400">/update</code>
                             <p className="text-white/50 text-xs mt-1">Update Roblox username</p>
                           </div>
                         </div>
@@ -1247,20 +1258,20 @@ const DeveloperBotDashboard = () => {
                       <div className="mb-6">
                         <h4 className="text-sm font-medium text-white/60 mb-3">Admin Commands (Configurable)</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                          <div className="p-3 rounded-lg bg-black/30 border border-green-500/20">
-                            <code className="text-green-400">/admin-product-add</code>
+                          <div className="p-3 rounded-lg bg-black/30 border border-violet-500/20">
+                            <code className="text-violet-400">/admin-product-add</code>
                             <p className="text-white/50 text-xs mt-1">Add a new product</p>
                           </div>
-                          <div className="p-3 rounded-lg bg-black/30 border border-green-500/20">
-                            <code className="text-green-400">/admin-product-list</code>
+                          <div className="p-3 rounded-lg bg-black/30 border border-violet-500/20">
+                            <code className="text-violet-400">/admin-product-list</code>
                             <p className="text-white/50 text-xs mt-1">List all products</p>
                           </div>
-                          <div className="p-3 rounded-lg bg-black/30 border border-green-500/20">
-                            <code className="text-green-400">/admin-whitelist-list</code>
+                          <div className="p-3 rounded-lg bg-black/30 border border-violet-500/20">
+                            <code className="text-violet-400">/admin-whitelist-list</code>
                             <p className="text-white/50 text-xs mt-1">View whitelisted users</p>
                           </div>
-                          <div className="p-3 rounded-lg bg-black/30 border border-green-500/20">
-                            <code className="text-green-400">/admin-whitelist-add</code>
+                          <div className="p-3 rounded-lg bg-black/30 border border-violet-500/20">
+                            <code className="text-violet-400">/admin-whitelist-add</code>
                             <p className="text-white/50 text-xs mt-1">Manually whitelist a user</p>
                           </div>
                         </div>
@@ -1297,7 +1308,7 @@ const DeveloperBotDashboard = () => {
                         value={newProduct.name}
                         onChange={e => setNewProduct({ ...newProduct, name: e.target.value })}
                         placeholder="e.g., Premium Script Pack"
-                        className="w-full px-4 py-2 rounded-lg bg-black/50 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-green-500"
+                        className="w-full px-4 py-2 rounded-lg bg-black/50 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-violet-500"
                       />
                     </div>
                     <div>
@@ -1307,7 +1318,7 @@ const DeveloperBotDashboard = () => {
                         value={newProduct.roblox_group_id}
                         onChange={e => setNewProduct({ ...newProduct, roblox_group_id: e.target.value })}
                         placeholder="e.g., 5451777"
-                        className="w-full px-4 py-2 rounded-lg bg-black/50 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-green-500"
+                        className="w-full px-4 py-2 rounded-lg bg-black/50 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-violet-500"
                       />
                     </div>
                     <div>
@@ -1317,7 +1328,7 @@ const DeveloperBotDashboard = () => {
                         value={newProduct.payhip_api_key}
                         onChange={e => setNewProduct({ ...newProduct, payhip_api_key: e.target.value })}
                         placeholder="prod_sk_..."
-                        className="w-full px-4 py-2 rounded-lg bg-black/50 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-green-500"
+                        className="w-full px-4 py-2 rounded-lg bg-black/50 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-violet-500"
                       />
                     </div>
                     <div>
@@ -1327,7 +1338,7 @@ const DeveloperBotDashboard = () => {
                         value={newProduct.role_id}
                         onChange={e => setNewProduct({ ...newProduct, role_id: e.target.value })}
                         placeholder="Role to assign on redemption"
-                        className="w-full px-4 py-2 rounded-lg bg-black/50 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-green-500"
+                        className="w-full px-4 py-2 rounded-lg bg-black/50 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-violet-500"
                       />
                     </div>
                     <div>
@@ -1337,7 +1348,7 @@ const DeveloperBotDashboard = () => {
                         onChange={e => setNewProduct({ ...newProduct, redemption_message: e.target.value })}
                         placeholder="Message shown after successful redemption"
                         rows={2}
-                        className="w-full px-4 py-2 rounded-lg bg-black/50 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-green-500 resize-none"
+                        className="w-full px-4 py-2 rounded-lg bg-black/50 border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-violet-500 resize-none"
                       />
                     </div>
                   </div>
@@ -1352,7 +1363,7 @@ const DeveloperBotDashboard = () => {
                     </Button>
                     <Button 
                       onClick={handleAddProduct}
-                      className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                      className="flex-1 bg-violet-500 hover:bg-violet-600 text-white"
                     >
                       <Plus className="w-4 h-4 mr-1" /> Add Product
                     </Button>
@@ -1387,7 +1398,7 @@ const DeveloperBotDashboard = () => {
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <code className="text-green-400 text-sm">/{perm.command_name}</code>
+                                <code className="text-violet-400 text-sm">/{perm.command_name}</code>
                                 <button
                                   onClick={() => {
                                     const updated = [...permissions];
@@ -1396,7 +1407,7 @@ const DeveloperBotDashboard = () => {
                                   }}
                                   className={`px-2 py-0.5 rounded text-xs transition-colors ${
                                     perm.enabled 
-                                      ? 'bg-green-500/20 text-green-400' 
+                                      ? 'bg-violet-500/20 text-violet-400' 
                                       : 'bg-white/10 text-white/40'
                                   }`}
                                 >
@@ -1438,7 +1449,7 @@ const DeveloperBotDashboard = () => {
                                   setPermissions(updated);
                                 }}
                                 placeholder="e.g., 123456789, 987654321"
-                                className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-green-500"
+                                className="w-full px-3 py-2 rounded-lg bg-black/50 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-violet-500"
                               />
                             </div>
                           )}
@@ -1457,7 +1468,7 @@ const DeveloperBotDashboard = () => {
                     </Button>
                     <Button 
                       onClick={handleSavePermissions}
-                      className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                      className="flex-1 bg-violet-500 hover:bg-violet-600 text-white"
                     >
                       <Save className="w-4 h-4 mr-1" /> Save Permissions
                     </Button>
@@ -1473,7 +1484,7 @@ const DeveloperBotDashboard = () => {
                   <div className="flex items-center justify-between p-6 border-b border-white/10">
                     <div>
                       <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <UserCheck className="w-5 h-5 text-green-400" /> {selectedProduct.name}
+                        <UserCheck className="w-5 h-5 text-violet-400" /> {selectedProduct.name}
                       </h3>
                       <p className="text-white/50 text-sm mt-1">
                         {whitelistedUsers.length} whitelisted user{whitelistedUsers.length !== 1 ? 's' : ''}
@@ -1495,7 +1506,7 @@ const DeveloperBotDashboard = () => {
                     {loadingWhitelist ? (
                       <div className="flex items-center justify-center py-12">
                         <div className="text-center">
-                          <RefreshCw className="w-8 h-8 text-green-400 animate-spin mx-auto mb-3" />
+                          <RefreshCw className="w-8 h-8 text-violet-400 animate-spin mx-auto mb-3" />
                           <p className="text-white/60">Loading whitelisted users...</p>
                         </div>
                       </div>

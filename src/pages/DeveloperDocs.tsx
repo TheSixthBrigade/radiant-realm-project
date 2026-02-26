@@ -14,82 +14,86 @@ import { toast } from "sonner";
 // Animated gradient canvas component
 const GradientCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     let animationId: number;
     let time = 0;
-    
+
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     };
-    
     resize();
     window.addEventListener('resize', resize);
-    
+
     const animate = () => {
       time += 0.002;
-      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      const offset1 = (Math.sin(time * 0.8) + 1) / 2;
-      const offset2 = (Math.sin(time * 0.8 + 2) + 1) / 2;
-      
-      gradient.addColorStop(0, `hsl(160, 20%, ${6 + Math.sin(time) * 2}%)`);
-      gradient.addColorStop(0.2, `hsl(155, 25%, ${10 + Math.sin(time + 1) * 2}%)`);
-      gradient.addColorStop(offset1 * 0.2 + 0.35, `hsl(${152 + Math.sin(time) * 8}, ${35 + Math.sin(time) * 10}%, ${16 + Math.sin(time) * 4}%)`);
-      gradient.addColorStop(0.55, `hsl(${155 + Math.sin(time + 2) * 10}, ${25 + Math.sin(time) * 8}%, ${14 + Math.sin(time) * 3}%)`);
-      gradient.addColorStop(offset2 * 0.15 + 0.7, `hsl(160, 15%, ${9 + Math.sin(time + 3) * 2}%)`);
-      gradient.addColorStop(1, `hsl(155, 20%, ${5 + Math.sin(time + 4) * 2}%)`);
-      
-      ctx.fillStyle = gradient;
+
+      // Pure black base
+      ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
+
+      // Subtle violet radial glow — bottom left
       ctx.globalCompositeOperation = 'screen';
-      for (let i = 0; i < 5; i++) {
-        ctx.beginPath();
-        ctx.moveTo(0, canvas.height);
-        for (let x = 0; x <= canvas.width; x += 6) {
-          const y = canvas.height * (0.35 + i * 0.12) + 
-            Math.sin(x * 0.002 + time * 1.5 + i * 0.8) * 100 +
-            Math.sin(x * 0.004 + time * 1.2 + i * 1.2) * 50 +
-            Math.cos(x * 0.001 + time + i) * 70;
-          ctx.lineTo(x, y);
-        }
-        ctx.lineTo(canvas.width, canvas.height);
-        ctx.closePath();
-        const alpha = 0.12 - i * 0.02;
-        ctx.fillStyle = i % 2 === 0 ? `rgba(34, 197, 94, ${alpha})` : `rgba(16, 185, 129, ${alpha})`;
-        ctx.fill();
-      }
-      
-      for (let i = 0; i < 50; i++) {
+      const glow1 = ctx.createRadialGradient(
+        canvas.width * 0.15, canvas.height * 0.85, 0,
+        canvas.width * 0.15, canvas.height * 0.85, canvas.width * 0.55
+      );
+      glow1.addColorStop(0, `rgba(124, 58, 237, ${0.08 + Math.sin(time) * 0.02})`);
+      glow1.addColorStop(0.5, `rgba(109, 40, 217, ${0.03 + Math.sin(time + 1) * 0.01})`);
+      glow1.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow1;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Subtle violet radial glow — top right
+      const glow2 = ctx.createRadialGradient(
+        canvas.width * 0.85, canvas.height * 0.15, 0,
+        canvas.width * 0.85, canvas.height * 0.15, canvas.width * 0.45
+      );
+      glow2.addColorStop(0, `rgba(139, 92, 246, ${0.06 + Math.sin(time * 0.7 + 2) * 0.02})`);
+      glow2.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow2;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Floating violet particles
+      for (let i = 0; i < 40; i++) {
         const x = (Math.sin(time * 0.3 + i * 47) + 1) / 2 * canvas.width;
         const y = (Math.cos(time * 0.2 + i * 31) + 1) / 2 * canvas.height;
-        const size = 2 + Math.sin(time + i) * 1.5;
-        const alpha = 0.25 + Math.sin(time * 2 + i) * 0.15;
+        const size = 1 + Math.sin(time + i) * 0.8;
+        const alpha = 0.08 + Math.sin(time * 2 + i) * 0.04;
         ctx.beginPath();
         ctx.arc(x, y, size, 0, Math.PI * 2);
-        ctx.fillStyle = i % 4 === 0 ? `rgba(34, 197, 94, ${alpha})` : i % 4 === 1 ? `rgba(16, 185, 129, ${alpha})` : i % 4 === 2 ? `rgba(52, 211, 153, ${alpha})` : `rgba(100, 116, 139, ${alpha * 0.5})`;
+        ctx.fillStyle = i % 3 === 0
+          ? `rgba(139, 92, 246, ${alpha})`
+          : i % 3 === 1
+          ? `rgba(124, 58, 237, ${alpha})`
+          : `rgba(167, 139, 250, ${alpha * 0.6})`;
         ctx.fill();
       }
-      
+
       ctx.globalCompositeOperation = 'source-over';
       animationId = requestAnimationFrame(animate);
     };
-    
+
     animate();
     return () => {
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', resize);
     };
   }, []);
-  
-  return <canvas ref={canvasRef} className="fixed inset-0 w-full h-full" style={{ zIndex: 0 }} />;
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 w-full h-full"
+      style={{ zIndex: 0 }}
+    />
+  );
 };
 
 const DeveloperDocs = () => {

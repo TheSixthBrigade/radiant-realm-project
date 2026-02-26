@@ -1,471 +1,259 @@
-import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
-import GlowingLogo from "@/components/GlowingLogo";
-import { SEO, BreadcrumbSchema } from "@/components/SEO";
-import { 
-  Code, Shield, Key, Terminal, Lock, 
-  FileCode, Users, ChevronRight, Copy, Check,
-  Menu, X, LayoutDashboard, ArrowRight, Sparkles,
-  Eye, EyeOff, Download, Settings, BookOpen, Bot
-} from "lucide-react";
+﻿import { Link } from "react-router-dom";
+import Navigation from "@/components/Navigation";
+import { Lock, CheckSquare, Bot, Key, BookOpen, BarChart2, Shield, Users, Zap } from "lucide-react";
 
-// Animated gradient canvas component - Dark Grey with subtle accents
-const GradientCanvas = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    let animationId: number;
-    let time = 0;
-    
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    
-    resize();
-    window.addEventListener('resize', resize);
-    
-    const animate = () => {
-      time += 0.002;
-      
-      // Create gradient - dark greys with visible green accents
-      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      
-      // Animated offsets for flowing effect
-      const offset1 = (Math.sin(time * 0.8) + 1) / 2;
-      const offset2 = (Math.sin(time * 0.8 + 2) + 1) / 2;
-      
-      // Very dark charcoal base
-      gradient.addColorStop(0, `hsl(160, 20%, ${6 + Math.sin(time) * 2}%)`);
-      // Dark grey with green tint
-      gradient.addColorStop(0.2, `hsl(155, 25%, ${10 + Math.sin(time + 1) * 2}%)`);
-      // More visible green zone
-      gradient.addColorStop(offset1 * 0.2 + 0.35, `hsl(${152 + Math.sin(time) * 8}, ${35 + Math.sin(time) * 10}%, ${16 + Math.sin(time) * 4}%)`);
-      // Green-grey blend
-      gradient.addColorStop(0.55, `hsl(${155 + Math.sin(time + 2) * 10}, ${25 + Math.sin(time) * 8}%, ${14 + Math.sin(time) * 3}%)`);
-      // Dark grey with hint of green
-      gradient.addColorStop(offset2 * 0.15 + 0.7, `hsl(160, 15%, ${9 + Math.sin(time + 3) * 2}%)`);
-      // Almost black with green undertone
-      gradient.addColorStop(1, `hsl(155, 20%, ${5 + Math.sin(time + 4) * 2}%)`);
-      
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Flowing waves with prominent green accents
-      ctx.globalCompositeOperation = 'screen';
-      for (let i = 0; i < 5; i++) {
-        ctx.beginPath();
-        ctx.moveTo(0, canvas.height);
-        
-        for (let x = 0; x <= canvas.width; x += 6) {
-          const y = canvas.height * (0.35 + i * 0.12) + 
-            Math.sin(x * 0.002 + time * 1.5 + i * 0.8) * 100 +
-            Math.sin(x * 0.004 + time * 1.2 + i * 1.2) * 50 +
-            Math.cos(x * 0.001 + time + i) * 70;
-          ctx.lineTo(x, y);
-        }
-        
-        ctx.lineTo(canvas.width, canvas.height);
-        ctx.closePath();
-        
-        // Much more visible green waves
-        const alpha = 0.12 - i * 0.02;
-        ctx.fillStyle = i % 2 === 0 
-          ? `rgba(34, 197, 94, ${alpha})` // bright green
-          : `rgba(16, 185, 129, ${alpha})`; // emerald
-        ctx.fill();
-      }
-      
-      // Add glowing green orbs
-      ctx.globalCompositeOperation = 'screen';
-      for (let i = 0; i < 50; i++) {
-        const x = (Math.sin(time * 0.3 + i * 47) + 1) / 2 * canvas.width;
-        const y = (Math.cos(time * 0.2 + i * 31) + 1) / 2 * canvas.height;
-        const size = 2 + Math.sin(time + i) * 1.5;
-        const alpha = 0.25 + Math.sin(time * 2 + i) * 0.15;
-        
-        ctx.beginPath();
-        ctx.arc(x, y, size, 0, Math.PI * 2);
-        // Mostly green particles with some grey
-        ctx.fillStyle = i % 4 === 0 
-          ? `rgba(34, 197, 94, ${alpha})` // green
-          : i % 4 === 1
-          ? `rgba(16, 185, 129, ${alpha})` // emerald
-          : i % 4 === 2
-          ? `rgba(52, 211, 153, ${alpha})` // light emerald
-          : `rgba(100, 116, 139, ${alpha * 0.5})`; // subtle grey
-        ctx.fill();
-      }
-      
-      // Add a subtle green glow in corners
-      const glowGradient = ctx.createRadialGradient(
-        canvas.width * 0.1, canvas.height * 0.9, 0,
-        canvas.width * 0.1, canvas.height * 0.9, canvas.width * 0.5
-      );
-      glowGradient.addColorStop(0, `rgba(34, 197, 94, ${0.15 + Math.sin(time) * 0.05})`);
-      glowGradient.addColorStop(0.5, `rgba(16, 185, 129, ${0.05 + Math.sin(time + 1) * 0.02})`);
-      glowGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = glowGradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      ctx.globalCompositeOperation = 'source-over';
-      animationId = requestAnimationFrame(animate);
-    };
-    
-    animate();
-    
-    return () => {
-      cancelAnimationFrame(animationId);
-      window.removeEventListener('resize', resize);
-    };
-  }, []);
-  
+const tools = [
+  { title: "Obfuscator", description: "Protect your Lua scripts with enterprise-grade obfuscation.", href: "/developer/obfuscator" },
+  { title: "Whitelist", description: "Control who can access your products with license keys.", href: "/developer/whitelist" },
+  { title: "Discord Bot", description: "Automate role assignment and whitelist verification.", href: "/developer/bot" },
+  { title: "API Keys", description: "Generate and manage keys for programmatic access.", href: "/developer/keys" },
+  { title: "Documentation", description: "Full API reference, guides, and integration examples.", href: "/developer/docs" },
+  { title: "Dashboard", description: "Monitor usage, analytics, and subscription status.", href: "/developer/dashboard" },
+];
+
+const tickerItems = [
+  "Obfuscation",
+  "Whitelisting",
+  "API Keys",
+  "Discord Bot",
+  "Rate Limiting",
+  "Webhooks",
+  "Analytics",
+  "License Keys",
+  "Roblox Integration",
+  "Encryption",
+];
+
+const beforeCode = `-- Original script
+local Players = game:GetService("Players")
+local function onPlayerAdded(player)
+  print("Welcome " .. player.Name)
+  player.CharacterAdded:Connect(function(char)
+    char:WaitForChild("Humanoid").Health = 100
+  end)
+end
+Players.PlayerAdded:Connect(onPlayerAdded)`;
+
+const afterCode = `-- Obfuscated output
+local _0x1a2b={}local _0x3c4d=game
+local _0x5e6f=_0x3c4d:GetService('Players')
+local function _0x7a8b(_0x9c0d)
+_0x1a2b[#_0x1a2b+1]=_0x9c0d
+_0x9c0d['CharacterAdded']:Connect(
+function(_0xef01)_0xef01:WaitForChild(
+'Humanoid').Health=0x64 end)end
+_0x5e6f.PlayerAdded:Connect(_0x7a8b)`;
+
+export default function Developer() {
   return (
-    <canvas 
-      ref={canvasRef} 
-      className="fixed inset-0 w-full h-full"
-      style={{ zIndex: 0 }}
-    />
-  );
-};
+    <div className="min-h-screen bg-black text-white">
+      <Navigation />
 
+      {/* Hero */}
+      <section className="relative pt-32 pb-20 px-6 overflow-hidden">
+        {/* Violet glow — large enough to bleed over the centered watermark */}
+        <div className="absolute -top-20 right-[200px] w-[1000px] h-[1000px] rounded-full blur-[140px] pointer-events-none" style={{ background: 'rgba(124, 58, 237, 0.12)' }} />
+        {/* Ghost watermark — stays very dark, revealed by the glow above */}
+        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[20vw] font-black text-white/[0.03] select-none pointer-events-none leading-none">
+          API
+        </span>
 
-const Developer = () => {
-  const { user } = useAuth();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  const copyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const features = [
-    {
-      icon: Lock,
-      title: "Code Obfuscator",
-      description: "Protect your Lua scripts with military-grade obfuscation. Make your code unreadable while keeping it functional.",
-      link: "/developer/obfuscator",
-      color: "from-purple-500 to-pink-500"
-    },
-    {
-      icon: Shield,
-      title: "Whitelist System",
-      description: "Control who can use your scripts. Manage licenses, HWID locks, and user access through our dashboard.",
-      link: "/developer/whitelist",
-      color: "from-pink-500 to-orange-500"
-    },
-    {
-      icon: Bot,
-      title: "Bot Dashboard",
-      description: "Manage your Discord whitelist bot. Configure products, view redemptions, and track whitelisted users.",
-      link: "/developer/bot",
-      color: "from-indigo-500 to-purple-500"
-    },
-    {
-      icon: Terminal,
-      title: "API Access",
-      description: "Integrate our services into your workflow with our REST API. Full documentation included.",
-      link: "/developer/api",
-      color: "from-yellow-500 to-green-500"
-    }
-  ];
-
-
-  const tools = [
-    { icon: FileCode, name: "Obfuscator", desc: "Protect your code" },
-    { icon: Users, name: "Whitelist", desc: "Manage access" },
-    { icon: Key, name: "Licenses", desc: "Generate keys" },
-    { icon: Settings, name: "Webhooks", desc: "Real-time events" },
-    { icon: BookOpen, name: "Docs", desc: "API reference" },
-    { icon: Download, name: "Loader", desc: "Script loader" }
-  ];
-
-  return (
-    <div className="min-h-screen relative overflow-hidden">
-      <SEO 
-        title="Developer Tools"
-        description="Protect your Lua scripts with code obfuscation, manage user access with whitelist systems, and integrate with our REST API. Build, protect, and distribute your creations."
-        url="/developer"
-        keywords="code obfuscation, Lua obfuscator, whitelist system, script protection, license management, developer tools, API access"
-      />
-      <BreadcrumbSchema items={[
-        { name: 'Home', url: '/' },
-        { name: 'Developer', url: '/developer' }
-      ]} />
-      
-      {/* Animated Gradient Background */}
-      <GradientCanvas />
-      
-      {/* Dark overlay for readability */}
-      <div className="fixed inset-0 bg-black/30 backdrop-blur-[1px]" style={{ zIndex: 1 }} />
-      
-      {/* Content */}
-      <div className="relative" style={{ zIndex: 2 }}>
-        {/* Navigation */}
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-xl border-b border-white/10">
-          <div className="container mx-auto px-4 sm:px-6 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Link to="/">
-                  <GlowingLogo size="sm" showText={false} />
-                </Link>
-                <div className="hidden sm:flex items-center">
-                  <span className="text-white/60 mx-2">/</span>
-                  <span className="text-white font-semibold">Developer</span>
-                </div>
-              </div>
-              
-              <div className="hidden md:flex items-center gap-6">
-                <Link to="/developer/obfuscator" className="text-white/70 hover:text-white text-sm transition-colors">Obfuscator</Link>
-                <Link to="/developer/whitelist" className="text-white/70 hover:text-white text-sm transition-colors">Whitelist</Link>
-                <Link to="/developer/bot" className="text-white/70 hover:text-white text-sm transition-colors">Bot</Link>
-                <Link to="/developer/api" className="text-white/70 hover:text-white text-sm transition-colors">API</Link>
-                <Link to="/developer/docs" className="text-white/70 hover:text-white text-sm transition-colors">Docs</Link>
-              </div>
-
-              
-              <div className="flex items-center gap-3">
-                {user ? (
-                  <Button asChild size="sm" className="bg-white text-black hover:bg-white/90 rounded-full px-4">
-                    <Link to="/dashboard" className="flex items-center gap-2">
-                      <LayoutDashboard className="w-4 h-4" />
-                      Dashboard
-                    </Link>
-                  </Button>
-                ) : (
-                  <Button asChild size="sm" className="bg-white text-black hover:bg-white/90 rounded-full px-4">
-                    <Link to="/auth?mode=register">Get Started</Link>
-                  </Button>
-                )}
-                
-                <button 
-                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
-                  className="md:hidden p-2 rounded-lg hover:bg-white/10 text-white"
-                >
-                  {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-            
-            {/* Mobile Menu */}
-            {mobileMenuOpen && (
-              <div className="md:hidden mt-4 pb-4 pt-4 border-t border-white/10 space-y-2">
-                <Link to="/developer/obfuscator" className="block px-3 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg">Obfuscator</Link>
-                <Link to="/developer/whitelist" className="block px-3 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg">Whitelist</Link>
-                <Link to="/developer/bot" className="block px-3 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg">Bot Dashboard</Link>
-                <Link to="/developer/api" className="block px-3 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg">API</Link>
-                <Link to="/developer/docs" className="block px-3 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg">Docs</Link>
-              </div>
-            )}
+        <div className="relative max-w-6xl mx-auto">
+          <p className="text-violet-400 text-sm font-mono uppercase tracking-widest mb-4">
+            Developer Platform
+          </p>
+          <h1 className="text-6xl md:text-8xl font-black leading-none mb-6">
+            Build
+            <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-purple-600">
+              Without
+            </span>
+            <br />
+            Limits.
+          </h1>
+          <p className="text-white/60 text-xl max-w-xl mb-10">
+            A full suite of developer tools — obfuscation, whitelisting, bot
+            automation, and a REST API — all in one platform.
+          </p>
+          <div className="flex flex-wrap gap-4">
+            <Link to="/developer/docs">
+              <button className="magnet-btn magnet-btn-primary px-8 py-4 text-base font-semibold">
+                <span className="magnet-btn-content">Read the Docs</span>
+              </button>
+            </Link>
+            <Link to="/developer/keys">
+              <button className="magnet-btn magnet-btn-outline px-8 py-4 text-base font-semibold">
+                <span className="magnet-btn-content">Get API Key</span>
+              </button>
+            </Link>
           </div>
-        </nav>
+        </div>
+      </section>
 
-
-        {/* Hero Section */}
-        <section className="pt-32 sm:pt-40 pb-20 sm:pb-28">
-          <div className="container mx-auto px-4 sm:px-6">
-            <div className="max-w-4xl mx-auto text-center">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 mb-8 backdrop-blur-sm">
-                <Sparkles className="w-4 h-4 text-white" />
-                <span className="text-sm text-white font-medium">Developer Tools</span>
-              </div>
-              
-              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-white mb-6 leading-[1.1]">
-                Build. Protect.
-                <span className="block mt-2">Distribute.</span>
-              </h1>
-              
-              <p className="text-lg sm:text-xl text-white/70 mb-10 max-w-2xl mx-auto leading-relaxed">
-                Everything you need to protect your code and manage your users. 
-                Obfuscation, whitelisting, licensing - all in one place.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Button asChild size="lg" className="w-full sm:w-auto bg-white text-black hover:bg-white/90 px-8 py-6 rounded-xl font-semibold text-lg">
-                  <Link to="/developer/obfuscator" className="flex items-center gap-2">
-                    <Code className="w-5 h-5" />
-                    Try Obfuscator
-                  </Link>
-                </Button>
-                <Button asChild size="lg" variant="outline" className="w-full sm:w-auto border-white/30 hover:bg-white/10 text-white px-8 py-6 rounded-xl font-semibold text-lg">
-                  <Link to="/developer/docs" className="flex items-center gap-2">
-                    View Docs
-                    <ArrowRight className="w-5 h-5" />
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-
-        {/* Features Grid */}
-        <section className="py-20">
-          <div className="container mx-auto px-4 sm:px-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-              {features.map((feature, i) => (
-                <Link 
-                  key={i} 
-                  to={feature.link}
-                  className="group relative overflow-hidden rounded-2xl bg-black/30 backdrop-blur-xl border border-white/10 p-6 sm:p-8 hover:border-white/20 transition-all hover:-translate-y-1"
-                >
-                  <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 transition-opacity`} />
-                  
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4`}>
-                    <feature.icon className="w-6 h-6 text-white" />
-                  </div>
-                  
-                  <h3 className="text-xl font-bold text-white mb-2">{feature.title}</h3>
-                  <p className="text-white/60 text-sm leading-relaxed mb-4">{feature.description}</p>
-                  
-                  <div className="flex items-center text-white/80 text-sm font-medium group-hover:text-white transition-colors">
-                    Learn more
-                    <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-
-
-        {/* Code Example Section */}
-        <section className="py-20">
-          <div className="container mx-auto px-4 sm:px-6">
-            <div className="max-w-5xl mx-auto">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Simple Integration</h2>
-                <p className="text-white/60 max-w-xl mx-auto">Add protection to your scripts with just a few lines of code.</p>
-              </div>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Before */}
-                <div className="rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-                    <div className="flex items-center gap-2">
-                      <Eye className="w-4 h-4 text-red-400" />
-                      <span className="text-sm text-white/60">Before - Exposed</span>
-                    </div>
-                  </div>
-                  <pre className="p-4 text-sm text-white/80 overflow-x-auto">
-                    <code>{`-- Your original code
-local function authenticate(key)
-  local valid_keys = {
-    "ABC123", "DEF456", "GHI789"
-  }
-  for _, k in pairs(valid_keys) do
-    if k == key then return true end
-  end
-  return false
-end`}</code>
-                  </pre>
-                </div>
-                
-                {/* After */}
-                <div className="rounded-2xl bg-black/40 backdrop-blur-xl border border-white/10 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-                    <div className="flex items-center gap-2">
-                      <EyeOff className="w-4 h-4 text-green-400" />
-                      <span className="text-sm text-white/60">After - Protected</span>
-                    </div>
-                    <button 
-                      onClick={() => copyCode('-- Obfuscated code here')}
-                      className="p-1.5 rounded hover:bg-white/10 transition-colors"
-                    >
-                      {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4 text-white/40" />}
-                    </button>
-                  </div>
-                  <pre className="p-4 text-sm text-white/80 overflow-x-auto">
-                    <code>{`-- Vectabase Protected
-local _0x1a2b=_G['\x6c\x6f\x61
-\x64\x73\x74\x72\x69\x6e\x67']
-local _0x3c4d=(function(_0x5e6f)
-local _0x7g8h='' for _0x9i0j=1,
-#_0x5e6f do _0x7g8h=_0x7g8h..
-string.char(... -- truncated`}</code>
-                  </pre>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-
-        {/* Tools Grid */}
-        <section className="py-20">
-          <div className="container mx-auto px-4 sm:px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">All Your Tools</h2>
-              <p className="text-white/60">Everything you need in one place.</p>
-            </div>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 max-w-4xl mx-auto">
-              {tools.map((tool, i) => (
-                <div 
-                  key={i}
-                  className="group p-4 rounded-xl bg-black/30 backdrop-blur-xl border border-white/10 hover:border-white/20 hover:bg-black/40 transition-all text-center cursor-pointer"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center mx-auto mb-3 group-hover:bg-white/20 transition-colors">
-                    <tool.icon className="w-5 h-5 text-white" />
-                  </div>
-                  <h4 className="text-sm font-semibold text-white mb-1">{tool.name}</h4>
-                  <p className="text-xs text-white/50">{tool.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="py-20">
-          <div className="container mx-auto px-4 sm:px-6">
-            <div className="max-w-3xl mx-auto text-center">
-              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Ready to protect your code?</h2>
-              <p className="text-white/60 mb-8">Join thousands of developers using Vectabase to secure their scripts.</p>
-              
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Button asChild size="lg" className="w-full sm:w-auto bg-white text-black hover:bg-white/90 px-8 py-6 rounded-xl font-semibold">
-                  <Link to="/auth?mode=register">Create Free Account</Link>
-                </Button>
-                <Button asChild size="lg" variant="outline" className="w-full sm:w-auto border-white/30 hover:bg-white/10 text-white px-8 py-6 rounded-xl font-semibold">
-                  <Link to="/developer/docs">Read Documentation</Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-
-        {/* Footer */}
-        <footer className="py-8 border-t border-white/10">
-          <div className="container mx-auto px-4 sm:px-6">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <img src="/Logo_pic.png" alt="Vectabase" className="w-6 h-6 object-contain" />
-                <span className="text-white font-medium text-sm">Vectabase Developer</span>
-              </div>
-              <p className="text-white/40 text-xs">© {new Date().getFullYear()} Vectabase</p>
-              <div className="flex items-center gap-4">
-                <Link to="/" className="text-white/50 hover:text-white text-xs transition-colors">Home</Link>
-                <Link to="/shop" className="text-white/50 hover:text-white text-xs transition-colors">Marketplace</Link>
-                <Link to="/about" className="text-white/50 hover:text-white text-xs transition-colors">About</Link>
-              </div>
-            </div>
-          </div>
-        </footer>
+      {/* Ticker */}
+      <div className="border-y border-white/10 py-4 overflow-hidden bg-white/[0.02]">
+        <div className="ticker-track">
+          {[...tickerItems, ...tickerItems].map((item, i) => (
+            <span key={i} className="ticker-item">
+              <span className="ticker-dot" />
+              {item}
+            </span>
+          ))}
+        </div>
       </div>
+
+      {/* Bento feature cards */}
+      <section className="py-24 px-6">
+        <div className="max-w-6xl mx-auto">
+          <p className="text-violet-400 text-sm font-mono uppercase tracking-widest mb-3">
+            What's included
+          </p>
+          <h2 className="text-4xl md:text-5xl font-black mb-16">
+            Everything you need.
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Tall card */}
+            <div className="bento-card bento-card-tall md:row-span-2 flex flex-col justify-between">
+              <div>
+                <Lock className="w-8 h-8 text-violet-400 mb-6" />
+                <h3 className="text-2xl font-bold mb-3">Obfuscation</h3>
+                <p className="text-white/50 text-sm leading-relaxed">
+                  Military-grade Lua obfuscation. Protect your scripts from
+                  reverse engineering with multiple layers of transformation.
+                </p>
+              </div>
+              <div className="mt-8">
+                <span className="bento-tag">Lua 5.1+</span>
+                <span className="bento-tag">Roblox</span>
+                <span className="bento-tag">Batch</span>
+              </div>
+            </div>
+
+            <div className="bento-card">
+              <CheckSquare className="w-7 h-7 text-violet-400 mb-4" />
+              <h3 className="text-xl font-bold mb-2">Whitelist System</h3>
+              <p className="text-white/50 text-sm">
+                License key generation and validation with Roblox user binding.
+              </p>
+            </div>
+
+            <div className="bento-card">
+              <Bot className="w-7 h-7 text-violet-400 mb-4" />
+              <h3 className="text-xl font-bold mb-2">Discord Bot</h3>
+              <p className="text-white/50 text-sm">
+                Automate role assignment and whitelist verification directly in
+                your server.
+              </p>
+            </div>
+
+            <div className="bento-card">
+              <Key className="w-7 h-7 text-violet-400 mb-4" />
+              <h3 className="text-xl font-bold mb-2">API Keys</h3>
+              <p className="text-white/50 text-sm">
+                Scoped API keys with rate limiting and usage analytics.
+              </p>
+            </div>
+
+            <div className="bento-card">
+              <BarChart2 className="w-7 h-7 text-violet-400 mb-4" />
+              <h3 className="text-xl font-bold mb-2">Analytics</h3>
+              <p className="text-white/50 text-sm">
+                Real-time usage metrics, request logs, and error tracking.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Before / After code comparison */}
+      <section className="py-24 px-6 bg-white/[0.02] border-y border-white/10">
+        <div className="max-w-6xl mx-auto">
+          <p className="text-violet-400 text-sm font-mono uppercase tracking-widest mb-3">
+            Obfuscation preview
+          </p>
+          <h2 className="text-4xl md:text-5xl font-black mb-16">
+            See the difference.
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <p className="text-white/40 text-xs font-mono uppercase tracking-widest mb-3">
+                Before
+              </p>
+              <pre className="bg-white/5 border border-white/10 rounded-xl p-6 text-sm text-green-400 font-mono overflow-x-auto leading-relaxed">
+                {beforeCode}
+              </pre>
+            </div>
+            <div>
+              <p className="text-violet-400 text-xs font-mono uppercase tracking-widest mb-3">
+                After
+              </p>
+              <pre className="bg-violet-950/30 border border-violet-500/20 rounded-xl p-6 text-sm text-violet-300 font-mono overflow-x-auto leading-relaxed">
+                {afterCode}
+              </pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Tools grid */}
+      <section className="py-24 px-6">
+        <div className="max-w-6xl mx-auto">
+          <p className="text-violet-400 text-sm font-mono uppercase tracking-widest mb-3">
+            All tools
+          </p>
+          <h2 className="text-4xl md:text-5xl font-black mb-16">
+            Pick your tool.
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {tools.map((tool) => {
+              const iconMap: Record<string, React.ReactNode> = {
+                "Obfuscator": <Lock className="w-6 h-6 text-violet-400" />,
+                "Whitelist": <CheckSquare className="w-6 h-6 text-violet-400" />,
+                "Discord Bot": <Bot className="w-6 h-6 text-violet-400" />,
+                "API Keys": <Key className="w-6 h-6 text-violet-400" />,
+                "Documentation": <BookOpen className="w-6 h-6 text-violet-400" />,
+                "Dashboard": <BarChart2 className="w-6 h-6 text-violet-400" />,
+              };
+              return (
+                <Link key={tool.href} to={tool.href}>
+                  <div className="group border border-white/10 rounded-xl p-6 bg-white/[0.02] hover:border-violet-500/50 hover:bg-violet-950/20 transition-all duration-300 cursor-pointer">
+                    <div className="mb-4">{iconMap[tool.title]}</div>
+                    <h3 className="text-lg font-bold mb-2 group-hover:text-violet-300 transition-colors">
+                      {tool.title}
+                    </h3>
+                    <p className="text-white/50 text-sm">{tool.description}</p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="relative py-32 px-6 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-950/40 to-black pointer-events-none" />
+        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[18vw] font-black text-white/[0.03] select-none pointer-events-none leading-none">
+          BUILD
+        </span>
+        <div className="relative max-w-3xl mx-auto text-center">
+          <h2 className="text-5xl md:text-6xl font-black mb-6">
+            Ready to ship?
+          </h2>
+          <p className="text-white/60 text-lg mb-10">
+            Get started with the developer platform today. Free tier available.
+          </p>
+          <Link to="/developer/keys">
+            <button className="magnet-btn magnet-btn-glow px-10 py-5 text-lg font-semibold">
+              <span className="magnet-btn-content">Start Building</span>
+            </button>
+          </Link>
+        </div>
+      </section>
+
     </div>
   );
-};
-
-export default Developer;
+}

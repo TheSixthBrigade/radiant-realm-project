@@ -667,8 +667,8 @@ export const RoadmapPage = ({ creatorId, isOwner, settings, storeName, storeLogo
         backgroundAttachment: 'fixed'
       };
     } else if (settings.backgroundType === 'gradient') {
-      const start = settings.customBackgroundGradientStart || (theme.backgroundGradient?.start || theme.backgroundColor);
-      const end = settings.customBackgroundGradientEnd || (theme.backgroundGradient?.end || theme.backgroundColor);
+      const start = settings.useCustomColors ? settings.customBackgroundGradientStart : (theme.backgroundGradient?.start || theme.backgroundColor);
+      const end = settings.useCustomColors ? settings.customBackgroundGradientEnd : (theme.backgroundGradient?.end || theme.backgroundColor);
       bgStyle = { background: 'linear-gradient(135deg, ' + start + ' 0%, ' + end + ' 100%)' };
     } else if (settings.backgroundType === 'solid') {
       bgStyle = { backgroundColor: settings.customBackgroundColor || theme.backgroundColor };

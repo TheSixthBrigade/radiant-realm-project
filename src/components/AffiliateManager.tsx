@@ -293,7 +293,7 @@ export const AffiliateManager = ({ mode, storeId, storeUsername }: AffiliateMana
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-violet-400" />
       </div>
     );
   }
@@ -304,32 +304,32 @@ export const AffiliateManager = ({ mode, storeId, storeUsername }: AffiliateMana
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <Users className="w-6 h-6 text-purple-500" />
+          <Users className="w-6 h-6 text-violet-400" />
           <h2 className="text-2xl font-bold text-white">Affiliate Program</h2>
         </div>
 
         {/* Settings Card */}
-        <div className="p-6 rounded-2xl border bg-slate-800/60 border-purple-500/30">
+        <div className="p-6 rounded-2xl border bg-[#0a0a0a] border-violet-500/20">
           <div className="flex items-center gap-2 mb-4">
-            <Settings className="w-5 h-5 text-gray-400" />
+            <Settings className="w-5 h-5 text-white/40" />
             <h3 className="text-lg font-semibold text-white">Program Settings</h3>
           </div>
           
           <div className="space-y-4">
             {/* Enable Toggle */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-black/20">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.03]">
               <div>
                 <p className="text-white font-medium">Enable Affiliate Program</p>
-                <p className="text-sm text-gray-400">Allow users to earn commissions by referring customers</p>
+                <p className="text-sm text-white/40">Allow users to earn commissions by referring customers</p>
               </div>
               <button
                 onClick={() => setIsEnabled(!isEnabled)}
                 className="p-1"
               >
                 {isEnabled ? (
-                  <ToggleRight className="w-10 h-10 text-green-400" />
+                  <ToggleRight className="w-10 h-10 text-violet-400" />
                 ) : (
-                  <ToggleLeft className="w-10 h-10 text-gray-400" />
+                  <ToggleLeft className="w-10 h-10 text-white/30" />
                 )}
               </button>
             </div>
@@ -339,42 +339,42 @@ export const AffiliateManager = ({ mode, storeId, storeUsername }: AffiliateMana
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Commission Rate */}
                   <div>
-                    <label className="text-sm text-gray-400 mb-1 block">Commission Rate</label>
+                    <label className="text-sm text-white/40 mb-1 block">Commission Rate</label>
                     <div className="relative">
                       <Input
                         type="number"
                         value={commissionRate}
                         onChange={e => setCommissionRate(e.target.value)}
-                        className="bg-black/30 border-gray-700 text-white pr-8"
+                        className="bg-white/[0.03] border-white/[0.07] text-white pr-8"
                         min="1"
                         max="100"
                       />
-                      <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                     </div>
                   </div>
                   
                   {/* Min Payout */}
                   <div>
-                    <label className="text-sm text-gray-400 mb-1 block">Minimum Payout</label>
+                    <label className="text-sm text-white/40 mb-1 block">Minimum Payout</label>
                     <div className="relative">
                       <Input
                         type="number"
                         value={minPayout}
                         onChange={e => setMinPayout(e.target.value)}
-                        className="bg-black/30 border-gray-700 text-white pl-8"
+                        className="bg-white/[0.03] border-white/[0.07] text-white pl-8"
                       />
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                     </div>
                   </div>
                   
                   {/* Cookie Days */}
                   <div>
-                    <label className="text-sm text-gray-400 mb-1 block">Cookie Duration (days)</label>
+                    <label className="text-sm text-white/40 mb-1 block">Cookie Duration (days)</label>
                     <Input
                       type="number"
                       value={cookieDays}
                       onChange={e => setCookieDays(e.target.value)}
-                      className="bg-black/30 border-gray-700 text-white"
+                      className="bg-white/[0.03] border-white/[0.07] text-white"
                       min="1"
                       max="365"
                     />
@@ -384,7 +384,7 @@ export const AffiliateManager = ({ mode, storeId, storeUsername }: AffiliateMana
                 <Button
                   onClick={saveSettings}
                   disabled={savingSettings}
-                  className="bg-purple-600 hover:bg-purple-700"
+                  className="bg-violet-600 hover:bg-violet-500"
                 >
                   {savingSettings ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                   Save Settings
@@ -396,27 +396,27 @@ export const AffiliateManager = ({ mode, storeId, storeUsername }: AffiliateMana
 
         {/* Affiliates List */}
         {isEnabled && (
-          <div className="p-6 rounded-2xl border bg-slate-800/60 border-purple-500/30">
+          <div className="p-6 rounded-2xl border bg-[#0a0a0a] border-violet-500/20">
             <h3 className="text-lg font-semibold text-white mb-4">Your Affiliates</h3>
             
             {allLinks.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
+              <div className="text-center py-8 text-white/40">
                 <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
                 <p>No affiliates yet</p>
-                <p className="text-sm text-gray-500">Share your store to attract affiliates</p>
+                <p className="text-sm text-white/30">Share your store to attract affiliates</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {allLinks.map(link => (
                   <div
                     key={link.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-black/20"
+                    className="flex items-center justify-between p-3 rounded-lg bg-white/[0.03]"
                   >
                     <div className="flex items-center gap-4">
-                      <code className="text-sm font-mono text-purple-400 bg-purple-500/10 px-2 py-1 rounded">
+                      <code className="text-sm font-mono text-violet-400 bg-violet-500/10 px-2 py-1 rounded">
                         {link.code}
                       </code>
-                      <div className="flex items-center gap-4 text-sm text-gray-400">
+                      <div className="flex items-center gap-4 text-sm text-white/40">
                         <span className="flex items-center gap-1">
                           <MousePointer className="w-4 h-4" />
                           {link.clicks} clicks
@@ -445,27 +445,27 @@ export const AffiliateManager = ({ mode, storeId, storeUsername }: AffiliateMana
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <TrendingUp className="w-6 h-6 text-purple-500" />
+        <TrendingUp className="w-6 h-6 text-violet-400" />
         <h2 className="text-2xl font-bold text-white">Affiliate Program</h2>
       </div>
 
       {/* Program not enabled */}
       {!settings?.is_enabled && (
-        <div className="text-center py-12 rounded-2xl border bg-slate-800/30 border-white/10">
-          <Users className="w-12 h-12 mx-auto mb-4 text-gray-500" />
-          <p className="text-gray-400">Affiliate program is not available for this store</p>
+        <div className="text-center py-12 rounded-2xl border bg-white/[0.02] border-white/[0.07]">
+          <Users className="w-12 h-12 mx-auto mb-4 text-white/30" />
+          <p className="text-white/40">Affiliate program is not available for this store</p>
         </div>
       )}
 
       {/* Program enabled but not joined */}
       {settings?.is_enabled && !myLink && (
-        <div className="p-6 rounded-2xl border bg-slate-800/60 border-purple-500/30 text-center">
-          <TrendingUp className="w-12 h-12 mx-auto mb-4 text-purple-500" />
+        <div className="p-6 rounded-2xl border bg-[#0a0a0a] border-violet-500/20 text-center">
+          <TrendingUp className="w-12 h-12 mx-auto mb-4 text-violet-400" />
           <h3 className="text-xl font-semibold text-white mb-2">Join the Affiliate Program</h3>
-          <p className="text-gray-400 mb-4">
+          <p className="text-white/40 mb-4">
             Earn {(settings.commission_rate * 100).toFixed(0)}% commission on every sale you refer!
           </p>
-          <div className="flex justify-center gap-4 text-sm text-gray-400 mb-6">
+          <div className="flex justify-center gap-4 text-sm text-white/40 mb-6">
             <span>Min payout: ${settings.min_payout}</span>
             <span>•</span>
             <span>{settings.cookie_days} day cookie</span>
@@ -473,7 +473,7 @@ export const AffiliateManager = ({ mode, storeId, storeUsername }: AffiliateMana
           <Button
             onClick={joinProgram}
             disabled={joining}
-            className="bg-purple-600 hover:bg-purple-700"
+            className="bg-violet-600 hover:bg-violet-500"
           >
             {joining ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
             Join Program
@@ -486,63 +486,63 @@ export const AffiliateManager = ({ mode, storeId, storeUsername }: AffiliateMana
         <>
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-4 rounded-xl bg-slate-800/50 border border-purple-500/30">
-              <MousePointer className="w-5 h-5 text-blue-400 mb-2" />
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-violet-500/20">
+              <MousePointer className="w-5 h-5 text-violet-400 mb-2" />
               <p className="text-2xl font-bold text-white">{myLink.clicks}</p>
-              <p className="text-sm text-gray-400">Clicks</p>
+              <p className="text-sm text-white/40">Clicks</p>
             </div>
-            <div className="p-4 rounded-xl bg-slate-800/50 border border-purple-500/30">
-              <ShoppingCart className="w-5 h-5 text-green-400 mb-2" />
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-violet-500/20">
+              <ShoppingCart className="w-5 h-5 text-violet-400 mb-2" />
               <p className="text-2xl font-bold text-white">{myLink.conversions}</p>
-              <p className="text-sm text-gray-400">Conversions</p>
+              <p className="text-sm text-white/40">Conversions</p>
             </div>
-            <div className="p-4 rounded-xl bg-slate-800/50 border border-purple-500/30">
-              <DollarSign className="w-5 h-5 text-yellow-400 mb-2" />
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-violet-500/20">
+              <DollarSign className="w-5 h-5 text-violet-400 mb-2" />
               <p className="text-2xl font-bold text-white">${myLink.earnings.toFixed(2)}</p>
-              <p className="text-sm text-gray-400">Earnings</p>
+              <p className="text-sm text-white/40">Earnings</p>
             </div>
-            <div className="p-4 rounded-xl bg-slate-800/50 border border-purple-500/30">
-              <Percent className="w-5 h-5 text-purple-400 mb-2" />
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-violet-500/20">
+              <Percent className="w-5 h-5 text-violet-400 mb-2" />
               <p className="text-2xl font-bold text-white">
                 {myLink.clicks > 0 ? ((myLink.conversions / myLink.clicks) * 100).toFixed(1) : 0}%
               </p>
-              <p className="text-sm text-gray-400">Conv. Rate</p>
+              <p className="text-sm text-white/40">Conv. Rate</p>
             </div>
           </div>
 
           {/* Affiliate Link */}
-          <div className="p-4 rounded-xl bg-slate-800/50 border border-purple-500/30">
+          <div className="p-4 rounded-xl bg-white/[0.02] border border-violet-500/20">
             <div className="flex items-center gap-2 mb-3">
-              <LinkIcon className="w-5 h-5 text-gray-400" />
+              <LinkIcon className="w-5 h-5 text-white/40" />
               <span className="text-white font-medium">Your Affiliate Link</span>
             </div>
             <div className="flex gap-2">
               <Input
                 readOnly
                 value={`${window.location.origin}/site/${storeUsername}?ref=${myLink.code}`}
-                className="bg-black/30 border-gray-700 text-gray-300 font-mono text-sm"
+                className="bg-white/[0.03] border-white/[0.07] text-white/60 font-mono text-sm"
               />
-              <Button onClick={copyLink} variant="outline" className="border-gray-700">
+              <Button onClick={copyLink} variant="outline" className="border-white/[0.07]">
                 <Copy className="w-4 h-4" />
               </Button>
             </div>
           </div>
 
           {/* Payout Info */}
-          <div className="p-4 rounded-xl bg-slate-800/50 border border-purple-500/30">
+          <div className="p-4 rounded-xl bg-white/[0.02] border border-violet-500/20">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Wallet className="w-5 h-5 text-gray-400" />
+                <Wallet className="w-5 h-5 text-white/40" />
                 <span className="text-white font-medium">Payout Status</span>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-white/40">
                   Min payout: ${settings.min_payout}
                 </p>
                 {myLink.earnings >= settings.min_payout ? (
                   <span className="text-green-400 text-sm">Eligible for payout</span>
                 ) : (
-                  <span className="text-gray-500 text-sm">
+                  <span className="text-white/30 text-sm">
                     ${(settings.min_payout - myLink.earnings).toFixed(2)} more to reach minimum
                   </span>
                 )}
@@ -552,15 +552,15 @@ export const AffiliateManager = ({ mode, storeId, storeUsername }: AffiliateMana
 
           {/* Recent Referrals */}
           {referrals.length > 0 && (
-            <div className="p-4 rounded-xl bg-slate-800/50 border border-purple-500/30">
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-violet-500/20">
               <h3 className="text-white font-medium mb-3">Recent Referrals</h3>
               <div className="space-y-2">
                 {referrals.slice(0, 5).map(ref => (
                   <div
                     key={ref.id}
-                    className="flex items-center justify-between p-2 rounded bg-black/20"
+                    className="flex items-center justify-between p-2 rounded bg-white/[0.03]"
                   >
-                    <span className="text-sm text-gray-400">{formatDate(ref.created_at)}</span>
+                    <span className="text-sm text-white/40">{formatDate(ref.created_at)}</span>
                     <span className={`text-sm px-2 py-0.5 rounded ${
                       ref.status === 'paid' ? 'bg-green-500/20 text-green-400' :
                       ref.status === 'approved' ? 'bg-blue-500/20 text-blue-400' :

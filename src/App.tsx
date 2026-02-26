@@ -47,6 +47,7 @@ const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const DynamicUserRoute = lazy(() => import("./pages/DynamicUserRoute"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
+const Pricing = lazy(() => import("./pages/Pricing"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -104,6 +105,7 @@ const App = () => {
                     <Route path="/payment-success" element={<PaymentSuccess />} />
                     <Route path="/payment-failure" element={<PaymentFailure />} />
                     <Route path="/developer" element={<Developer />} />
+                    <Route path="/pricing" element={<Pricing />} />
                     <Route path="/developer/obfuscator" element={<DeveloperObfuscator />} />
                     <Route path="/developer/whitelist" element={<DeveloperWhitelist />} />
                     <Route path="/developer/docs" element={<DeveloperDocs />} />
@@ -113,6 +115,10 @@ const App = () => {
                     <Route path="/onboarding" element={<Onboarding />} />
                     <Route path="/tos" element={<TermsOfService />} />
                     <Route path="/privacy" element={<PrivacyPolicy />} />
+                    {/* /site/:slug alias routes - must be before /:username catch-all */}
+                    <Route path="/site/:username" element={<DynamicUserRoute />} />
+                    <Route path="/site/:username/roadmap/:productId" element={<DynamicUserRoute />} />
+                    <Route path="/site/:username/:pageType" element={<DynamicUserRoute />} />
                     {/* Direct username routes (like Payhip) - must be after all system routes */}
                     <Route path="/:username" element={<DynamicUserRoute />} />
                     <Route path="/:username/roadmap/:productId" element={<DynamicUserRoute />} />

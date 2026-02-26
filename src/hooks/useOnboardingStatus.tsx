@@ -77,12 +77,13 @@ export function validateBusinessProfile(data: {
 
 export function useOnboardingStatus() {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [status, setStatus] = useState<OnboardingStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchStatus = useCallback(async () => {
-    if (!user) {
+    if (!userId) {
       setStatus(null);
       setIsLoading(false);
       return;
@@ -105,7 +106,7 @@ export function useOnboardingStatus() {
           onboarding_completed_at,
           is_creator
         `)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .single();
 
       if (fetchError) {
@@ -121,7 +122,7 @@ export function useOnboardingStatus() {
           business_name: profile.business_name,
           business_description: profile.business_description,
           contact_email: profile.contact_email,
-          stripe_connected: profile.stripe_connect_status === 'complete',
+          stripe_connected: profile.stripe_connect_status === 'complete' || profile.stripe_connect_status === 'connected',
           stripe_account_id: profile.stripe_connect_account_id,
           stripe_status: profile.stripe_connect_status as OnboardingStatus['stripe_status'],
           is_fully_onboarded: isOnboardingComplete(profile),
@@ -135,25 +136,24 @@ export function useOnboardingStatus() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [userId]);
 
   const updateStatus = useCallback(async (updates: OnboardingUpdates) => {
-    if (!user) {
+    if (!userId) {
       throw new Error('User not authenticated');
     }
 
     const { error: updateError } = await supabase
       .from('profiles')
       .update(updates)
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
 
     if (updateError) {
       throw updateError;
     }
 
-    // Refetch to get updated status
     await fetchStatus();
-  }, [user, fetchStatus]);
+  }, [userId, fetchStatus]);
 
   const agreeTOS = useCallback(async (version: string = '2026-01-05') => {
     await updateStatus({
@@ -175,9 +175,9 @@ export function useOnboardingStatus() {
     await updateStatus({
       business_name: data.business_name.trim(),
       business_description: data.business_description?.trim() || null,
-      contact_email: data.contact_email?.trim() || user?.email || null,
+      contact_email: data.contact_email?.trim() || null,
     });
-  }, [updateStatus, user]);
+  }, [updateStatus]);
 
   const markOnboardingComplete = useCallback(async () => {
     await updateStatus({

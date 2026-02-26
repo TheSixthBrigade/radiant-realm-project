@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useState } from "react";
+import { useLocation, Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Search, Sparkles, TrendingUp, Star, Download, Clock, Flame, Crown, Zap, ChevronRight, Package } from "lucide-react";
+import { Search, Sparkles, Zap, Package, Flame, Crown, Star, Clock, ChevronRight } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import Navigation from "@/components/Navigation";
 import { useProducts } from "@/hooks/useProducts";
@@ -78,12 +78,12 @@ const Shop = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950">
+      <div className="min-h-screen relative" style={{ background: '#000000' }}>
         <Navigation />
         <div className="flex items-center justify-center min-h-[80vh]">
           <div className="text-center">
-            <div className="w-12 h-12 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="mt-4 text-slate-400">Loading marketplace...</p>
+            <div className="w-12 h-12 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="mt-4 text-zinc-500">Loading marketplace...</p>
           </div>
         </div>
       </div>
@@ -111,19 +111,19 @@ const Shop = () => {
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-800/60 border border-slate-700/50 flex items-center justify-center">
-              <Icon className="w-5 h-5 text-slate-400" strokeWidth={1.5} />
-            </div>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.15)' }}>
+                <Icon className="w-5 h-5 text-violet-400" strokeWidth={1.5} />
+              </div>
             <div>
               <h2 className="text-xl font-bold text-white">{title}</h2>
-              <p className="text-slate-500 text-sm">{products.length} products</p>
+              <p className="text-zinc-600 text-sm">{products.length} products</p>
             </div>
           </div>
           {products.length > 3 && (
             <Button 
               variant="ghost" 
               onClick={() => setActiveSection(isExpanded ? null : sectionKey)}
-              className="text-green-400 hover:text-green-300 hover:bg-green-500/10"
+              className="text-violet-400 hover:text-violet-300 hover:bg-violet-500/10 text-sm font-semibold"
             >
               {isExpanded ? 'Show Less' : 'View All'}
               <ChevronRight className={`w-4 h-4 ml-1 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
@@ -153,7 +153,7 @@ const Shop = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 relative">
+    <div className="min-h-screen relative" style={{ background: '#000000' }}>
       <SEO 
         title="Shop - Browse Digital Assets"
         description={`Discover ${allProducts.length}+ premium digital assets from talented creators. Game scripts, 3D models, UI kits, textures, and more.`}
@@ -165,66 +165,125 @@ const Shop = () => {
         { name: 'Shop', url: '/shop' }
       ]} />
       
-      {/* Ambient background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-green-500/[0.04] rounded-full blur-[100px]" />
-        <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-emerald-500/[0.04] rounded-full blur-[120px]" />
-      </div>
+
 
       <Navigation />
       
-      {/* Hero / Search Section */}
-      <div className="pt-24 pb-8 relative z-10">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="max-w-3xl mx-auto text-center mb-8">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
-              Marketplace
-            </h1>
-            <p className="text-slate-400 text-sm sm:text-base mb-6">
-              Discover {allProducts.length}+ premium digital assets from talented creators
-            </p>
-            
-            {/* Search Bar */}
-            <div className="relative max-w-xl mx-auto">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+      {/* ── HERO ── */}
+      <section className="relative pt-32 pb-12 sm:pt-40 sm:pb-16 overflow-hidden" style={{ background: '#000000' }}>
+        {/* Ghost watermark */}
+        <div
+          aria-hidden="true"
+          className="absolute right-0 top-1/2 -translate-y-1/2 select-none pointer-events-none"
+          style={{
+            fontSize: 'clamp(120px, 18vw, 260px)',
+            fontFamily: "'Arial Rounded MT Bold', sans-serif",
+            fontWeight: 900,
+            color: 'transparent',
+            WebkitTextStroke: '1px rgba(139,92,246,0.08)',
+            lineHeight: 1,
+            letterSpacing: '-0.04em',
+            userSelect: 'none',
+          }}
+        >
+          SHOP
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.span
+            initial={{ opacity: 0, x: -16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4 }}
+            className="inline-block text-xs font-bold uppercase tracking-[0.2em] text-violet-400 mb-6"
+          >
+            Marketplace
+          </motion.span>
+
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-10">
+            <motion.h1
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.06 }}
+              className="font-black leading-[0.9] tracking-tight text-white"
+              style={{ fontSize: 'clamp(44px, 7vw, 96px)' }}
+            >
+              <span className="block">Find your next</span>
+              <span className="block" style={{ color: '#8b5cf6' }}>game asset.</span>
+            </motion.h1>
+
+            {/* Search bar — right-aligned on desktop */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.16 }}
+              className="relative w-full lg:max-w-sm flex-shrink-0"
+            >
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
               <Input
-                placeholder="Search assets..."
+                placeholder="Search scripts, models, tools..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 pr-4 py-3 bg-slate-900/60 border-slate-800 text-white placeholder:text-slate-500 focus:border-green-500/50 focus:ring-green-500/20 rounded-xl"
+                className="pl-11 pr-10 py-3 text-sm bg-white/[0.04] border border-white/[0.08] text-white placeholder:text-zinc-600 focus:border-violet-500/40 focus:outline-none rounded-full transition-all"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white transition-colors"
                 >
                   ✕
                 </button>
               )}
-            </div>
+            </motion.div>
           </div>
 
-          {/* Category Pills */}
-          <div className="flex flex-wrap justify-center gap-2 mb-8">
+          {/* Category pills */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.22 }}
+            className="flex flex-wrap gap-2"
+          >
             {categories.map((cat) => (
               <button
                 key={cat.value}
                 onClick={() => setSelectedCategory(cat.value)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  selectedCategory === cat.value
-                    ? 'bg-green-600 text-white shadow-lg shadow-green-500/20'
-                    : 'bg-slate-800/60 text-slate-400 hover:bg-slate-700/60 hover:text-white border border-slate-700/50'
-                }`}
+                className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200"
+                style={selectedCategory === cat.value ? {
+                  background: '#7c3aed',
+                  color: '#fff',
+                  border: '1px solid #7c3aed',
+                } : {
+                  background: 'transparent',
+                  color: '#71717a',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}
+                onMouseEnter={e => {
+                  if (selectedCategory !== cat.value) {
+                    (e.currentTarget as HTMLButtonElement).style.color = '#fff';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.2)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (selectedCategory !== cat.value) {
+                    (e.currentTarget as HTMLButtonElement).style.color = '#71717a';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.08)';
+                  }
+                }}
               >
                 {cat.label}
               </button>
             ))}
-          </div>
+            {allProducts.length > 0 && (
+              <span className="px-4 py-1.5 text-xs text-zinc-600 self-center">
+                {allProducts.length} products
+              </span>
+            )}
+          </motion.div>
         </div>
-      </div>
+      </section>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 sm:px-6 pb-16 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 relative z-10">
         {searchQuery || selectedCategory !== "all" ? (
           /* Search Results */
           <div>
@@ -233,7 +292,7 @@ const Shop = () => {
                 <h2 className="text-xl font-bold text-white">
                   {searchQuery ? `Results for "${searchQuery}"` : categories.find(c => c.value === selectedCategory)?.label}
                 </h2>
-                <p className="text-slate-500 text-sm">{filteredProducts.length} products found</p>
+                <p className="text-zinc-600 text-sm">{filteredProducts.length} products found</p>
               </div>
               {(searchQuery || selectedCategory !== "all") && (
                 <Button 
@@ -266,15 +325,15 @@ const Shop = () => {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-16 bg-slate-900/30 rounded-2xl border border-slate-800/30">
-                <Search className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+              <div className="text-center py-16 bg-white/[0.02] rounded-2xl border border-white/[0.07]">
+                <Search className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-white mb-2">No products found</h3>
-                <p className="text-slate-400 text-sm mb-4">Try adjusting your search or filters</p>
+                <p className="text-zinc-500 text-sm mb-4">Try adjusting your search or filters</p>
                 <Button 
                   onClick={() => { setSearchQuery(''); setSelectedCategory('all'); }}
-                  className="bg-green-600 hover:bg-green-500"
+                  className="spark-btn spark-btn-primary"
                 >
-                  Clear Filters
+                  <span className="spark-btn-content">Clear Filters</span>
                 </Button>
               </div>
             )}
@@ -320,12 +379,12 @@ const Shop = () => {
             {allProducts.length > 0 && (
               <section>
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-slate-800/60 border border-slate-700/50 flex items-center justify-center">
-                    <Package className="w-5 h-5 text-slate-400" strokeWidth={1.5} />
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.15)' }}>
+                    <Package className="w-5 h-5 text-violet-400" strokeWidth={1.5} />
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-white">All Products</h2>
-                    <p className="text-slate-500 text-sm">{allProducts.length} total</p>
+                    <p className="text-zinc-600 text-sm">{allProducts.length} total</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

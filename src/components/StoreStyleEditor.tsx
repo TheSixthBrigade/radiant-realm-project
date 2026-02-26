@@ -112,6 +112,45 @@ export const StoreStyleEditor = ({ isOpen, onClose, settings, onSettingsChange, 
             </div>
           </div>
 
+          {/* Button Colors */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Button Colors</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Button Background</Label>
+                <div className="flex gap-2 mt-1">
+                  <Input type="color" value={settings.primary_button_bg || '#5DADE2'} onChange={(e) => onSettingsChange({ ...settings, primary_button_bg: e.target.value })} className="w-16 h-10 p-1" />
+                  <Input value={settings.primary_button_bg || '#5DADE2'} onChange={(e) => onSettingsChange({ ...settings, primary_button_bg: e.target.value })} className="flex-1" />
+                </div>
+              </div>
+              <div>
+                <Label>Button Text</Label>
+                <div className="flex gap-2 mt-1">
+                  <Input type="color" value={settings.primary_button_text || '#ffffff'} onChange={(e) => onSettingsChange({ ...settings, primary_button_text: e.target.value })} className="w-16 h-10 p-1" />
+                  <Input value={settings.primary_button_text || '#ffffff'} onChange={(e) => onSettingsChange({ ...settings, primary_button_text: e.target.value })} className="flex-1" />
+                </div>
+              </div>
+              <div>
+                <Label>Button Hover Background</Label>
+                <div className="flex gap-2 mt-1">
+                  <Input type="color" value={settings.primary_button_bg_hover || '#3498DB'} onChange={(e) => onSettingsChange({ ...settings, primary_button_bg_hover: e.target.value })} className="w-16 h-10 p-1" />
+                  <Input value={settings.primary_button_bg_hover || '#3498DB'} onChange={(e) => onSettingsChange({ ...settings, primary_button_bg_hover: e.target.value })} className="flex-1" />
+                </div>
+              </div>
+              <div>
+                <Label>Button Size</Label>
+                <Select value={settings.button_size || 'medium'} onValueChange={(value) => onSettingsChange({ ...settings, button_size: value })}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="small">Small</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="large">Large</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
           {/* Typography Section */}
           <div>
             <div className="flex items-center gap-2 mb-4">
@@ -177,6 +216,98 @@ export const StoreStyleEditor = ({ isOpen, onClose, settings, onSettingsChange, 
                     <SelectItem value="pill">Pill</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Card Settings */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Cards & Layout</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Card Style</Label>
+                <Select value={settings.card_style || 'modern'} onValueChange={(value) => onSettingsChange({ ...settings, card_style: value })}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="modern">Modern</SelectItem>
+                    <SelectItem value="minimal">Minimal</SelectItem>
+                    <SelectItem value="standard">Standard</SelectItem>
+                    <SelectItem value="elevated">Elevated</SelectItem>
+                    <SelectItem value="gaming">Gaming</SelectItem>
+                    <SelectItem value="hover-reveal">Hover Reveal</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Products Per Row</Label>
+                <Select value={settings.products_per_row || '4'} onValueChange={(value) => onSettingsChange({ ...settings, products_per_row: value })}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2">2 columns</SelectItem>
+                    <SelectItem value="3">3 columns</SelectItem>
+                    <SelectItem value="4">4 columns</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Card Border Radius (px)</Label>
+                <Input
+                  type="number" min="0" max="32"
+                  value={settings.card_border_radius || '8'}
+                  onChange={(e) => onSettingsChange({ ...settings, card_border_radius: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Spacing</Label>
+                <Select value={settings.spacing || 'normal'} onValueChange={(value) => onSettingsChange({ ...settings, spacing: value })}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="compact">Compact</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="relaxed">Relaxed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Card Background</Label>
+                <div className="flex gap-2 mt-1">
+                  <Input type="color" value={settings.card_bg_color || '#ffffff'} onChange={(e) => onSettingsChange({ ...settings, card_bg_color: e.target.value })} className="w-16 h-10 p-1" />
+                  <Input value={settings.card_bg_color || '#ffffff'} onChange={(e) => onSettingsChange({ ...settings, card_bg_color: e.target.value })} className="flex-1" />
+                </div>
+              </div>
+              <div>
+                <Label>Product Layout</Label>
+                <Select value={settings.product_layout || 'grid'} onValueChange={(value) => onSettingsChange({ ...settings, product_layout: value })}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="grid">Grid</SelectItem>
+                    <SelectItem value="list">List</SelectItem>
+                    <SelectItem value="masonry">Masonry</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="mt-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Show Ratings</Label>
+                <Switch checked={settings.show_ratings !== false} onCheckedChange={(v) => onSettingsChange({ ...settings, show_ratings: v })} />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Show Download Count</Label>
+                <Switch checked={settings.show_downloads !== false} onCheckedChange={(v) => onSettingsChange({ ...settings, show_downloads: v })} />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Show Badges (New, Featured)</Label>
+                <Switch checked={settings.show_badges !== false} onCheckedChange={(v) => onSettingsChange({ ...settings, show_badges: v })} />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Show Sale Tags</Label>
+                <Switch checked={settings.show_sale_tags !== false} onCheckedChange={(v) => onSettingsChange({ ...settings, show_sale_tags: v })} />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Hover Effects</Label>
+                <Switch checked={settings.show_hover_effects !== false} onCheckedChange={(v) => onSettingsChange({ ...settings, show_hover_effects: v })} />
               </div>
             </div>
           </div>

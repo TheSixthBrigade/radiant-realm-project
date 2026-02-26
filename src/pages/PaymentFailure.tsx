@@ -1,6 +1,4 @@
 import { useSearchParams, Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { XCircle, ArrowLeft, RefreshCw } from "lucide-react";
 import Navigation from "@/components/Navigation";
 
@@ -9,65 +7,77 @@ const PaymentFailure = () => {
   const error = searchParams.get('error');
 
   const handleRetry = () => {
-    // Go back to the previous page or shop
     window.history.back();
   };
 
+  const reasons = [
+    "Insufficient funds in your account",
+    "Incorrect or expired card details",
+    "Card blocked by your bank",
+    "Network connection issues",
+  ];
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      {/* Red-tinted glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse, rgba(239,68,68,0.08) 0%, transparent 70%)' }} />
+
       <Navigation />
-      
-      <div className="container mx-auto px-6 pt-24 pb-12">
-        <div className="max-w-2xl mx-auto">
-          <Card className="glass p-8 text-center">
-            <div className="mb-6">
-              <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-              <h1 className="text-3xl font-bold mb-2">Payment Failed</h1>
-              <p className="text-muted-foreground text-lg">
-                We couldn't process your payment. Please try again.
-              </p>
-            </div>
 
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
-                <p className="text-red-800 dark:text-red-200 text-sm">
-                  Error: {error}
-                </p>
-              </div>
-            )}
+      <div className="relative z-10 flex items-center justify-center min-h-[80vh] px-6 pt-20">
+        <div className="max-w-md w-full text-center">
+          {/* Icon */}
+          <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8 border border-red-500/20 bg-red-500/10">
+            <XCircle className="w-10 h-10 text-red-400" />
+          </div>
 
-            <div className="space-y-4 mb-8">
-              <div className="p-4 border rounded-lg text-left">
-                <h3 className="font-semibold mb-2">Common reasons for payment failure:</h3>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Insufficient funds in your account</li>
-                  <li>• Incorrect card details</li>
-                  <li>• Card expired or blocked</li>
-                  <li>• Network connection issues</li>
-                </ul>
-              </div>
-            </div>
+          <p className="text-red-400/70 text-xs uppercase tracking-widest mb-3 font-medium">Payment failed</p>
+          <h1 className="text-5xl font-black mb-4 leading-tight" style={{ fontFamily: "'Arial Rounded MT Bold', sans-serif" }}>
+            Something<br />went wrong.
+          </h1>
+          <p className="text-white/40 text-sm mb-8 leading-relaxed">
+            We couldn't process your payment. No charges were made.
+          </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button onClick={handleRetry} className="flex-1 sm:flex-none">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Try Again
-              </Button>
-              
-              <Button asChild variant="outline" className="flex-1 sm:flex-none">
-                <Link to="/shop">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Shop
-                </Link>
-              </Button>
+          {error && (
+            <div className="border border-red-500/20 rounded-2xl p-4 mb-6 bg-red-500/5 text-left">
+              <p className="text-red-400/70 text-xs uppercase tracking-wider mb-1">Error details</p>
+              <p className="text-red-300 text-sm">{error}</p>
             </div>
+          )}
 
-            <div className="mt-8 pt-6 border-t">
-              <p className="text-sm text-muted-foreground">
-                Still having issues? <Link to="/contact" className="text-primary hover:underline">Contact Support</Link>
-              </p>
-            </div>
-          </Card>
+          <div className="border border-white/[0.07] rounded-2xl p-5 mb-8 bg-[#0a0a0a] text-left">
+            <p className="text-white/30 text-xs uppercase tracking-wider mb-3">Common reasons</p>
+            <ul className="space-y-2">
+              {reasons.map((r, i) => (
+                <li key={i} className="flex items-center gap-3 text-white/50 text-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/20 flex-shrink-0" />
+                  {r}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button onClick={handleRetry}
+              className="magnet-btn magnet-btn-primary px-6 h-12 rounded-xl text-sm font-semibold">
+              <span className="magnet-btn-content flex items-center gap-2">
+                <RefreshCw className="w-4 h-4" /> Try Again
+              </span>
+            </button>
+            <Link to="/shop"
+              className="magnet-btn magnet-btn-outline px-6 h-12 rounded-xl text-sm font-semibold">
+              <span className="magnet-btn-content flex items-center gap-2">
+                <ArrowLeft className="w-4 h-4" /> Back to Shop
+              </span>
+            </Link>
+          </div>
+
+          <p className="text-white/20 text-xs mt-8">
+            Still having issues?{" "}
+            <Link to="/contact" className="text-violet-400/60 hover:text-violet-400 transition-colors">Contact Support</Link>
+          </p>
         </div>
       </div>
     </div>

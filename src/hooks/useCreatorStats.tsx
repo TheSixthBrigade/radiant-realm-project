@@ -1,12 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 interface CreatorStats {
   totalEarnings: number;
   totalDownloads: number;
   activeProducts: number;
   monthlyRevenue: number;
+  previousMonthRevenue: number;
   totalSales: number;
 }
 
@@ -36,12 +38,14 @@ export const useCreatorStats = () => {
     totalDownloads: 0,
     activeProducts: 0,
     monthlyRevenue: 0,
+    previousMonthRevenue: 0,
     totalSales: 0,
   });
   const [products, setProducts] = useState<CreatorProduct[]>([]);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasToastedError = useRef(false);
 
   const fetchCreatorData = async () => {
     if (!user) {
@@ -64,13 +68,11 @@ export const useCreatorStats = () => {
         // Get product IDs for sales query
         const productIds = productsData?.map(p => p.id) || [];
 
-        // Get creator's sales - more efficient query
-        const { data: salesData, error: salesError } = productIds.length > 0 
-          ? await supabase
-              .from('sales')
-              .select('id, product_id, amount, created_at')
-              .in('product_id', productIds)
-          : { data: [], error: null };
+        // Get creator's sales directly by seller_id
+        const { data: salesData, error: salesError } = await supabase
+          .from('sales')
+          .select('id, product_id, amount, created_at')
+          .eq('seller_id', user.id);
 
         if (salesError) throw salesError;
 
@@ -87,11 +89,20 @@ export const useCreatorStats = () => {
           new Date(sale.created_at) >= thirtyDaysAgo
         ).reduce((sum, sale) => sum + Number(sale.amount), 0) || 0;
 
+        // Calculate previous month revenue (60–30 days ago)
+        const sixtyDaysAgo = new Date();
+        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+        const previousMonthRevenue = salesData?.filter(sale => {
+          const saleDate = new Date(sale.created_at);
+          return saleDate >= sixtyDaysAgo && saleDate < thirtyDaysAgo;
+        }).reduce((sum, sale) => sum + Number(sale.amount), 0) || 0;
+
         setStats({
           totalEarnings,
           totalDownloads,
           activeProducts,
           monthlyRevenue,
+          previousMonthRevenue,
           totalSales,
         });
 
@@ -130,6 +141,10 @@ export const useCreatorStats = () => {
 
       } catch (err) {
         console.error('Error fetching creator data:', err);
+        if (!hasToastedError.current) {
+          hasToastedError.current = true;
+          toast.error('Failed to load your stats. Please try again.');
+        }
         setError(err instanceof Error ? err.message : 'Failed to fetch creator data');
       } finally {
         setLoading(false);
@@ -148,13 +163,13 @@ export const useCreatorStats = () => {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
-          table: 'sales'
+          table: 'sales',
+          filter: `seller_id=eq.${user.id}`
         },
         () => {
-          console.log('Sales changed, refetching...');
-          fetchCreatorData();
+          if (!hasToastedError.current) fetchCreatorData();
         }
       )
       .subscribe();
@@ -167,11 +182,11 @@ export const useCreatorStats = () => {
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'products'
+          table: 'products',
+          filter: `creator_id=eq.${user.id}`
         },
         () => {
-          console.log('Products changed, refetching...');
-          fetchCreatorData();
+          if (!hasToastedError.current) fetchCreatorData();
         }
       )
       .subscribe();
@@ -198,6 +213,7 @@ export const useCreatorStats = () => {
   };
 
   const refetch = () => {
+    hasToastedError.current = false;
     fetchCreatorData();
   };
 
@@ -208,5 +224,6 @@ export const useCreatorStats = () => {
     loading,
     error,
     refetch,
+    previousMonthRevenue: stats.previousMonthRevenue,
   };
 };

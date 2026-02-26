@@ -40,73 +40,86 @@ type WhitelistUser = {
 // Animated gradient canvas component
 const GradientCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
     let animationId: number;
     let time = 0;
 
-    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
     resize();
     window.addEventListener('resize', resize);
-    
+
     const animate = () => {
       time += 0.002;
-      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      const offset1 = (Math.sin(time * 0.8) + 1) / 2;
-      const offset2 = (Math.sin(time * 0.8 + 2) + 1) / 2;
-      // Dark greys with visible green accents
-      gradient.addColorStop(0, `hsl(160, 20%, ${6 + Math.sin(time) * 2}%)`);
-      gradient.addColorStop(0.2, `hsl(155, 25%, ${10 + Math.sin(time + 1) * 2}%)`);
-      gradient.addColorStop(offset1 * 0.2 + 0.35, `hsl(${152 + Math.sin(time) * 8}, ${35 + Math.sin(time) * 10}%, ${16 + Math.sin(time) * 4}%)`);
-      gradient.addColorStop(0.55, `hsl(${155 + Math.sin(time + 2) * 10}, ${25 + Math.sin(time) * 8}%, ${14 + Math.sin(time) * 3}%)`);
-      gradient.addColorStop(offset2 * 0.15 + 0.7, `hsl(160, 15%, ${9 + Math.sin(time + 3) * 2}%)`);
-      gradient.addColorStop(1, `hsl(155, 20%, ${5 + Math.sin(time + 4) * 2}%)`);
-      ctx.fillStyle = gradient;
+
+      // Pure black base
+      ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      // Flowing waves with prominent green
+
+      // Subtle violet radial glow — bottom left
       ctx.globalCompositeOperation = 'screen';
-      for (let i = 0; i < 5; i++) {
-        ctx.beginPath();
-        ctx.moveTo(0, canvas.height);
-        for (let x = 0; x <= canvas.width; x += 6) {
-          const y = canvas.height * (0.35 + i * 0.12) + Math.sin(x * 0.002 + time * 1.5 + i * 0.8) * 100 + Math.sin(x * 0.004 + time * 1.2 + i * 1.2) * 50 + Math.cos(x * 0.001 + time + i) * 70;
-          ctx.lineTo(x, y);
-        }
-        ctx.lineTo(canvas.width, canvas.height);
-        ctx.closePath();
-        const alpha = 0.12 - i * 0.02;
-        ctx.fillStyle = i % 2 === 0 ? `rgba(34, 197, 94, ${alpha})` : `rgba(16, 185, 129, ${alpha})`;
-        ctx.fill();
-      }
-      // Glowing green orbs
-      for (let i = 0; i < 50; i++) {
+      const glow1 = ctx.createRadialGradient(
+        canvas.width * 0.15, canvas.height * 0.85, 0,
+        canvas.width * 0.15, canvas.height * 0.85, canvas.width * 0.55
+      );
+      glow1.addColorStop(0, `rgba(124, 58, 237, ${0.08 + Math.sin(time) * 0.02})`);
+      glow1.addColorStop(0.5, `rgba(109, 40, 217, ${0.03 + Math.sin(time + 1) * 0.01})`);
+      glow1.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow1;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Subtle violet radial glow — top right
+      const glow2 = ctx.createRadialGradient(
+        canvas.width * 0.85, canvas.height * 0.15, 0,
+        canvas.width * 0.85, canvas.height * 0.15, canvas.width * 0.45
+      );
+      glow2.addColorStop(0, `rgba(139, 92, 246, ${0.06 + Math.sin(time * 0.7 + 2) * 0.02})`);
+      glow2.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow2;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Floating violet particles
+      for (let i = 0; i < 40; i++) {
         const x = (Math.sin(time * 0.3 + i * 47) + 1) / 2 * canvas.width;
         const y = (Math.cos(time * 0.2 + i * 31) + 1) / 2 * canvas.height;
-        const size = 2 + Math.sin(time + i) * 1.5;
-        const alpha = 0.25 + Math.sin(time * 2 + i) * 0.15;
+        const size = 1 + Math.sin(time + i) * 0.8;
+        const alpha = 0.08 + Math.sin(time * 2 + i) * 0.04;
         ctx.beginPath();
         ctx.arc(x, y, size, 0, Math.PI * 2);
-        ctx.fillStyle = i % 4 === 0 ? `rgba(34, 197, 94, ${alpha})` : i % 4 === 1 ? `rgba(16, 185, 129, ${alpha})` : i % 4 === 2 ? `rgba(52, 211, 153, ${alpha})` : `rgba(100, 116, 139, ${alpha * 0.5})`;
+        ctx.fillStyle = i % 3 === 0
+          ? `rgba(139, 92, 246, ${alpha})`
+          : i % 3 === 1
+          ? `rgba(124, 58, 237, ${alpha})`
+          : `rgba(167, 139, 250, ${alpha * 0.6})`;
         ctx.fill();
       }
-      // Green glow in corner
-      const glowGradient = ctx.createRadialGradient(canvas.width * 0.1, canvas.height * 0.9, 0, canvas.width * 0.1, canvas.height * 0.9, canvas.width * 0.5);
-      glowGradient.addColorStop(0, `rgba(34, 197, 94, ${0.15 + Math.sin(time) * 0.05})`);
-      glowGradient.addColorStop(0.5, `rgba(16, 185, 129, ${0.05 + Math.sin(time + 1) * 0.02})`);
-      glowGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = glowGradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
       ctx.globalCompositeOperation = 'source-over';
       animationId = requestAnimationFrame(animate);
     };
+
     animate();
-    return () => { cancelAnimationFrame(animationId); window.removeEventListener('resize', resize); };
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener('resize', resize);
+    };
   }, []);
-  return <canvas ref={canvasRef} className="fixed inset-0 w-full h-full" style={{ zIndex: 0 }} />;
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 w-full h-full"
+      style={{ zIndex: 0 }}
+    />
+  );
 };
 
 const DeveloperWhitelist = () => {
@@ -275,7 +288,7 @@ const DeveloperWhitelist = () => {
   const handleCopy = (text: string, id: string) => { navigator.clipboard.writeText(text); setCopied(id); setTimeout(() => setCopied(null), 2000); toast.success('Copied!'); };
   const getStatusColor = (status: string | null) => {
     switch (status) {
-      case 'active': return 'text-green-400 bg-green-400/10 border-green-400/20';
+      case 'active': return 'text-violet-400 bg-violet-400/10 border-violet-400/20';
       case 'expired': return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
       case 'banned': return 'text-red-400 bg-red-400/10 border-red-400/20';
       default: return 'text-white/60 bg-white/10 border-white/10';
@@ -357,7 +370,7 @@ const DeveloperWhitelist = () => {
                   <Plus className="w-4 h-4 mr-2" />New Whitelist
                 </Button>
                 {selectedWhitelist && (
-                  <Button onClick={() => setShowAddUserModal(true)} className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white">
+                  <Button onClick={() => setShowAddUserModal(true)} className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white">
                     <UserPlus className="w-4 h-4 mr-2" />Add User
                   </Button>
                 )}
@@ -370,7 +383,7 @@ const DeveloperWhitelist = () => {
                 <Shield className="w-16 h-16 text-white/20 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-white mb-2">Sign In Required</h3>
                 <p className="text-white/50 mb-6 max-w-md mx-auto">Please sign in to manage your whitelist systems.</p>
-                <Button asChild className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white">
+                <Button asChild className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white">
                   <Link to="/auth?mode=login">Sign In</Link>
                 </Button>
               </div>
@@ -381,7 +394,7 @@ const DeveloperWhitelist = () => {
               <div className="mb-6">
                 <div className="relative inline-block">
                   <button onClick={() => setShowWhitelistDropdown(!showWhitelistDropdown)} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-black/30 backdrop-blur-xl border border-white/10 hover:border-white/20 transition-colors">
-                    <Package className="w-5 h-5 text-green-400" />
+                    <Package className="w-5 h-5 text-violet-400" />
                     <span className="text-white font-medium">{currentWhitelist?.name || 'Select Whitelist'}</span>
                     <ChevronDown className={`w-4 h-4 text-white/60 transition-transform ${showWhitelistDropdown ? 'rotate-180' : ''}`} />
                   </button>
@@ -410,7 +423,7 @@ const DeveloperWhitelist = () => {
                 <Package className="w-16 h-16 text-white/20 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-white mb-2">No Whitelist Systems</h3>
                 <p className="text-white/50 mb-6 max-w-md mx-auto">Create your first whitelist system to start managing user access for your products.</p>
-                <Button onClick={() => setShowCreateWhitelistModal(true)} className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white">
+                <Button onClick={() => setShowCreateWhitelistModal(true)} className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white">
                   <Plus className="w-4 h-4 mr-2" />Create Whitelist
                 </Button>
               </div>
@@ -471,7 +484,7 @@ const DeveloperWhitelist = () => {
                       <Users className="w-12 h-12 text-white/20 mx-auto mb-3" />
                       <p className="text-white/40">{currentUsers.length === 0 ? 'No users in this whitelist yet' : 'No users match your search'}</p>
                       {currentUsers.length === 0 && (
-                        <Button onClick={() => setShowAddUserModal(true)} variant="ghost" className="mt-4 text-green-400 hover:text-green-300 hover:bg-green-400/10">
+                        <Button onClick={() => setShowAddUserModal(true)} variant="ghost" className="mt-4 text-violet-400 hover:text-violet-300 hover:bg-violet-400/10">
                           <UserPlus className="w-4 h-4 mr-2" />Add First User
                         </Button>
                       )}
@@ -495,9 +508,9 @@ const DeveloperWhitelist = () => {
                           </div>
                           <div className="lg:col-span-3 flex items-center gap-2">
                             <span className="lg:hidden text-xs text-white/40 w-20">License:</span>
-                            <code className="text-sm text-green-400/80 font-mono truncate">{u.license_key}</code>
+                            <code className="text-sm text-violet-400/80 font-mono truncate">{u.license_key}</code>
                             <button onClick={() => handleCopy(u.license_key, `key-${u.id}`)} className="p-1 rounded hover:bg-white/10 transition-colors flex-shrink-0">
-                              {copied === `key-${u.id}` ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3 text-white/40" />}
+                              {copied === `key-${u.id}` ? <Check className="w-3 h-3 text-violet-400" /> : <Copy className="w-3 h-3 text-white/40" />}
                             </button>
                           </div>
                           <div className="lg:col-span-1 flex items-center">
@@ -508,7 +521,7 @@ const DeveloperWhitelist = () => {
                             </span>
                           </div>
                           <div className="lg:col-span-2 flex items-center justify-end gap-1">
-                            <button onClick={() => handleToggleBan(u.id)} className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${u.status === 'banned' ? 'text-green-400' : 'text-white/40 hover:text-yellow-400'}`} title={u.status === 'banned' ? 'Unban' : 'Ban'}>
+                            <button onClick={() => handleToggleBan(u.id)} className={`p-2 rounded-lg hover:bg-white/10 transition-colors ${u.status === 'banned' ? 'text-violet-400' : 'text-white/40 hover:text-yellow-400'}`} title={u.status === 'banned' ? 'Unban' : 'Ban'}>
                               <Shield className="w-4 h-4" />
                             </button>
                             <button onClick={() => handleRemoveUser(u.id)} className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/40 hover:text-red-400" title="Remove">
@@ -532,18 +545,18 @@ const DeveloperWhitelist = () => {
             <div className="relative w-full max-w-md rounded-2xl bg-slate-900 border border-white/10 p-6">
               <button onClick={() => setShowCreateWhitelistModal(false)} className="absolute top-4 right-4 p-1 rounded hover:bg-white/10 text-white/40 hover:text-white"><X className="w-5 h-5" /></button>
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center"><Package className="w-5 h-5 text-green-400" /></div>
+                <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center"><Package className="w-5 h-5 text-violet-400" /></div>
                 <div><h3 className="text-lg font-bold text-white">Create Whitelist</h3><p className="text-sm text-white/50">Create a new whitelist for a product</p></div>
               </div>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm text-white/60 mb-2">Whitelist Name *</label>
-                  <input type="text" value={newWhitelistName} onChange={(e) => setNewWhitelistName(e.target.value)} placeholder="e.g., My Script Pro" className="w-full px-4 py-3 rounded-lg bg-black/30 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-green-500/50" />
+                  <input type="text" value={newWhitelistName} onChange={(e) => setNewWhitelistName(e.target.value)} placeholder="e.g., My Script Pro" className="w-full px-4 py-3 rounded-lg bg-black/30 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-violet-500/50" />
                 </div>
               </div>
               <div className="flex gap-3 mt-6">
                 <Button variant="ghost" onClick={() => setShowCreateWhitelistModal(false)} className="flex-1 text-white/60 hover:text-white hover:bg-white/10">Cancel</Button>
-                <Button onClick={handleCreateWhitelist} disabled={saving} className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white">
+                <Button onClick={handleCreateWhitelist} disabled={saving} className="flex-1 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white">
                   {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}Create
                 </Button>
               </div>
@@ -558,33 +571,33 @@ const DeveloperWhitelist = () => {
             <div className="relative w-full max-w-md rounded-2xl bg-slate-900 border border-white/10 p-6">
               <button onClick={() => setShowAddUserModal(false)} className="absolute top-4 right-4 p-1 rounded hover:bg-white/10 text-white/40 hover:text-white"><X className="w-5 h-5" /></button>
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center"><UserPlus className="w-5 h-5 text-green-400" /></div>
+                <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center"><UserPlus className="w-5 h-5 text-violet-400" /></div>
                 <div><h3 className="text-lg font-bold text-white">Add User</h3><p className="text-sm text-white/50">Add to {currentWhitelist?.name}</p></div>
               </div>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm text-white/60 mb-2">Username / Nickname *</label>
-                  <input type="text" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} placeholder="Enter username" className="w-full px-4 py-3 rounded-lg bg-black/30 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-green-500/50" />
+                  <input type="text" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} placeholder="Enter username" className="w-full px-4 py-3 rounded-lg bg-black/30 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-violet-500/50" />
                 </div>
                 <div>
                   <label className="block text-sm text-white/60 mb-2">Discord ID</label>
-                  <input type="text" value={newDiscordId} onChange={(e) => setNewDiscordId(e.target.value)} placeholder="e.g., 123456789012345678" className="w-full px-4 py-3 rounded-lg bg-black/30 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-green-500/50" />
+                  <input type="text" value={newDiscordId} onChange={(e) => setNewDiscordId(e.target.value)} placeholder="e.g., 123456789012345678" className="w-full px-4 py-3 rounded-lg bg-black/30 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-violet-500/50" />
                 </div>
                 <div>
                   <label className="block text-sm text-white/60 mb-2">Roblox ID</label>
-                  <input type="text" value={newRobloxId} onChange={(e) => setNewRobloxId(e.target.value)} placeholder="e.g., 12345678" className="w-full px-4 py-3 rounded-lg bg-black/30 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-green-500/50" />
+                  <input type="text" value={newRobloxId} onChange={(e) => setNewRobloxId(e.target.value)} placeholder="e.g., 12345678" className="w-full px-4 py-3 rounded-lg bg-black/30 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-violet-500/50" />
                 </div>
                 <div>
                   <label className="block text-sm text-white/60 mb-2">License Key</label>
                   <div className="flex gap-2">
-                    <input type="text" value={newLicenseKey} onChange={(e) => setNewLicenseKey(e.target.value)} placeholder="Auto-generated if empty" className="flex-1 px-4 py-3 rounded-lg bg-black/30 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-green-500/50 font-mono" />
+                    <input type="text" value={newLicenseKey} onChange={(e) => setNewLicenseKey(e.target.value)} placeholder="Auto-generated if empty" className="flex-1 px-4 py-3 rounded-lg bg-black/30 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-violet-500/50 font-mono" />
                     <Button type="button" variant="outline" onClick={generateLicenseKey} className="border-white/20 text-white hover:bg-white/10 px-3"><Key className="w-4 h-4" /></Button>
                   </div>
                 </div>
               </div>
               <div className="flex gap-3 mt-6">
                 <Button variant="ghost" onClick={() => setShowAddUserModal(false)} className="flex-1 text-white/60 hover:text-white hover:bg-white/10">Cancel</Button>
-                <Button onClick={handleAddUser} disabled={saving} className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white">
+                <Button onClick={handleAddUser} disabled={saving} className="flex-1 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white">
                   {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UserPlus className="w-4 h-4 mr-2" />}Add User
                 </Button>
               </div>

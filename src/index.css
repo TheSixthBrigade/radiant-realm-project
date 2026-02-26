@@ -1,116 +1,115 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@font-face {
+  font-family: 'Arial Rounded MT Bold';
+  src: url('/Fonts/Arial Rounded MT Bold Regular.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import './styles/design-tokens.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Vectabase Design System - Clean, Functional, Modern */
+/* Vectabase Design System */
 
 @layer base {
   :root {
-    /* Vectabase Brand Colors - Black, Gray, Green */
-    --background: 220 15% 6%;
+    --background: 0 0% 0%;
     --foreground: 0 0% 100%;
-    
-    --card: 220 15% 10%;
+    --card: 0 0% 5%;
     --card-foreground: 0 0% 100%;
-    
-    --popover: 220 15% 10%;
+    --popover: 0 0% 5%;
     --popover-foreground: 0 0% 100%;
-    
-    --primary: 142 71% 45%;
+    --primary: 263 70% 50%;
     --primary-foreground: 0 0% 100%;
-    
-    --secondary: 0 0% 15%;
+    --secondary: 0 0% 10%;
     --secondary-foreground: 0 0% 100%;
-    
-    --muted: 220 15% 15%;
-    --muted-foreground: 0 0% 64%;
-    
-    --accent: 142 71% 45%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 263 70% 50%;
     --accent-foreground: 0 0% 100%;
-    
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
-    
-    --border: 0 0% 15%;
-    --input: 220 15% 10%;
-    --ring: 142 71% 45%;
-    
+    --border: 0 0% 12%;
+    --input: 0 0% 8%;
+    --ring: 263 70% 50%;
     --radius: 0.75rem;
-    
-    --sidebar-background: 220 15% 6%;
+    --sidebar-background: 0 0% 0%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 142 71% 45%;
+    --sidebar-primary: 263 70% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 10%;
+    --sidebar-accent: 0 0% 8%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 142 71% 45%;
+    --sidebar-border: 0 0% 12%;
+    --sidebar-ring: 263 70% 50%;
   }
-  
+
   * {
     @apply border-border;
   }
-  
+
   html {
     scroll-behavior: smooth;
-    font-family: var(--font-family-base);
+    font-family: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   }
-  
+
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-family-base);
+    font-family: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: var(--color-bg-black);
-    color: var(--color-text-white);
+    background-color: #000000;
+    color: #ffffff;
     min-height: 100vh;
   }
-  
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-family-heading);
-    font-weight: var(--font-weight-bold);
-    line-height: var(--line-height-tight);
+
+  h1, h2, h3 {
+    font-family: 'Arial Rounded MT Bold', 'Arial Rounded MT', 'Nunito', 'Varela Round', 'Geist', sans-serif;
+    font-weight: 900;
+    line-height: 1.05;
     letter-spacing: -0.02em;
   }
-  
-  h1 { font-size: var(--font-size-h1); }
-  h2 { font-size: var(--font-size-h2); }
-  h3 { font-size: var(--font-size-h3); }
-  h4 { font-size: var(--font-size-h4); }
-  
+
+  h4, h5, h6 {
+    font-family: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+
   p {
-    line-height: var(--line-height-normal);
+    line-height: 1.6;
   }
-  
+
   code, pre, .code {
-    font-family: var(--font-family-mono);
+    font-family: 'JetBrains Mono', monospace;
   }
-  
+
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
-  
+
   ::-webkit-scrollbar-track {
-    background: var(--color-bg-dark);
+    background: #0a0a0a;
   }
-  
+
   ::-webkit-scrollbar-thumb {
-    background: var(--color-surface-gray);
+    background: #2a2a2a;
     border-radius: 4px;
   }
-  
+
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-primary-green);
+    background: #3a3a3a;
   }
-  
+
   @media (max-width: 768px) {
     h1 { font-size: 2rem; }
     h2 { font-size: 1.75rem; }
@@ -121,66 +120,443 @@
 
 @layer components {
   .glass {
-    background: rgba(38, 38, 38, 0.5);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--border-default);
+    background: rgba(10, 10, 10, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
   }
-  
+
   .card-interactive {
     @apply transition-all duration-200 ease-out;
-    border: 1px solid var(--border-default);
+    border: 1px solid rgba(255, 255, 255, 0.07);
   }
-  
+
   .card-interactive:hover {
-    border-color: var(--border-green);
-    box-shadow: var(--shadow-glow-green);
+    border-color: rgba(255, 255, 255, 0.14);
     transform: translateY(-2px);
   }
-  
+
   .btn-primary {
-    @apply bg-green-600 hover:bg-green-500 text-white font-semibold;
-    @apply px-6 py-3 rounded-lg transition-all duration-200;
-    box-shadow: var(--shadow-glow-green);
+    @apply text-white font-semibold;
+    padding: 15px 36px;
+    border-radius: 9999px;
+    background: #7c3aed;
+    transition: all 0.2s ease;
+    font-family: 'Arial Rounded MT Bold', 'Arial Rounded MT', 'Nunito', 'Varela Round', 'Geist', sans-serif;
   }
-  
+
   .btn-primary:hover {
-    box-shadow: var(--shadow-glow-green-lg);
+    background: #6d28d9;
     transform: translateY(-1px);
   }
-  
+
   .btn-secondary {
-    @apply bg-gray-800 hover:bg-gray-700 text-white font-semibold;
-    @apply px-6 py-3 rounded-lg transition-all duration-200;
-    border: 1px solid var(--border-default);
+    @apply text-white font-semibold;
+    padding: 15px 36px;
+    border-radius: 9999px;
+    background: transparent;
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.2s ease;
+    font-family: 'Arial Rounded MT Bold', 'Arial Rounded MT', 'Nunito', 'Varela Round', 'Geist', sans-serif;
   }
-  
+
   .btn-secondary:hover {
-    border-color: var(--border-hover);
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.06);
   }
-  
+
   .code-block {
-    font-family: var(--font-family-mono);
-    background: var(--color-bg-dark);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-lg);
-    padding: var(--space-4);
+    font-family: 'JetBrains Mono', monospace;
+    background: #0a0a0a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 16px;
   }
-  
-  .text-gradient-green {
-    background: linear-gradient(135deg, var(--color-primary-green-light) 0%, var(--color-primary-green) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+
+  /* ══════════════════════════════════════════════════════════════════
+     WAVE SPLASH BUTTONS — global
+     SVG wave rises from bottom on hover, slow & splashy
+     ══════════════════════════════════════════════════════════════════ */
+
+  @keyframes wave-scroll {
+    from { background-position-x: 0; }
+    to   { background-position-x: 200%; }
+  }
+
+  .wave-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 30px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    border-radius: 9999px;
+    overflow: hidden;
+    cursor: pointer;
+    text-decoration: none;
+    isolation: isolate;
+    white-space: nowrap;
+    font-family: 'Arial Rounded MT Bold', 'Arial Rounded MT', 'Nunito', 'Varela Round', 'Geist', sans-serif;
+    transition: border-color 0.5s ease, color 0.8s ease;
+  }
+
+  .wave-btn-sm {
+    padding: 7px 18px;
+    font-size: 0.8rem;
+  }
+
+  .wave-btn-lg {
+    padding: 15px 36px;
+    font-size: 0.95rem;
+  }
+
+  /* Wave layer — SVG wave that scrolls horizontally + rises up */
+  .wave-btn::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 200%;
+    /* Wave SVG: a gentle sinusoidal path, white fill */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,60 C150,100 350,0 600,60 C850,120 1050,20 1200,60 L1200,120 L0,120 Z' fill='%23ffffff'/%3E%3C/svg%3E");
+    background-size: 50% 60px;
+    background-repeat: repeat-x;
+    background-position-y: top;
+    /* Start: wave sits below the button */
+    top: 100%;
+    height: calc(100% + 60px);
+    animation: wave-scroll 4s linear infinite;
+    transition: top 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* Solid fill layer behind the wave */
+  .wave-btn::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 100%;
+    bottom: 0;
+    height: 0%;
+    transition: height 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* On hover: wave rises to cover the button */
+  .wave-btn:hover::before {
+    top: -60px;
+  }
+
+  .wave-btn:hover::after {
+    height: 100%;
+  }
+
+  .wave-btn-content {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.8s ease;
+  }
+
+  /* ── PRIMARY: violet bg, white wave rises, text flips violet ── */
+  .wave-btn-primary {
+    background: #7c3aed;
+    color: #fff;
+    border: none;
+  }
+  /* white wave + white fill */
+  .wave-btn-primary::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,60 C150,100 350,0 600,60 C850,120 1050,20 1200,60 L1200,120 L0,120 Z' fill='%23ffffff'/%3E%3C/svg%3E");
+  }
+  .wave-btn-primary::after { background: #fff; }
+  .wave-btn-primary:hover .wave-btn-content { color: #7c3aed; }
+
+  /* ── OUTLINE: transparent bg, white/grey wave rises ── */
+  .wave-btn-outline {
+    background: transparent;
+    color: #fff;
+    border: 1.5px solid rgba(255,255,255,0.2);
+  }
+  .wave-btn-outline::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,60 C150,100 350,0 600,60 C850,120 1050,20 1200,60 L1200,120 L0,120 Z' fill='rgba(255%2C255%2C255%2C0.15)'/%3E%3C/svg%3E");
+  }
+  .wave-btn-outline::after { background: rgba(255,255,255,0.10); }
+  .wave-btn-outline:hover { border-color: rgba(255,255,255,0.4); }
+  .wave-btn-outline:hover .wave-btn-content { color: #fff; }
+
+  /* ── Product card overrides ── */
+  .product-card-dark > * {
+    background: #0d0d0d !important;
+    border-color: rgba(255,255,255,0.07) !important;
+    border-radius: 16px !important;
+    overflow: hidden;
+  }
+  .product-card-dark:hover > * {
+    border-color: rgba(255,255,255,0.12) !important;
+    transition: border-color 0.2s ease;
+  }
+
+  /* ── How It Works cards ── */
+  .hiw-card {
+    background: #0a0a0a;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 20px;
+    padding: 28px;
+    transition: border-color 0.25s ease, transform 0.25s ease;
+  }
+  .hiw-card:hover {
+    border-color: rgba(255,255,255,0.12);
+    transform: translateY(-3px);
+  }
+  .hiw-icon-wrap {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: rgba(124,58,237,0.08);
+    border: 1px solid rgba(124,58,237,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent, #8b5cf6);
+    transition: background 0.25s ease;
+  }
+  .hiw-card:hover .hiw-icon-wrap {
+    background: rgba(124,58,237,0.14);
+  }
+
+  /* ── Nav frosted glass ── */
+  .nav-frosted {
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* ── Currency pill toggle ── */
+  .currency-toggle {
+    display: flex;
+    align-items: center;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 9999px;
+    padding: 3px;
+  }
+  .currency-toggle-btn {
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    color: #71717a;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: 'Geist', sans-serif;
+  }
+  .currency-toggle-btn.active {
+    background: #ffffff;
+    color: #000000;
+  }
+  .currency-toggle-btn:not(.active):hover {
+    color: #ffffff;
   }
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   INK BLEED BUTTONS — Creators page
+   Radial ink drop expands from center on hover
+   ══════════════════════════════════════════════════════════════════ */
+
+.ink-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 30px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  border-radius: 9999px;
+  overflow: hidden;
+  cursor: pointer;
+  text-decoration: none;
+  isolation: isolate;
+  white-space: nowrap;
+  font-family: 'Arial Rounded MT Bold', 'Arial Rounded MT', 'Nunito', 'Varela Round', 'Geist', sans-serif;
+  transition: border-color 0.5s ease;
+}
+
+.ink-btn-lg {
+  padding: 15px 36px;
+  font-size: 0.95rem;
+}
+
+.ink-btn-sm {
+  padding: 7px 18px;
+  font-size: 0.8rem;
+}
+
+/* Ink circle — starts as a tiny dot in the center, expands to cover */
+.ink-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 1.0s cubic-bezier(0.22, 1, 0.36, 1),
+              height 1.0s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.ink-btn:hover::before {
+  /* Expand to 300% to fully cover pill shape */
+  width: 300%;
+  height: 600%;
+}
+
+.ink-btn-content {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.6s ease;
+}
+
+/* PRIMARY ink: violet bg, white ink bleeds in, text flips violet */
+.ink-btn-primary {
+  background: #7c3aed;
+  color: #fff;
+  border: none;
+}
+.ink-btn-primary::before { background: #fff; }
+.ink-btn-primary:hover .ink-btn-content { color: #7c3aed; }
+
+/* OUTLINE ink: transparent bg, white ink bleeds in */
+.ink-btn-outline {
+  background: transparent;
+  color: #fff;
+  border: 1.5px solid rgba(255,255,255,0.2);
+}
+.ink-btn-outline::before { background: rgba(255,255,255,0.12); }
+.ink-btn-outline:hover { border-color: rgba(255,255,255,0.5); }
+.ink-btn-outline:hover .ink-btn-content { color: #fff; }
+
+
+/* ══════════════════════════════════════════════════════════════════
+   SPARK BUTTONS — Shop page
+   Diagonal slash fill sweeps from top-left to bottom-right
+   ══════════════════════════════════════════════════════════════════ */
+
+@keyframes spark-shimmer {
+  0%   { left: -120%; }
+  100% { left: 120%; }
+}
+
+.spark-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 30px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  border-radius: 9999px;
+  overflow: hidden;
+  cursor: pointer;
+  text-decoration: none;
+  isolation: isolate;
+  white-space: nowrap;
+  font-family: 'Arial Rounded MT Bold', 'Arial Rounded MT', 'Nunito', 'Varela Round', 'Geist', sans-serif;
+  transition: border-color 0.4s ease;
+}
+
+.spark-btn-lg {
+  padding: 15px 36px;
+  font-size: 0.95rem;
+}
+
+.spark-btn-sm {
+  padding: 7px 18px;
+  font-size: 0.8rem;
+}
+
+/* Diagonal fill — skewed rectangle slides from left */
+.spark-btn::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: -110%;
+  width: 100%;
+  height: 120%;
+  transform: skewX(-18deg);
+  transition: left 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.spark-btn:hover::before {
+  left: 110%;
+}
+
+/* Shimmer streak that runs after the fill */
+.spark-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.2), transparent);
+  transform: skewX(-18deg);
+  transition: none;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.spark-btn:hover::after {
+  animation: spark-shimmer 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
+}
+
+.spark-btn-content {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.5s ease;
+}
+
+/* PRIMARY spark: violet bg, white slash sweeps through */
+.spark-btn-primary {
+  background: #7c3aed;
+  color: #fff;
+  border: none;
+}
+.spark-btn-primary::before { background: #fff; }
+.spark-btn-primary:hover .spark-btn-content { color: #7c3aed; }
+
+/* OUTLINE spark: transparent, white slash sweeps through */
+.spark-btn-outline {
+  background: transparent;
+  color: #fff;
+  border: 1.5px solid rgba(255,255,255,0.2);
+}
+.spark-btn-outline::before { background: rgba(255,255,255,0.10); }
+.spark-btn-outline:hover { border-color: rgba(255,255,255,0.4); }
+.spark-btn-outline:hover .spark-btn-content { color: #fff; }
+
 @layer utilities {
-  .space-xs { gap: var(--space-2); }
-  .space-sm { gap: var(--space-4); }
-  .space-md { gap: var(--space-6); }
-  .space-lg { gap: var(--space-8); }
-  .space-xl { gap: var(--space-12); }
-  
   .container-custom {
     max-width: 1400px;
     margin-left: auto;
@@ -188,7 +564,7 @@
     padding-left: 1.5rem;
     padding-right: 1.5rem;
   }
-  
+
   @media (min-width: 768px) {
     .container-custom {
       padding-left: 2rem;
@@ -197,92 +573,247 @@
   }
 }
 
+@keyframes wave-scroll {
+  from { background-position-x: 0; }
+  to   { background-position-x: 200%; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fadeIn 0.6s ease-out; }
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up { animation: slideUp 0.8s ease-out; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) translateX(0px); }
+  25% { transform: translateY(-20px) translateX(10px); }
+  50% { transform: translateY(-10px) translateX(-10px); }
+  75% { transform: translateY(-30px) translateX(5px); }
+}
+.animate-float { animation: float 6s ease-in-out infinite; }
+
 @keyframes gradient {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
-
 .animate-gradient {
   background-size: 200% auto;
   animation: gradient 3s ease infinite;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* ══════════════════════════════════════════════════════════════════
+   TICKER STRIP — Creators page
+   Infinite horizontal marquee
+   ══════════════════════════════════════════════════════════════════ */
+
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.6s ease-out;
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ticker-scroll 28s linear infinite;
+  white-space: nowrap;
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(40px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 32px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #52525b;
+  font-family: 'Geist', sans-serif;
 }
 
-.animate-slide-up {
-  animation: slideUp 0.8s ease-out;
+.ticker-dot {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #7c3aed;
+  flex-shrink: 0;
 }
 
-@keyframes scan {
-  0% {
-    transform: translateY(-100%);
-  }
-  100% {
-    transform: translateY(100vh);
-  }
+/* ══════════════════════════════════════════════════════════════════
+   BENTO GRID CARDS — Creators page
+   ══════════════════════════════════════════════════════════════════ */
+
+.bento-card {
+  background: #0a0a0a;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 20px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.25s ease, transform 0.25s ease;
 }
 
-.animate-scan {
-  animation: scan 8s linear infinite;
+.bento-card:hover {
+  border-color: rgba(255,255,255,0.12);
+  transform: translateY(-2px);
 }
 
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px) translateX(0px);
-  }
-  25% {
-    transform: translateY(-20px) translateX(10px);
-  }
-  50% {
-    transform: translateY(-10px) translateX(-10px);
-  }
-  75% {
-    transform: translateY(-30px) translateX(5px);
-  }
+.bento-card-tall {
+  min-height: 280px;
 }
 
-.animate-float {
-  animation: float 6s ease-in-out infinite;
+.bento-tag {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #8b5cf6;
+  background: rgba(139,92,246,0.08);
+  border: 1px solid rgba(139,92,246,0.18);
+  border-radius: 4px;
+  padding: 2px 8px;
+  width: fit-content;
 }
 
-/* Gradient animation for text */
-@keyframes gradient {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
+/* ══════════════════════════════════════════════════════════════════
+   MAGNET BUTTONS — Developer page
+   Solid fill slides in from the LEFT edge on hover
+   ══════════════════════════════════════════════════════════════════ */
+
+.magnet-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 30px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  border-radius: 9999px;
+  overflow: hidden;
+  cursor: pointer;
+  text-decoration: none;
+  isolation: isolate;
+  white-space: nowrap;
+  font-family: 'Arial Rounded MT Bold', 'Arial Rounded MT', 'Nunito', 'Varela Round', 'Geist', sans-serif;
+  transition: border-color 0.4s ease;
 }
 
-.animate-gradient {
-  animation: gradient 3s ease infinite;
+.magnet-btn-lg {
+  padding: 15px 36px;
+  font-size: 0.95rem;
 }
+
+.magnet-btn-sm {
+  padding: 7px 18px;
+  font-size: 0.8rem;
+}
+
+/* Fill layer — scales in from left on hover, respects pill border-radius */
+.magnet-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.magnet-btn:hover::before {
+  transform: scaleX(1);
+}
+
+.magnet-btn-content {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.45s ease;
+}
+
+/* PRIMARY magnet: violet bg, white fill slides in, text flips violet */
+.magnet-btn-primary {
+  background: #7c3aed;
+  color: #fff;
+  border: none;
+}
+.magnet-btn-primary::before { background: #fff; }
+.magnet-btn-primary:hover .magnet-btn-content { color: #7c3aed; }
+
+/* OUTLINE magnet: transparent bg, white fill slides in */
+.magnet-btn-outline {
+  background: transparent;
+  color: #fff;
+  border: 1.5px solid rgba(255,255,255,0.2);
+}
+.magnet-btn-outline::before { background: rgba(255,255,255,0.10); }
+.magnet-btn-outline:hover { border-color: rgba(255,255,255,0.4); }
+.magnet-btn-outline:hover .magnet-btn-content { color: #fff; }
+
+/* DARK magnet: white bg, violet fill slides in, text flips white */
+.magnet-btn-dark {
+  background: #fff;
+  color: #7c3aed;
+  border: none;
+}
+.magnet-btn-dark::before { background: #7c3aed; }
+.magnet-btn-dark:hover .magnet-btn-content { color: #fff; }
+
+/* GLOW magnet: violet border, shimmer scan-line sweeps across on hover */
+@keyframes shimmer-scan {
+  0%   { transform: translateX(-200%) skewX(-15deg); }
+  100% { transform: translateX(400%) skewX(-15deg); }
+}
+
+.magnet-btn-glow {
+  background: transparent;
+  color: #a78bfa;
+  border: 1.5px solid #7c3aed;
+  box-shadow: 0 0 12px rgba(124, 58, 237, 0.25), inset 0 0 12px rgba(124, 58, 237, 0.05);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* ::before stays completely default (scaleX from base .magnet-btn) — no overrides */
+.magnet-btn-glow::before {
+  background: rgba(124, 58, 237, 0.15);
+}
+
+/* ::after is the shimmer streak — only animates on hover, invisible otherwise */
+.magnet-btn-glow::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.35), transparent);
+  transform: translateX(-200%) skewX(-15deg);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.magnet-btn-glow:hover::after {
+  animation: shimmer-scan 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.magnet-btn-glow:hover {
+  border-color: #a78bfa;
+  color: #fff;
+  box-shadow: 0 0 24px rgba(124, 58, 237, 0.5), inset 0 0 20px rgba(124, 58, 237, 0.1);
+}
+.magnet-btn-glow:hover .magnet-btn-content { color: #fff; }
