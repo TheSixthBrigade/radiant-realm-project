@@ -8,7 +8,7 @@ const tools = [
   { title: "Discord Bot", description: "Automate role assignment and whitelist verification.", href: "/developer/bot" },
   { title: "API Keys", description: "Generate and manage keys for programmatic access.", href: "/developer/keys" },
   { title: "Documentation", description: "Full API reference, guides, and integration examples.", href: "/developer/docs" },
-  { title: "Dashboard", description: "Monitor usage, analytics, and subscription status.", href: "/developer/dashboard" },
+  { title: "Dashboard", description: "Monitor usage, analytics, and subscription status.", href: "/developer/bot" },
 ];
 
 const tickerItems = [

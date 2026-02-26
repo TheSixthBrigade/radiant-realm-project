@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -143,9 +143,18 @@ const UserSite = () => {
     global_background_overlay: 0.5,
   });
 
+  const fetchedSlugRef = useRef<string | null>(null);
+  const fetchedUserRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (actualSlug) fetchWebsite();
-  }, [actualSlug, user]);
+    if (!actualSlug) return;
+    // Avoid double-fetch when auth state initializes (user goes undefined → defined)
+    const userId = user?.id ?? null;
+    if (fetchedSlugRef.current === actualSlug && fetchedUserRef.current === userId) return;
+    fetchedSlugRef.current = actualSlug;
+    fetchedUserRef.current = userId;
+    fetchWebsite();
+  }, [actualSlug, user?.id]);
 
   // Track affiliate referral clicks
   useEffect(() => {
@@ -463,32 +472,53 @@ const UserSite = () => {
   const spacing = spacingMap[editSettings.spacing as keyof typeof spacingMap];
   const gridCols = gridColsMap[editSettings.products_per_row as keyof typeof gridColsMap];
 
-  // Background styling
-  let backgroundStyle: any = { backgroundColor: editSettings.page_bg_color };
-  const useAnimatedGradient = editSettings.background_type === 'animated_gradient';
+  const { backgroundStyle, useAnimatedGradient } = useMemo(() => {
+    const isAnimated = editSettings.background_type === 'animated_gradient';
+    let style: any = { backgroundColor: editSettings.page_bg_color };
+    if (editSettings.background_type === 'gradient') {
+      style = { background: `linear-gradient(135deg, ${editSettings.background_gradient_start} 0%, ${editSettings.background_gradient_end} 100%)` };
+    } else if (editSettings.background_type === 'image' && editSettings.background_image) {
+      style = {
+        backgroundImage: `linear-gradient(rgba(0,0,0,${editSettings.background_overlay}), rgba(0,0,0,${editSettings.background_overlay})), url(${editSettings.background_image})`,
+        backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed'
+      };
+    } else if (editSettings.background_type === 'gif' && editSettings.background_gif) {
+      style = {
+        backgroundImage: `linear-gradient(rgba(0,0,0,${editSettings.background_overlay}), rgba(0,0,0,${editSettings.background_overlay})), url(${editSettings.background_gif})`,
+        backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed'
+      };
+    } else if (isAnimated) {
+      style = { backgroundColor: 'transparent' };
+    }
+    return { backgroundStyle: style, useAnimatedGradient: isAnimated };
+  }, [
+    editSettings.background_type,
+    editSettings.page_bg_color,
+    editSettings.background_gradient_start,
+    editSettings.background_gradient_end,
+    editSettings.background_image,
+    editSettings.background_gif,
+    editSettings.background_overlay,
+  ]);
 
-  if (editSettings.background_type === 'gradient') {
-    backgroundStyle = {
-      background: `linear-gradient(135deg, ${editSettings.background_gradient_start} 0%, ${editSettings.background_gradient_end} 100%)`
-    };
-  } else if (editSettings.background_type === 'image' && editSettings.background_image) {
-    backgroundStyle = {
-      backgroundImage: `linear-gradient(rgba(0,0,0,${editSettings.background_overlay}), rgba(0,0,0,${editSettings.background_overlay})), url(${editSettings.background_image})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundAttachment: 'fixed'
-    };
-  } else if (editSettings.background_type === 'gif' && editSettings.background_gif) {
-    backgroundStyle = {
-      backgroundImage: `linear-gradient(rgba(0,0,0,${editSettings.background_overlay}), rgba(0,0,0,${editSettings.background_overlay})), url(${editSettings.background_gif})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundAttachment: 'fixed'
-    };
-  } else if (useAnimatedGradient) {
-    // For animated gradient, we use transparent background and render the canvas
-    backgroundStyle = { backgroundColor: 'transparent' };
-  }
+  const dynamicCSS = useMemo(() => `
+    .primary-btn { background-color: ${editSettings.primary_button_bg}; color: ${editSettings.primary_button_text}; border: 2px solid ${editSettings.primary_button_border}; transition: all 0.3s ease; border-radius: ${editSettings.button_style === 'pill' ? '9999px' : editSettings.button_style === 'square' ? '0' : '6px'}; }
+    .primary-btn:hover { background-color: ${editSettings.primary_button_bg_hover}; color: ${editSettings.primary_button_text_hover}; border-color: ${editSettings.primary_button_border_hover}; transform: translateY(-2px); }
+    .product-card { transition: transform 0.3s ease, box-shadow 0.3s ease; background-color: ${editSettings.card_bg_color}; border-radius: ${editSettings.card_border_radius}px; }
+    .product-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15); }
+    h1, h2, h3 { font-family: ${editSettings.heading_font}; }
+  `, [
+    editSettings.primary_button_bg,
+    editSettings.primary_button_text,
+    editSettings.primary_button_border,
+    editSettings.primary_button_bg_hover,
+    editSettings.primary_button_text_hover,
+    editSettings.primary_button_border_hover,
+    editSettings.button_style,
+    editSettings.card_bg_color,
+    editSettings.card_border_radius,
+    editSettings.heading_font,
+  ]);
 
   return (
     <>
@@ -511,14 +541,7 @@ const UserSite = () => {
       )}
       
       <div className='min-h-screen relative' style={{ fontFamily: editSettings.font_family, fontSize: fontSize.base, color: editSettings.text_color }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Poppins:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap');
-        .primary-btn { background-color: ${editSettings.primary_button_bg}; color: ${editSettings.primary_button_text}; border: 2px solid ${editSettings.primary_button_border}; transition: all 0.3s ease; border-radius: ${editSettings.button_style === 'pill' ? '9999px' : editSettings.button_style === 'square' ? '0' : '6px'}; }
-        .primary-btn:hover { background-color: ${editSettings.primary_button_bg_hover}; color: ${editSettings.primary_button_text_hover}; border-color: ${editSettings.primary_button_border_hover}; transform: translateY(-2px); }
-        .product-card { transition: transform 0.3s ease, box-shadow 0.3s ease; background-color: ${editSettings.card_bg_color}; border-radius: ${editSettings.card_border_radius}px; }
-        .product-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15); }
-        h1, h2, h3 { font-family: ${editSettings.heading_font}; }
-      `}</style>
+      <style>{dynamicCSS}</style>
 
       {/* Site Header - displays on all pages */}
       <SiteHeader
@@ -828,7 +851,7 @@ const UserSite = () => {
               </p>
               {isOwner && (
                 <Button 
-                  onClick={() => navigate('/dashboard/developer')}
+                  onClick={() => navigate('/dashboard')}
                   className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-full"
                 >
                   Upgrade to Pro
@@ -937,7 +960,7 @@ const UserSite = () => {
                 </p>
                 {isOwner && (
                   <Button 
-                    onClick={() => navigate('/dashboard/developer')}
+                    onClick={() => navigate('/dashboard')}
                     className="px-8 py-3 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-semibold rounded-full"
                   >
                     Upgrade to Pro
@@ -1155,6 +1178,7 @@ const UserSite = () => {
                         <img 
                           src={product.image_url || "/placeholder.svg"} 
                           alt={product.title}
+                          loading="lazy"
                           className='w-full h-full object-cover transition-transform duration-500 group-hover:scale-110'
                         />
                         
@@ -1268,6 +1292,7 @@ const UserSite = () => {
                           <img 
                             src={product.image_url || "/placeholder.svg"} 
                             alt={product.title}
+                            loading="lazy"
                             className={`w-full h-full ${imageFit} transition-transform duration-500 ${
                               hoverEffect === 'zoom' ? 'group-hover:scale-110' : ''
                             }`}
@@ -1413,6 +1438,7 @@ const UserSite = () => {
                           <img 
                             src={product.image_url || "/placeholder.svg"} 
                             alt={product.title}
+                            loading="lazy"
                             className='w-full h-full object-cover transition-transform duration-500 group-hover:scale-110'
                           />
                           
@@ -1771,6 +1797,7 @@ const UserSite = () => {
                         <img 
                           src={product.image_url || "/placeholder.svg"} 
                           alt={product.title}
+                          loading="lazy"
                           className='w-full h-full object-cover transition-transform duration-500 group-hover:scale-110'
                         />
                         
@@ -1817,6 +1844,7 @@ const UserSite = () => {
                             <img 
                               src={product.image_url || "/placeholder.svg"} 
                               alt={product.title}
+                              loading="lazy"
                               className='w-full h-full object-cover transition-transform duration-500 group-hover:scale-110'
                             />
                             
@@ -1871,6 +1899,7 @@ const UserSite = () => {
                         <img 
                           src={product.image_url || "/placeholder.svg"} 
                           alt={product.title}
+                          loading="lazy"
                           className='w-full h-full object-cover transition-transform duration-500 group-hover:scale-110'
                         />
                         
