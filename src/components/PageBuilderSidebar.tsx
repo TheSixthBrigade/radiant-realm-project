@@ -1886,7 +1886,7 @@ export const PageBuilderSidebar = ({
                       {([
                         { key: 'ghost',     label: 'Ghost',     desc: 'Pure text list' },
                         { key: 'kanban',    label: 'Kanban',    desc: 'Status columns' },
-                        { key: 'timeline',  label: 'Timeline',  desc: 'Glowing spine' },
+                        { key: 'timeline',  label: 'Timeline',  desc: 'Vertical spine' },
                         { key: 'terminal',  label: 'Terminal',  desc: 'CLI output' },
                         { key: 'spotlight', label: 'Spotlight', desc: 'One at a time' },
                         { key: 'bento',     label: 'Bento',     desc: 'Grid mosaic' },
@@ -1894,6 +1894,11 @@ export const PageBuilderSidebar = ({
                         { key: 'brutalist', label: 'Brutalist', desc: 'Raw & bold' },
                         { key: 'accordion', label: 'Accordion', desc: 'Expand/collapse' },
                         { key: 'orbit',     label: 'Orbit',     desc: 'Radial layout' },
+                        { key: 'newspaper', label: 'Newspaper', desc: 'Editorial columns' },
+                        { key: 'minimal',   label: 'Minimal',   desc: 'Ultra-sparse' },
+                        { key: 'sidebar',   label: 'Sidebar',   desc: 'Nav + panel' },
+                        { key: 'table',     label: 'Table',     desc: 'Spreadsheet rows' },
+                        { key: 'cards3d',   label: 'Cards 3D',  desc: 'Depth shadows' },
                       ] as const).map(({ key, label, desc }) => {
                         const isActive = (roadmapSettings.layoutVariant || 'ghost') === key;
                         return (
