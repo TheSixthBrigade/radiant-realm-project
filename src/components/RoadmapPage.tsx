@@ -1077,7 +1077,7 @@ export const RoadmapPage = ({
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h3 className={`${settings.versionTitleSize || 'text-lg'} font-semibold`} style={{ color: text }}>{ver.version_name}</h3>
-                  <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: colors.bg, color: colors.text, border: `1px solid ${colors.border}40` }}>{ver.status.replace('_', ' ')}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: colors.bg, color: colors.border, border: `1px solid ${colors.border}40` }}>{ver.status.replace('_', ' ')}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: withOpacity(accent, 0.12) }}>
@@ -1127,7 +1127,7 @@ export const RoadmapPage = ({
                             </>
                           )}
                         </div>
-                        <span className="text-xs px-1.5 py-0.5 rounded flex-shrink-0" style={{ backgroundColor: ic.bg, color: ic.text, border: `1px solid ${ic.border}30` }}>{item.status.replace('_', ' ')}</span>
+                        <span className="text-xs px-1.5 py-0.5 rounded flex-shrink-0" style={{ backgroundColor: ic.bg, color: ic.border, border: `1px solid ${ic.border}30` }}>{item.status.replace('_', ' ')}</span>
                         {isOwner && editingTaskId !== item.id && (
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onClick={() => { setEditingTaskId(item.id); setEditingTaskTitle(item.title); setEditingTaskDesc(item.description || ''); }} style={{ color: textMuted }}><Edit2 className="w-3 h-3" /></button>
@@ -1483,7 +1483,7 @@ export const RoadmapPage = ({
                 <div>
                   <div className="flex items-center gap-3 mb-1">
                     <h2 className={`${settings.versionTitleSize || 'text-xl'} font-semibold`} style={{ color: text }}>{activeVer.version_name}</h2>
-                    <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: colors.bg, color: colors.text, border: `1px solid ${colors.border}40` }}>{activeVer.status.replace('_', ' ')}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: colors.bg, color: colors.border, border: `1px solid ${colors.border}40` }}>{activeVer.status.replace('_', ' ')}</span>
                   </div>
                   {activeVer.description && <p className="text-sm opacity-50" style={{ color: textMuted }}>{activeVer.description}</p>}
                 </div>
@@ -1513,7 +1513,7 @@ export const RoadmapPage = ({
                             </>
                           )}
                         </div>
-                        <span className="text-xs px-1.5 py-0.5 rounded flex-shrink-0" style={{ backgroundColor: ic.bg, color: ic.text, border: `1px solid ${ic.border}30` }}>{item.status.replace('_', ' ')}</span>
+                        <span className="text-xs px-1.5 py-0.5 rounded flex-shrink-0" style={{ backgroundColor: ic.bg, color: ic.border, border: `1px solid ${ic.border}30` }}>{item.status.replace('_', ' ')}</span>
                         {isOwner && editingTaskId !== item.id && (
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onClick={() => { setEditingTaskId(item.id); setEditingTaskTitle(item.title); setEditingTaskDesc(item.description || ''); }} style={{ color: textMuted }}><Edit2 className="w-3 h-3" /></button>
@@ -1590,7 +1590,7 @@ export const RoadmapPage = ({
                             <span className="text-xs font-mono opacity-40" style={{ color: textMuted }}>{ver.version_name}</span>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="text-xs px-2 py-0.5 rounded font-mono" style={{ backgroundColor: ic.bg, color: ic.text, border: `1px solid ${ic.border}40` }}>{item.status.replace('_', ' ')}</span>
+                            <span className="text-xs px-2 py-0.5 rounded font-mono" style={{ backgroundColor: ic.bg, color: ic.border, border: `1px solid ${ic.border}40` }}>{item.status.replace('_', ' ')}</span>
                           </td>
                           {itemVotingEnabled && (
                             <td className="px-4 py-3">
@@ -1678,7 +1678,7 @@ export const RoadmapPage = ({
                     <div>
                       <h3 className={`${settings.versionTitleSize || 'text-lg'} font-semibold leading-tight`} style={{ color: text }}>{ver.version_name}</h3>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: colors.bg, color: colors.text, border: `1px solid ${colors.border}40` }}>{ver.status.replace('_', ' ')}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: colors.bg, color: colors.border, border: `1px solid ${colors.border}40` }}>{ver.status.replace('_', ' ')}</span>
                         <span className="text-xs opacity-40" style={{ color: textMuted }}>{completedCount}/{totalCount} done</span>
                       </div>
                     </div>
@@ -1919,6 +1919,413 @@ export const RoadmapPage = ({
     );
   };
 
+  // ── LAYOUT: CHANGELOG — date rail left, content right ───────────────────
+  const renderChangelog = () => (
+    <div style={{ fontFamily: theme.font }}>
+      {versions.map((ver, idx) => {
+        const colors = sc(ver.status);
+        const isExp = expanded[ver.id];
+        const dateStr = ver.status_changed_at ? new Date(ver.status_changed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : `v${idx + 1}`;
+        return (
+          <div key={ver.id} className="flex gap-0" style={{ borderBottom: `1px solid ${border}20` }}>
+            {/* Left rail */}
+            <div className="flex-shrink-0 flex flex-col items-end pt-6 pr-6" style={{ width: '140px' }}>
+              <span className="text-xs font-mono opacity-50 text-right leading-tight" style={{ color: textMuted }}>{dateStr}</span>
+              <div className="w-px flex-1 mt-3" style={{ backgroundColor: `${border}40`, minHeight: '20px' }} />
+            </div>
+            {/* Dot */}
+            <div className="flex-shrink-0 flex flex-col items-center pt-7" style={{ width: '20px' }}>
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: colors.border, boxShadow: `0 0 6px ${colors.border}60` }} />
+            </div>
+            {/* Content */}
+            <div className="flex-1 pl-6 py-6">
+              <button className="w-full text-left group" onClick={() => setExpanded(p => ({ ...p, [ver.id]: !p[ver.id] }))}>
+                <div className="flex items-center gap-3 mb-1">
+                  <span className="text-xs font-mono uppercase tracking-widest" style={{ color: colors.border }}>{ver.status.replace('_', ' ')}</span>
+                  {isOwner && isExp && (
+                    <select value={ver.status} onChange={e => updateStatus('roadmap_versions', ver.id, e.target.value)}
+                      onClick={e => e.stopPropagation()}
+                      className="rounded px-1.5 py-0.5 text-xs border" style={{ backgroundColor: 'rgba(0,0,0,0.4)', color: text, borderColor: border }}>
+                      <option value="backlog">Backlog</option><option value="in_progress">In Progress</option>
+                      <option value="qa">QA</option><option value="completed">Completed</option>
+                    </select>
+                  )}
+                </div>
+                <h3 className="text-xl font-semibold mb-1 group-hover:opacity-80 transition-opacity" style={{ color: text }}>{ver.version_name}</h3>
+                {ver.description && <p className="text-sm opacity-50 mb-2" style={{ color: textMuted }}>{ver.description}</p>}
+              </button>
+              {isExp && (
+                <div className="mt-3 space-y-1.5">
+                  {ver.items?.map(item => {
+                    const ic = sc(item.status);
+                    return (
+                      <div key={item.id} className="group flex items-start gap-3 py-1.5">
+                        <span className="w-1 h-1 rounded-full mt-2 flex-shrink-0" style={{ backgroundColor: ic.border }} />
+                        <div className="flex-1 min-w-0">
+                          {editingTaskId === item.id ? <TaskEditForm item={item} statusColors={ic} /> : (
+                            <span className="text-sm" style={{ color: item.status === 'completed' ? textMuted : text, textDecoration: item.status === 'completed' ? 'line-through' : 'none' }}>{item.title}</span>
+                          )}
+                        </div>
+                        <span className="text-[10px] font-mono opacity-40 flex-shrink-0 mt-0.5" style={{ color: ic.border }}>{item.status.replace('_', ' ')}</span>
+                        {isOwner && editingTaskId !== item.id && (
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-60 transition-opacity">
+                            <button onClick={() => { setEditingTaskId(item.id); setEditingTaskTitle(item.title); setEditingTaskDesc(item.description || ''); }} style={{ color: textMuted }}><Edit2 className="w-3 h-3" /></button>
+                            <button onClick={() => deleteItem(item.id)} className="text-red-600"><X className="w-3 h-3" /></button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <AddTaskForm ver={ver} statusColors={colors} />
+                  {isOwner && (
+                    <Button size="sm" variant="ghost" onClick={() => deleteVersion(ver.id)} className="text-red-600 text-xs mt-2">Delete version</Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // ── LAYOUT: MAGAZINE — hero version top, smaller tiles below ────────────
+  const renderMagazine = () => {
+    const [hero, ...rest] = versions;
+    if (!hero) return <div style={{ color: textMuted }}>No versions yet.</div>;
+    const heroColors = sc(hero.status);
+    const heroDone = hero.items?.filter(i => i.status === 'completed').length || 0;
+    const heroTotal = hero.items?.length || 0;
+    const heroPct = heroTotal > 0 ? Math.round((heroDone / heroTotal) * 100) : 0;
+    return (
+      <div style={{ fontFamily: theme.font }}>
+        {/* Hero tile */}
+        <div className="rounded-2xl overflow-hidden mb-4" style={{ backgroundColor: cardBg, border: `1px solid ${heroColors.border}30` }}>
+          <div className="p-8" style={{ background: `linear-gradient(135deg, ${withOpacity(heroColors.border, 0.1)} 0%, transparent 60%)` }}>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <span className="text-xs font-mono uppercase tracking-widest mb-2 block" style={{ color: heroColors.border }}>{hero.status.replace('_', ' ')}</span>
+                <h2 className="text-4xl font-bold leading-tight mb-2" style={{ color: text }}>{hero.version_name}</h2>
+                {hero.description && <p className="text-base opacity-50" style={{ color: textMuted }}>{hero.description}</p>}
+              </div>
+              <div className="text-right flex-shrink-0 ml-8">
+                <div className="text-6xl font-bold tabular-nums" style={{ color: withOpacity(heroColors.border, 0.6) }}>{heroPct}<span className="text-2xl">%</span></div>
+                <div className="text-xs mt-1 opacity-50" style={{ color: textMuted }}>{heroDone} of {heroTotal} done</div>
+              </div>
+            </div>
+            <div className="h-1 rounded-full overflow-hidden mb-6" style={{ backgroundColor: withOpacity(heroColors.border, 0.12) }}>
+              <div className="h-full rounded-full" style={{ width: `${heroPct}%`, backgroundColor: heroColors.border }} />
+            </div>
+            {isOwner && (
+              <div className="flex gap-2 mb-4">
+                <select value={hero.status} onChange={e => updateStatus('roadmap_versions', hero.id, e.target.value)}
+                  className="rounded px-2 py-1 text-xs border" style={{ backgroundColor: 'rgba(0,0,0,0.3)', color: text, borderColor: border }}>
+                  <option value="backlog">Backlog</option><option value="in_progress">In Progress</option>
+                  <option value="qa">QA</option><option value="completed">Completed</option>
+                </select>
+                <Button size="sm" variant="ghost" onClick={() => deleteVersion(hero.id)} className="text-red-600 text-xs">Delete</Button>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              {(expanded[hero.id] ? hero.items : hero.items?.slice(0, 6))?.map(item => {
+                const ic = sc(item.status);
+                return (
+                  <div key={item.id} className="group flex items-center gap-2 py-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: ic.border }} />
+                    <span className="text-sm flex-1 truncate" style={{ color: item.status === 'completed' ? textMuted : text, textDecoration: item.status === 'completed' ? 'line-through' : 'none' }}>{item.title}</span>
+                    {isOwner && <button onClick={() => deleteItem(item.id)} className="opacity-0 group-hover:opacity-60 text-red-600 flex-shrink-0"><X className="w-3 h-3" /></button>}
+                  </div>
+                );
+              })}
+            </div>
+            {(hero.items?.length || 0) > 6 && (
+              <button onClick={() => setExpanded(p => ({ ...p, [hero.id]: !p[hero.id] }))} className="mt-3 text-xs opacity-40 hover:opacity-70" style={{ color: textMuted }}>
+                {expanded[hero.id] ? 'Show less' : `+${(hero.items?.length || 0) - 6} more tasks`}
+              </button>
+            )}
+            <AddTaskForm ver={hero} statusColors={heroColors} />
+          </div>
+        </div>
+        {/* Secondary grid */}
+        <div className="grid grid-cols-3 gap-3">
+          {rest.map(ver => {
+            const colors = sc(ver.status);
+            const done = ver.items?.filter(i => i.status === 'completed').length || 0;
+            const total = ver.items?.length || 0;
+            const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+            return (
+              <div key={ver.id} className="rounded-xl p-4 flex flex-col" style={{ backgroundColor: cardBg, border: `1px solid ${colors.border}20` }}>
+                <div className="flex items-start justify-between mb-2">
+                  <div className="w-1.5 h-1.5 rounded-full mt-1" style={{ backgroundColor: colors.border }} />
+                  <span className="text-xs font-mono tabular-nums" style={{ color: withOpacity(colors.border, 0.6) }}>{pct}%</span>
+                </div>
+                <button className="text-left mb-2" onClick={() => setExpanded(p => ({ ...p, [ver.id]: !p[ver.id] }))}>
+                  <h4 className="text-sm font-semibold leading-tight" style={{ color: text }}>{ver.version_name}</h4>
+                  <span className="text-[10px] font-mono uppercase tracking-wider opacity-50 mt-0.5 block" style={{ color: colors.border }}>{ver.status.replace('_', ' ')}</span>
+                </button>
+                <div className="h-0.5 rounded-full mb-3" style={{ backgroundColor: withOpacity(colors.border, 0.12) }}>
+                  <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: colors.border }} />
+                </div>
+                <div className="flex-1 space-y-1">
+                  {ver.items?.slice(0, 3).map(item => {
+                    const ic = sc(item.status);
+                    return (
+                      <div key={item.id} className="flex items-center gap-1.5">
+                        <div className="w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: ic.border }} />
+                        <span className="text-xs truncate" style={{ color: item.status === 'completed' ? textMuted : text, textDecoration: item.status === 'completed' ? 'line-through' : 'none' }}>{item.title}</span>
+                      </div>
+                    );
+                  })}
+                  {(ver.items?.length || 0) > 3 && <span className="text-[10px] opacity-30" style={{ color: textMuted }}>+{(ver.items?.length || 0) - 3} more</span>}
+                </div>
+                {isOwner && (
+                  <div className="mt-3 pt-2 flex gap-1" style={{ borderTop: `1px solid ${border}` }}>
+                    <select value={ver.status} onChange={e => updateStatus('roadmap_versions', ver.id, e.target.value)}
+                      className="rounded px-1 py-0.5 text-xs border flex-1" style={{ backgroundColor: 'rgba(0,0,0,0.3)', color: text, borderColor: border }}>
+                      <option value="backlog">Backlog</option><option value="in_progress">In Progress</option>
+                      <option value="qa">QA</option><option value="completed">Completed</option>
+                    </select>
+                    <button onClick={() => setAddingTo(addingTo === ver.id ? null : ver.id)} style={{ color: accent }}><Plus className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => deleteVersion(ver.id)} className="text-red-600"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                )}
+                {addingTo === ver.id && isOwner && (
+                  <div className="mt-2 space-y-1">
+                    <Input placeholder="Task..." value={newItem} onChange={e => setNewItem(e.target.value)}
+                      className="w-full text-xs" style={{ backgroundColor: 'rgba(0,0,0,0.3)', borderColor: border, color: text }} autoFocus />
+                    <div className="flex gap-1">
+                      <Button size="sm" onClick={() => addItem(ver.id)} disabled={!newItem.trim()} style={{ backgroundColor: accent, color: '#fff' }} className="text-xs">Add</Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setAddingTo(null); setNewItem(''); }} style={{ color: textMuted }} className="text-xs">✕</Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // ── LAYOUT: SWIMLANE — horizontal scroll, each version is a lane ────────
+  const renderSwimlane = () => (
+    <div style={{ fontFamily: theme.font }}>
+      <div className="overflow-x-auto pb-4">
+        <div className="flex gap-0" style={{ minWidth: `${versions.length * 320}px` }}>
+          {versions.map((ver, idx) => {
+            const colors = sc(ver.status);
+            const isLast = idx === versions.length - 1;
+            return (
+              <div key={ver.id} className="flex-shrink-0 flex flex-col" style={{ width: '300px', borderRight: isLast ? 'none' : `1px solid ${border}` }}>
+                {/* Lane header */}
+                <div className="px-5 py-4 sticky top-0" style={{ backgroundColor: withOpacity(surface, 0.95), borderBottom: `2px solid ${colors.border}40`, backdropFilter: 'blur(8px)' }}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.border }} />
+                    <span className="text-sm font-semibold" style={{ color: text }}>{ver.version_name}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono uppercase tracking-wider opacity-50" style={{ color: colors.border }}>{ver.status.replace('_', ' ')}</span>
+                    <span className="text-xs font-mono opacity-30" style={{ color: textMuted }}>{ver.items?.length || 0} tasks</span>
+                  </div>
+                  {/* Progress bar */}
+                  {(ver.items?.length || 0) > 0 && (
+                    <div className="mt-2 h-0.5 rounded-full overflow-hidden" style={{ backgroundColor: withOpacity(colors.border, 0.12) }}>
+                      <div className="h-full rounded-full" style={{ width: `${Math.round(((ver.items?.filter(i => i.status === 'completed').length || 0) / (ver.items?.length || 1)) * 100)}%`, backgroundColor: colors.border }} />
+                    </div>
+                  )}
+                  {isOwner && (
+                    <div className="flex gap-1 mt-2">
+                      <select value={ver.status} onChange={e => updateStatus('roadmap_versions', ver.id, e.target.value)}
+                        className="rounded px-1.5 py-0.5 text-xs border flex-1" style={{ backgroundColor: 'rgba(0,0,0,0.3)', color: text, borderColor: border }}>
+                        <option value="backlog">Backlog</option><option value="in_progress">In Progress</option>
+                        <option value="qa">QA</option><option value="completed">Completed</option>
+                      </select>
+                      <button onClick={() => deleteVersion(ver.id)} className="text-red-600 opacity-60 hover:opacity-100"><X className="w-3.5 h-3.5" /></button>
+                    </div>
+                  )}
+                </div>
+                {/* Tasks */}
+                <div className="flex-1 p-3 space-y-2">
+                  {ver.items?.map(item => {
+                    const ic = sc(item.status);
+                    return (
+                      <div key={item.id} className="group rounded-lg p-3" style={{ backgroundColor: withOpacity(surface, 0.6), border: `1px solid ${border}` }}>
+                        <div className="flex items-start gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: ic.border }} />
+                          <div className="flex-1 min-w-0">
+                            {editingTaskId === item.id ? <TaskEditForm item={item} statusColors={ic} /> : (
+                              <>
+                                <p className="text-sm leading-snug" style={{ color: item.status === 'completed' ? textMuted : text, textDecoration: item.status === 'completed' ? 'line-through' : 'none' }}>{item.title}</p>
+                                {item.description && <p className="text-xs opacity-40 mt-0.5" style={{ color: textMuted }}>{item.description}</p>}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded font-mono" style={{ backgroundColor: ic.bg, color: ic.border, border: `1px solid ${ic.border}30` }}>{item.status.replace('_', ' ')}</span>
+                          {isOwner && editingTaskId !== item.id && (
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={() => { setEditingTaskId(item.id); setEditingTaskTitle(item.title); setEditingTaskDesc(item.description || ''); }} style={{ color: textMuted }}><Edit2 className="w-3 h-3" /></button>
+                              <button onClick={() => deleteItem(item.id)} className="text-red-600"><X className="w-3 h-3" /></button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {isOwner && (
+                    addingTo === ver.id ? (
+                      <div className="space-y-2 p-2 rounded-lg" style={{ border: `1px dashed ${border}` }}>
+                        <Input placeholder="Task title..." value={newItem} onChange={e => setNewItem(e.target.value)}
+                          className="w-full text-xs" style={{ backgroundColor: 'rgba(0,0,0,0.3)', borderColor: border, color: text }} autoFocus />
+                        <div className="flex gap-1">
+                          <Button size="sm" onClick={() => addItem(ver.id)} disabled={!newItem.trim()} style={{ backgroundColor: accent, color: '#fff' }} className="text-xs flex-1">Add</Button>
+                          <Button size="sm" variant="ghost" onClick={() => { setAddingTo(null); setNewItem(''); }} style={{ color: textMuted }} className="text-xs">✕</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button onClick={() => setAddingTo(ver.id)} className="w-full py-2 text-xs flex items-center justify-center gap-1 rounded-lg opacity-30 hover:opacity-60 transition-opacity"
+                        style={{ border: `1px dashed ${border}`, color: textMuted }}>
+                        <Plus className="w-3 h-3" />Add task
+                      </button>
+                    )
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          {/* Add version column */}
+          {isOwner && (
+            <div className="flex-shrink-0 flex flex-col p-4" style={{ width: '200px' }}>
+              {addingTo === 'new-version' ? (
+                <div className="space-y-2">
+                  <Input value={newVersion} onChange={e => setNewVersion(e.target.value)} placeholder="Version name..."
+                    className="w-full text-xs" style={{ backgroundColor: 'rgba(0,0,0,0.3)', borderColor: border, color: text }} autoFocus />
+                  <Button size="sm" onClick={addVersion} disabled={!newVersion.trim()} style={{ backgroundColor: accent, color: '#fff' }} className="w-full text-xs">Add</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setAddingTo(null)} style={{ color: textMuted }} className="w-full text-xs">Cancel</Button>
+                </div>
+              ) : (
+                <button onClick={() => setAddingTo('new-version')} className="w-full py-3 text-xs flex items-center justify-center gap-1 rounded-xl opacity-30 hover:opacity-60 transition-opacity"
+                  style={{ border: `1px dashed ${border}`, color: textMuted }}>
+                  <Plus className="w-3 h-3" />New lane
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── LAYOUT: CODEBLOCK — looks like a code diff / PR review ──────────────
+  const renderCodeblock = () => (
+    <div className="rounded-xl overflow-hidden" style={{ fontFamily: theme.font, border: `1px solid ${border}`, backgroundColor: theme.bg }}>
+      {/* File header bar */}
+      <div className="flex items-center gap-3 px-4 py-2.5" style={{ backgroundColor: withOpacity(surface, 0.9), borderBottom: `1px solid ${border}` }}>
+        <div className="flex gap-1.5">
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3a1a1a' }} />
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3a3a1a' }} />
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#1a3a1a' }} />
+        </div>
+        <span className="text-xs font-mono opacity-50" style={{ color: textMuted }}>roadmap.json</span>
+        <span className="ml-auto text-xs font-mono opacity-30" style={{ color: textMuted }}>{versions.length} versions · {versions.reduce((a, v) => a + (v.items?.length || 0), 0)} tasks</span>
+      </div>
+      {/* Code content */}
+      <div className="p-0">
+        {versions.map((ver, vi) => {
+          const colors = sc(ver.status);
+          const isExp = expanded[ver.id];
+          const diffMarker = ver.status === 'completed' ? '+' : ver.status === 'in_progress' ? '~' : ' ';
+          const diffBg = ver.status === 'completed' ? withOpacity('#00cc33', 0.05) : ver.status === 'in_progress' ? withOpacity(accent, 0.05) : 'transparent';
+          return (
+            <div key={ver.id} style={{ borderBottom: `1px solid ${border}20` }}>
+              {/* Version line */}
+              <button className="w-full text-left flex items-center hover:bg-white/5 transition-colors"
+                onClick={() => setExpanded(p => ({ ...p, [ver.id]: !p[ver.id] }))}>
+                <span className="w-12 text-right pr-4 text-xs font-mono opacity-20 flex-shrink-0 py-2.5" style={{ color: textMuted }}>{vi + 1}</span>
+                <span className="w-5 text-center text-xs font-mono flex-shrink-0 py-2.5" style={{ color: colors.border, backgroundColor: diffBg }}>{diffMarker}</span>
+                <div className="flex-1 px-3 py-2.5 flex items-center gap-3" style={{ backgroundColor: diffBg }}>
+                  <span className="text-xs font-mono" style={{ color: withOpacity(accent, 0.6) }}>"version"</span>
+                  <span className="text-xs font-mono opacity-40" style={{ color: textMuted }}>:</span>
+                  <span className="text-sm font-mono font-semibold" style={{ color: text }}>"{ver.version_name}"</span>
+                  <span className="text-xs font-mono opacity-40" style={{ color: textMuted }}>,</span>
+                  <span className="text-xs font-mono ml-2" style={{ color: colors.border }}>// {ver.status.replace('_', ' ')} · {ver.items?.length || 0} tasks</span>
+                </div>
+                <span className="px-3 py-2.5 text-xs font-mono opacity-20" style={{ color: textMuted }}>{isExp ? '▾' : '▸'}</span>
+              </button>
+              {/* Expanded tasks */}
+              {isExp && (
+                <div>
+                  {isOwner && (
+                    <div className="flex items-center gap-2 px-4 py-2" style={{ backgroundColor: withOpacity(surface, 0.4), borderBottom: `1px solid ${border}20` }}>
+                      <select value={ver.status} onChange={e => updateStatus('roadmap_versions', ver.id, e.target.value)}
+                        className="rounded px-2 py-0.5 text-xs border" style={{ backgroundColor: 'rgba(0,0,0,0.4)', color: text, borderColor: border }}>
+                        <option value="backlog">backlog</option><option value="in_progress">in_progress</option>
+                        <option value="qa">qa</option><option value="completed">completed</option>
+                      </select>
+                      <button onClick={() => deleteVersion(ver.id)} className="text-xs opacity-50 hover:opacity-100" style={{ color: '#f87171' }}>delete</button>
+                    </div>
+                  )}
+                  {ver.items?.map((item, ii) => {
+                    const ic = sc(item.status);
+                    const itemMarker = item.status === 'completed' ? '+' : item.status === 'in_progress' ? '~' : ' ';
+                    const itemBg = item.status === 'completed' ? withOpacity('#00cc33', 0.04) : item.status === 'in_progress' ? withOpacity(accent, 0.04) : 'transparent';
+                    return (
+                      <div key={item.id} className="group flex items-center hover:bg-white/5 transition-colors" style={{ backgroundColor: itemBg }}>
+                        <span className="w-12 text-right pr-4 text-xs font-mono opacity-15 flex-shrink-0 py-2" style={{ color: textMuted }}>{vi + 1}.{ii + 1}</span>
+                        <span className="w-5 text-center text-xs font-mono flex-shrink-0 py-2" style={{ color: ic.border }}>{itemMarker}</span>
+                        <div className="flex-1 px-3 py-2 flex items-center gap-2">
+                          <span className="text-xs font-mono opacity-40" style={{ color: textMuted }}>{"  "}</span>
+                          {editingTaskId === item.id ? (
+                            <div className="flex-1"><TaskEditForm item={item} statusColors={ic} /></div>
+                          ) : (
+                            <>
+                              <span className="text-sm font-mono" style={{ color: item.status === 'completed' ? textMuted : text, textDecoration: item.status === 'completed' ? 'line-through' : 'none' }}>"{item.title}"</span>
+                              <span className="text-xs font-mono opacity-30" style={{ color: textMuted }}>,</span>
+                              <span className="text-xs font-mono opacity-40 ml-1" style={{ color: ic.border }}>// {item.status.replace('_', ' ')}</span>
+                            </>
+                          )}
+                        </div>
+                        {isOwner && editingTaskId !== item.id && (
+                          <div className="flex gap-1 pr-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => { setEditingTaskId(item.id); setEditingTaskTitle(item.title); setEditingTaskDesc(item.description || ''); }} style={{ color: textMuted }}><Edit2 className="w-3 h-3" /></button>
+                            <button onClick={() => deleteItem(item.id)} className="text-red-600"><X className="w-3 h-3" /></button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {isOwner && (
+                    addingTo === ver.id ? (
+                      <div className="flex items-center gap-2 px-4 py-2" style={{ borderTop: `1px solid ${border}20` }}>
+                        <span className="w-5 text-center text-xs font-mono" style={{ color: accent }}>+</span>
+                        <Input value={newItem} onChange={e => setNewItem(e.target.value)} placeholder='"new task title"'
+                          className="flex-1 h-7 text-sm font-mono" style={{ backgroundColor: 'transparent', borderColor: border, color: text }} autoFocus
+                          onKeyDown={e => { if (e.key === 'Enter') addItem(ver.id); if (e.key === 'Escape') { setAddingTo(null); setNewItem(''); } }} />
+                        <button onClick={() => addItem(ver.id)} style={{ color: accent }} className="text-xs font-mono">↵</button>
+                        <button onClick={() => { setAddingTo(null); setNewItem(''); }} style={{ color: textMuted }} className="text-xs">✕</button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setAddingTo(ver.id)} className="w-full text-left px-4 py-2 text-xs font-mono opacity-20 hover:opacity-50 transition-opacity" style={{ color: textMuted }}>
+                        <span className="w-5 inline-block text-center mr-3">+</span>// add task...
+                      </button>
+                    )
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {/* Closing brace */}
+        <div className="flex items-center px-4 py-3">
+          <span className="w-12 text-right pr-4 text-xs font-mono opacity-15" style={{ color: textMuted }}>{versions.length + 1}</span>
+          <span className="w-5" />
+          <span className="text-sm font-mono opacity-30" style={{ color: text }}>{'}'}</span>
+        </div>
+      </div>
+    </div>
+  );
+
   // ── Layout dispatcher ────────────────────────────────────────────────────
   const renderLayout = () => {
     switch (layout) {
@@ -1936,6 +2343,10 @@ export const RoadmapPage = ({
       case 'sidebar':   return renderSidebar();
       case 'table':     return renderTable();
       case 'cards3d':   return renderCards3d();
+      case 'changelog': return renderChangelog();
+      case 'magazine':  return renderMagazine();
+      case 'swimlane':  return renderSwimlane();
+      case 'codeblock': return renderCodeblock();
       default:          return renderGhost();
     }
   };
@@ -1968,7 +2379,7 @@ export const RoadmapPage = ({
         )}
 
         {/* Add version (owner, non-kanban/table/sidebar layouts) */}
-        {isOwner && !['kanban', 'table', 'sidebar'].includes(layout) && (
+        {isOwner && !['kanban', 'table', 'sidebar', 'swimlane'].includes(layout) && (
           <div className="flex gap-3 mb-8">
             <Input value={newVersion} onChange={e => setNewVersion(e.target.value)} placeholder="New version name..."
               className="max-w-xs" style={{ backgroundColor: withOpacity(surface, 0.5), borderColor: border, color: text }}

@@ -1884,21 +1884,25 @@ export const PageBuilderSidebar = ({
                     <p className="text-xs text-white/40 font-semibold uppercase tracking-wider mb-2 mt-2">Layout</p>
                     <div className="grid grid-cols-2 gap-1.5">
                       {([
-                        { key: 'ghost',     label: 'Ghost',     desc: 'Pure text list' },
-                        { key: 'kanban',    label: 'Kanban',    desc: 'Status columns' },
-                        { key: 'timeline',  label: 'Timeline',  desc: 'Vertical spine' },
-                        { key: 'terminal',  label: 'Terminal',  desc: 'CLI output' },
-                        { key: 'spotlight', label: 'Spotlight', desc: 'One at a time' },
-                        { key: 'bento',     label: 'Bento',     desc: 'Grid mosaic' },
-                        { key: 'glass',     label: 'Glass',     desc: 'Frosted panels' },
-                        { key: 'brutalist', label: 'Brutalist', desc: 'Raw & bold' },
-                        { key: 'accordion', label: 'Accordion', desc: 'Expand/collapse' },
-                        { key: 'orbit',     label: 'Orbit',     desc: 'Radial layout' },
-                        { key: 'newspaper', label: 'Newspaper', desc: 'Editorial columns' },
-                        { key: 'minimal',   label: 'Minimal',   desc: 'Ultra-sparse' },
-                        { key: 'sidebar',   label: 'Sidebar',   desc: 'Nav + panel' },
-                        { key: 'table',     label: 'Table',     desc: 'Spreadsheet rows' },
-                        { key: 'cards3d',   label: 'Cards 3D',  desc: 'Depth shadows' },
+                        { key: 'ghost',      label: 'Ghost',      desc: 'Pure text list' },
+                        { key: 'changelog',  label: 'Changelog',  desc: 'Date rail + entries' },
+                        { key: 'minimal',    label: 'Minimal',    desc: 'Ultra-sparse numbers' },
+                        { key: 'terminal',   label: 'Terminal',   desc: 'CLI output' },
+                        { key: 'newspaper',  label: 'Newspaper',  desc: 'Editorial columns' },
+                        { key: 'codeblock',  label: 'Code Block', desc: 'Diff / PR style' },
+                        { key: 'kanban',     label: 'Kanban',     desc: 'Status columns' },
+                        { key: 'swimlane',   label: 'Swimlane',   desc: 'Horizontal lanes' },
+                        { key: 'table',      label: 'Table',      desc: 'Spreadsheet rows' },
+                        { key: 'timeline',   label: 'Timeline',   desc: 'Vertical spine' },
+                        { key: 'spotlight',  label: 'Spotlight',  desc: 'One at a time' },
+                        { key: 'magazine',   label: 'Magazine',   desc: 'Hero + grid tiles' },
+                        { key: 'bento',      label: 'Bento',      desc: 'Mosaic grid' },
+                        { key: 'glass',      label: 'Glass',      desc: 'Frosted panels' },
+                        { key: 'brutalist',  label: 'Brutalist',  desc: 'Raw & bold' },
+                        { key: 'accordion',  label: 'Accordion',  desc: 'Expand/collapse' },
+                        { key: 'orbit',      label: 'Orbit',      desc: 'Radial layout' },
+                        { key: 'sidebar',    label: 'Sidebar',    desc: 'Nav + panel' },
+                        { key: 'cards3d',    label: 'Cards 3D',   desc: 'Depth shadows' },
                       ] as const).map(({ key, label, desc }) => {
                         const isActive = (roadmapSettings.layoutVariant || 'ghost') === key;
                         return (
@@ -2017,6 +2021,54 @@ export const PageBuilderSidebar = ({
                               onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, customBackgroundGradientEnd: e.target.value, useCustomColors: true, backgroundType: 'gradient' })}
                               className="flex-1 bg-white/[0.05] border-white/10 text-white text-xs" />
                           </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Text + Surface colors */}
+                    <div className="mb-3 grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs text-white/50 mb-1 block">Text Color</Label>
+                        <div className="flex gap-1">
+                          <input type="color" value={roadmapSettings.customText || '#f0f0f0'}
+                            onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, customText: e.target.value, useCustomColors: true })}
+                            className="w-8 h-8 rounded border border-white/10 bg-transparent cursor-pointer" />
+                          <Input value={roadmapSettings.customText || '#f0f0f0'}
+                            onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, customText: e.target.value, useCustomColors: true })}
+                            className="flex-1 bg-white/[0.05] border-white/10 text-white text-xs" />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-white/50 mb-1 block">Muted Text</Label>
+                        <div className="flex gap-1">
+                          <input type="color" value={roadmapSettings.customTextMuted || '#555555'}
+                            onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, customTextMuted: e.target.value, useCustomColors: true })}
+                            className="w-8 h-8 rounded border border-white/10 bg-transparent cursor-pointer" />
+                          <Input value={roadmapSettings.customTextMuted || '#555555'}
+                            onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, customTextMuted: e.target.value, useCustomColors: true })}
+                            className="flex-1 bg-white/[0.05] border-white/10 text-white text-xs" />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-white/50 mb-1 block">Card Surface</Label>
+                        <div className="flex gap-1">
+                          <input type="color" value={roadmapSettings.customSurface || '#111111'}
+                            onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, customSurface: e.target.value, useCustomColors: true })}
+                            className="w-8 h-8 rounded border border-white/10 bg-transparent cursor-pointer" />
+                          <Input value={roadmapSettings.customSurface || '#111111'}
+                            onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, customSurface: e.target.value, useCustomColors: true })}
+                            className="flex-1 bg-white/[0.05] border-white/10 text-white text-xs" />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-white/50 mb-1 block">Border Color</Label>
+                        <div className="flex gap-1">
+                          <input type="color" value={roadmapSettings.customCardBorder || '#222222'}
+                            onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, customCardBorder: e.target.value, useCustomColors: true })}
+                            className="w-8 h-8 rounded border border-white/10 bg-transparent cursor-pointer" />
+                          <Input value={roadmapSettings.customCardBorder || '#222222'}
+                            onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, customCardBorder: e.target.value, useCustomColors: true })}
+                            className="flex-1 bg-white/[0.05] border-white/10 text-white text-xs" />
                         </div>
                       </div>
                     </div>
