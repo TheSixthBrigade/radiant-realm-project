@@ -1867,72 +1867,211 @@ export const PageBuilderSidebar = ({
                 })}
 
                 {/* Roadmap custom settings */}
-                <div className="mt-4 pt-4 border-t border-white/[0.07] space-y-3">
-                  <p className="text-xs text-white/40 font-semibold uppercase tracking-wider">Roadmap Settings</p>
+                <div className="mt-4 pt-4 border-t border-white/[0.07] space-y-4">
+                  <p className="text-xs text-white/40 font-semibold uppercase tracking-wider">Content</p>
+
+                  {/* Title / Subtitle */}
                   <div>
                     <Label className="text-xs text-white/50 mb-1 block">Title</Label>
-                    <Input
-                      value={roadmapSettings.title || 'Development Roadmap'}
+                    <Input value={roadmapSettings.title || 'Development Roadmap'}
                       onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, title: e.target.value })}
-                      className="bg-white/[0.05] border-white/10 text-white text-sm"
-                    />
+                      className="bg-white/[0.05] border-white/10 text-white text-sm" />
                   </div>
                   <div>
                     <Label className="text-xs text-white/50 mb-1 block">Subtitle</Label>
-                    <Input
-                      value={roadmapSettings.subtitle || ''}
+                    <Input value={roadmapSettings.subtitle || ''}
                       onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, subtitle: e.target.value })}
-                      className="bg-white/[0.05] border-white/10 text-white text-sm"
-                    />
+                      className="bg-white/[0.05] border-white/10 text-white text-sm" />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs text-white/50">Show Suggestions</Label>
-                    <Switch
-                      checked={roadmapSettings.showSuggestions !== false}
-                      onCheckedChange={v => onRoadmapSettingsChange({ ...roadmapSettings, showSuggestions: v })}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs text-white/50">Card Glow Effect</Label>
-                    <Switch
-                      checked={roadmapSettings.cardGlow === true}
-                      onCheckedChange={v => onRoadmapSettingsChange({ ...roadmapSettings, cardGlow: v })}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs text-white/50">Floating Orbs</Label>
-                    <Switch
-                      checked={roadmapSettings.showFloatingOrbs !== false}
-                      onCheckedChange={v => onRoadmapSettingsChange({ ...roadmapSettings, showFloatingOrbs: v })}
-                    />
-                  </div>
+
+                  {/* Layout variant picker */}
                   <div>
-                    <Label className="text-xs text-white/50 mb-1 block">Card Style</Label>
-                    <select
-                      value={roadmapSettings.cardStyle || 'full'}
-                      onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, cardStyle: e.target.value })}
-                      className="w-full bg-white/[0.05] border border-white/10 text-white text-sm rounded-lg px-3 py-2"
-                    >
-                      <option value="full">Full</option>
-                      <option value="left-accent">Left Accent</option>
-                      <option value="minimal">Minimal</option>
+                    <p className="text-xs text-white/40 font-semibold uppercase tracking-wider mb-2 mt-2">Layout</p>
+                    {(() => {
+                      const LAYOUT_GROUPS: Record<string, string[]> = {
+                        'List': ['stacked', 'timeline', 'minimal_list'],
+                        'Board': ['kanban', 'grid', 'bento'],
+                        'Editorial': ['magazine', 'newspaper', 'brutalist'],
+                        'Immersive': ['spotlight', 'progress', 'glass'],
+                        'Code': ['terminal', 'retro'],
+                        'Nav': ['sidebar'],
+                      };
+                      const LAYOUT_LABELS_LOCAL: Record<string, string> = {
+                        stacked: 'Stacked', timeline: 'Timeline', terminal: 'Terminal', grid: 'Grid',
+                        kanban: 'Kanban', magazine: 'Magazine', bento: 'Bento', brutalist: 'Brutalist',
+                        glass: 'Glass', minimal_list: 'Minimal', sidebar: 'Sidebar', progress: 'Progress',
+                        spotlight: 'Spotlight', retro: 'Retro', newspaper: 'Newspaper',
+                      };
+                      return Object.entries(LAYOUT_GROUPS).map(([group, keys]) => (
+                        <div key={group} className="mb-2">
+                          <p className="text-[10px] text-white/25 uppercase tracking-widest mb-1">{group}</p>
+                          <div className="grid grid-cols-3 gap-1">
+                            {keys.map(key => {
+                              const isActive = (roadmapSettings.layoutVariant || 'stacked') === key;
+                              return (
+                                <button key={key}
+                                  onClick={() => onRoadmapSettingsChange({ ...roadmapSettings, layoutVariant: key })}
+                                  className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${isActive ? 'bg-violet-500/30 text-violet-300 border border-violet-500/50' : 'bg-white/[0.04] text-white/50 border border-white/[0.06] hover:border-white/20 hover:text-white/80'}`}>
+                                  {LAYOUT_LABELS_LOCAL[key]}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+
+                  {/* Font family */}
+                  <div>
+                    <Label className="text-xs text-white/50 mb-1 block">Font Family</Label>
+                    <select value={roadmapSettings.fontFamily || ''}
+                      onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, fontFamily: e.target.value })}
+                      className="w-full bg-white/[0.05] border border-white/10 text-white text-sm rounded-lg px-3 py-2">
+                      <option value="">Theme Default</option>
+                      <option value="Inter, sans-serif">Inter (Sans)</option>
+                      <option value='"Plus Jakarta Sans", sans-serif'>Plus Jakarta Sans</option>
+                      <option value='"Outfit", sans-serif'>Outfit</option>
+                      <option value='"Sora", sans-serif'>Sora</option>
+                      <option value='"DM Sans", sans-serif'>DM Sans</option>
+                      <option value='"JetBrains Mono", monospace'>JetBrains Mono</option>
+                      <option value='"IBM Plex Mono", monospace'>IBM Plex Mono</option>
+                      <option value='"Playfair Display", serif'>Playfair Display</option>
+                      <option value='"Merriweather", serif'>Merriweather</option>
                     </select>
                   </div>
-                  <div>
-                    <Label className="text-xs text-white/50 mb-1 block">Accent Color</Label>
-                    <div className="flex gap-2">
-                      <input
-                        type="color"
-                        value={roadmapSettings.customAccentColor || '#22c55e'}
-                        onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, customAccentColor: e.target.value, useCustomColors: true })}
-                        className="w-10 h-9 rounded border border-white/10 bg-transparent cursor-pointer"
-                      />
-                      <Input
-                        value={roadmapSettings.customAccentColor || '#22c55e'}
-                        onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, customAccentColor: e.target.value, useCustomColors: true })}
-                        className="flex-1 bg-white/[0.05] border-white/10 text-white text-sm"
-                      />
+
+                  {/* Card style + border radius */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs text-white/50 mb-1 block">Card Style</Label>
+                      <select value={roadmapSettings.cardStyle || 'full'}
+                        onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, cardStyle: e.target.value })}
+                        className="w-full bg-white/[0.05] border border-white/10 text-white text-sm rounded-lg px-2 py-2">
+                        <option value="full">Full</option>
+                        <option value="left-accent">Accent</option>
+                        <option value="minimal">Minimal</option>
+                      </select>
                     </div>
+                    <div>
+                      <Label className="text-xs text-white/50 mb-1 block">Radius: {roadmapSettings.cardBorderRadius ?? 12}px</Label>
+                      <input type="range" min={0} max={32} step={2}
+                        value={roadmapSettings.cardBorderRadius ?? 12}
+                        onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, cardBorderRadius: Number(e.target.value) })}
+                        className="w-full accent-violet-500" />
+                    </div>
+                  </div>
+
+                  {/* Section spacing */}
+                  <div>
+                    <Label className="text-xs text-white/50 mb-1 block">Section Spacing</Label>
+                    <div className="grid grid-cols-3 gap-1">
+                      {(['compact', 'normal', 'relaxed'] as const).map(s => (
+                        <button key={s} onClick={() => onRoadmapSettingsChange({ ...roadmapSettings, sectionSpacing: s })}
+                          className={`py-1.5 rounded-lg text-xs font-medium transition-all capitalize ${(roadmapSettings.sectionSpacing || 'normal') === s ? 'bg-violet-500/30 text-violet-300 border border-violet-500/50' : 'bg-white/[0.04] text-white/50 border border-white/[0.06] hover:border-white/20'}`}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Card opacity */}
+                  <div>
+                    <Label className="text-xs text-white/50 mb-1 block">Card Opacity: {roadmapSettings.cardOpacity ?? 80}%</Label>
+                    <input type="range" min={20} max={100} step={5}
+                      value={roadmapSettings.cardOpacity ?? 80}
+                      onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, cardOpacity: Number(e.target.value) })}
+                      className="w-full accent-violet-500" />
+                  </div>
+
+                  {/* Colors section */}
+                  <div className="pt-2 border-t border-white/[0.07]">
+                    <p className="text-xs text-white/40 font-semibold uppercase tracking-wider mb-3">Colors</p>
+
+                    {/* Accent */}
+                    <div className="mb-3">
+                      <Label className="text-xs text-white/50 mb-1 block">Accent Color</Label>
+                      <div className="flex gap-2">
+                        <input type="color" value={roadmapSettings.customAccentColor || '#22c55e'}
+                          onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, customAccentColor: e.target.value, useCustomColors: true })}
+                          className="w-10 h-9 rounded border border-white/10 bg-transparent cursor-pointer" />
+                        <Input value={roadmapSettings.customAccentColor || '#22c55e'}
+                          onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, customAccentColor: e.target.value, useCustomColors: true })}
+                          className="flex-1 bg-white/[0.05] border-white/10 text-white text-sm" />
+                      </div>
+                    </div>
+
+                    {/* Background */}
+                    <div className="mb-3">
+                      <Label className="text-xs text-white/50 mb-1 block">Background</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <p className="text-[10px] text-white/30 mb-1">Start</p>
+                          <div className="flex gap-1">
+                            <input type="color" value={roadmapSettings.customBackgroundGradientStart || '#0d1117'}
+                              onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, customBackgroundGradientStart: e.target.value, useCustomColors: true, backgroundType: 'gradient' })}
+                              className="w-8 h-8 rounded border border-white/10 bg-transparent cursor-pointer" />
+                            <Input value={roadmapSettings.customBackgroundGradientStart || '#0d1117'}
+                              onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, customBackgroundGradientStart: e.target.value, useCustomColors: true, backgroundType: 'gradient' })}
+                              className="flex-1 bg-white/[0.05] border-white/10 text-white text-xs" />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-white/30 mb-1">End</p>
+                          <div className="flex gap-1">
+                            <input type="color" value={roadmapSettings.customBackgroundGradientEnd || '#161b22'}
+                              onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, customBackgroundGradientEnd: e.target.value, useCustomColors: true, backgroundType: 'gradient' })}
+                              className="w-8 h-8 rounded border border-white/10 bg-transparent cursor-pointer" />
+                            <Input value={roadmapSettings.customBackgroundGradientEnd || '#161b22'}
+                              onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, customBackgroundGradientEnd: e.target.value, useCustomColors: true, backgroundType: 'gradient' })}
+                              className="flex-1 bg-white/[0.05] border-white/10 text-white text-xs" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Status colors */}
+                    <div>
+                      <p className="text-[10px] text-white/30 uppercase tracking-widest mb-2">Status Colors</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {([
+                          { key: 'customStatusBacklog', label: 'Backlog', fallback: '#374151' },
+                          { key: 'customStatusInProgress', label: 'In Progress', fallback: '#22c55e' },
+                          { key: 'customStatusQa', label: 'QA', fallback: '#f59e0b' },
+                          { key: 'customStatusCompleted', label: 'Done', fallback: '#22c55e' },
+                        ] as const).map(({ key, label, fallback }) => (
+                          <div key={key}>
+                            <p className="text-[10px] text-white/30 mb-1">{label}</p>
+                            <div className="flex gap-1">
+                              <input type="color" value={(roadmapSettings as any)[key] || fallback}
+                                onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, [key]: e.target.value, useCustomColors: true })}
+                                className="w-8 h-8 rounded border border-white/10 bg-transparent cursor-pointer" />
+                              <Input value={(roadmapSettings as any)[key] || fallback}
+                                onChange={e => onRoadmapSettingsChange({ ...roadmapSettings, [key]: e.target.value, useCustomColors: true })}
+                                className="flex-1 bg-white/[0.05] border-white/10 text-white text-xs" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Toggles */}
+                  <div className="pt-2 border-t border-white/[0.07] space-y-2">
+                    <p className="text-xs text-white/40 font-semibold uppercase tracking-wider mb-2">Display</p>
+                    {([
+                      { key: 'showSuggestions', label: 'Show Suggestions', default: true },
+                      { key: 'cardGlow', label: 'Card Glow Effect', default: false },
+                      { key: 'defaultExpanded', label: 'Expand Versions by Default', default: true },
+                    ] as const).map(({ key, label, default: def }) => (
+                      <div key={key} className="flex items-center justify-between">
+                        <Label className="text-xs text-white/50">{label}</Label>
+                        <Switch
+                          checked={(roadmapSettings as any)[key] !== undefined ? (roadmapSettings as any)[key] : def}
+                          onCheckedChange={v => onRoadmapSettingsChange({ ...roadmapSettings, [key]: v })}
+                        />
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
