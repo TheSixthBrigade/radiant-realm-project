@@ -440,9 +440,6 @@ const UserSite = () => {
     style: { opacity: 0.5, cursor: 'not-allowed' },
   } : {};
 
-  if (loading) return <div className='min-h-screen flex items-center justify-center'><div className='animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600'></div></div>;
-  if (!website) return <div className='min-h-screen flex items-center justify-center'><div className='text-center'><h1 className='text-4xl font-bold mb-4'>Website Not Found</h1></div></div>;
-
   const fontSizeMap = {
     small: { base: "14px", heading: "28px" },
     medium: { base: "16px", heading: "32px" },
@@ -519,6 +516,9 @@ const UserSite = () => {
     editSettings.card_border_radius,
     editSettings.heading_font,
   ]);
+
+  if (loading) return <div className='min-h-screen flex items-center justify-center'><div className='animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600'></div></div>;
+  if (!website) return <div className='min-h-screen flex items-center justify-center'><div className='text-center'><h1 className='text-4xl font-bold mb-4'>Website Not Found</h1></div></div>;
 
   return (
     <>

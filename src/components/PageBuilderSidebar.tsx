@@ -12,7 +12,7 @@ import { CollectionManager } from "./CollectionManager";
 import { ImageUploadZone } from "./ImageUploadZone";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
-import { RoadmapSettings, ROADMAP_THEMES } from "@/lib/roadmapThemes";
+import { RoadmapSettings, ROADMAP_THEMES, applyThemeToSettings } from "@/lib/roadmapThemes";
 import { PageManager, StorePage } from "./PageManager";
 import { CommunitySettings, DEFAULT_COMMUNITY_SETTINGS } from "@/lib/communitySettings";
 import { AboutPageSettings, TosPageSettings, DEFAULT_ABOUT_SETTINGS, DEFAULT_TOS_SETTINGS } from "@/lib/pageSettings";
@@ -1828,21 +1828,43 @@ export const PageBuilderSidebar = ({
           <div className="p-4 space-y-3">
             {/* Special page settings */}
             {isRoadmapMode && roadmapSettings && (
-              <div className="space-y-3">
-                <p className="text-xs text-white/40 font-semibold uppercase tracking-wider">Roadmap Theme</p>
-                {Object.entries(ROADMAP_THEMES).map(([id, theme]) => (
-                  <button
-                    key={id}
-                    onClick={() => onRoadmapSettingsChange({ ...roadmapSettings, theme: id, useCustomColors: false, backgroundType: 'gradient' })}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${roadmapSettings.theme === id ? 'border-violet-500/60 bg-violet-950/20' : 'border-white/[0.07] hover:border-white/20'}`}
-                  >
-                    <div className="w-8 h-8 rounded-lg shrink-0" style={{ background: (theme as any).backgroundGradient ? `linear-gradient(135deg, ${(theme as any).backgroundGradient.start}, ${(theme as any).backgroundGradient.end})` : (theme as any).backgroundColor }} />
-                    <div className="text-left flex-1">
-                      <p className="text-sm font-medium text-white">{theme.name}</p>
-                    </div>
-                    {roadmapSettings.theme === id && <div className="w-2 h-2 rounded-full bg-violet-400 shrink-0" />}
-                  </button>
-                ))}
+              <div className="space-y-2">
+                <p className="text-xs text-white/40 font-semibold uppercase tracking-wider mb-3">Roadmap Theme</p>
+                {Object.entries(ROADMAP_THEMES).map(([id, theme]) => {
+                  const isActive = roadmapSettings.theme === id;
+                  const bgPreview = theme.backgroundGradient
+                    ? `linear-gradient(135deg, ${theme.backgroundGradient.start}, ${theme.backgroundGradient.end})`
+                    : theme.backgroundColor;
+                  const fontLabel = theme.layout.fontFamily.includes('Mono') || theme.layout.fontFamily.includes('mono') || theme.layout.fontFamily.includes('Courier')
+                    ? 'Mono' : theme.layout.fontFamily.includes('serif') || theme.layout.fontFamily.includes('Playfair') || theme.layout.fontFamily.includes('Georgia')
+                    ? 'Serif' : 'Sans';
+                  return (
+                    <button
+                      key={id}
+                      onClick={() => onRoadmapSettingsChange(applyThemeToSettings(id, roadmapSettings))}
+                      className={`w-full rounded-xl border transition-all overflow-hidden ${isActive ? 'border-violet-500/70 ring-1 ring-violet-500/30' : 'border-white/[0.07] hover:border-white/20'}`}
+                    >
+                      {/* Mini preview strip */}
+                      <div className="h-10 w-full relative flex items-center px-3 gap-2" style={{ background: bgPreview }}>
+                        {/* Fake card blobs */}
+                        <div className="h-5 rounded flex-1 opacity-70" style={{ backgroundColor: theme.cardBackground.includes('rgba') ? theme.cardBackground : theme.cardBackground, border: `1px solid ${theme.cardBorder}` }} />
+                        <div className="h-5 rounded flex-1 opacity-70" style={{ backgroundColor: theme.cardBackground.includes('rgba') ? theme.cardBackground : theme.cardBackground, border: `1px solid ${theme.cardBorder}` }} />
+                        {/* Accent dot */}
+                        <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: theme.accentColor, boxShadow: `0 0 6px ${theme.accentColor}` }} />
+                      </div>
+                      {/* Info row */}
+                      <div className="flex items-center justify-between px-3 py-2 bg-white/[0.03]">
+                        <p className="text-sm font-medium text-white">{theme.name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/50">{fontLabel}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/50 capitalize">{theme.layout.cardStyle.replace('-', ' ')}</span>
+                          {theme.layout.cardGlow && <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-300">Glow</span>}
+                          {isActive && <div className="w-2 h-2 rounded-full bg-violet-400" />}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
 
                 {/* Roadmap custom settings */}
                 <div className="mt-4 pt-4 border-t border-white/[0.07] space-y-3">
