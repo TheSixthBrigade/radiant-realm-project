@@ -427,6 +427,43 @@ export const ROADMAP_THEMES: Record<string, RoadmapTheme> = {
     font: '"Inter", sans-serif',
     layout: 'kanban',
   },
+
+  // ── STRUCTURAL: product/saas ─────────────────────────────────────────────
+
+  kinetic: {
+    id: 'kinetic',
+    name: 'Kinetic',
+    description: 'Colored version header bars, compact task rows, right-aligned pill badges.',
+    bg: '#0a0b0f',
+    bgGradient: 'linear-gradient(180deg, #0a0b0f 0%, #0c0e14 100%)',
+    surface: '#111318',
+    surfaceAlt: '#161820',
+    border: '#1e2028',
+    text: '#d8dce8',
+    textMuted: '#4a5068',
+    accent: '#7c6af0',
+    accentAlt: '#9d8ff8',
+    status: { backlog: '#2a2d3e', in_progress: '#1e3a5f', qa: '#3a1e5f', completed: '#0f3d2a' },
+    font: '"Inter", "DM Sans", sans-serif',
+    layout: 'kinetic',
+  },
+
+  tactical: {
+    id: 'tactical',
+    name: 'Tactical',
+    description: 'Pure black, version badge header, circle icons, uppercase titles, outlined status badges.',
+    bg: '#000000',
+    surface: '#0a0a0a',
+    surfaceAlt: '#0f0f0f',
+    border: '#1a1a1a',
+    text: '#e8e8e8',
+    textMuted: '#444',
+    accent: '#00cc88',
+    accentAlt: '#00ffaa',
+    status: { backlog: '#333', in_progress: '#00cc88', qa: '#cc8800', completed: '#00cc88' },
+    font: '"JetBrains Mono", "Fira Code", monospace',
+    layout: 'tactical',
+  },
 };
 
 export const DEFAULT_ROADMAP_SETTINGS: RoadmapSettings = {

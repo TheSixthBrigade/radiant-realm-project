@@ -1903,6 +1903,8 @@ export const PageBuilderSidebar = ({
                         { key: 'orbit',      label: 'Orbit',      desc: 'Radial layout' },
                         { key: 'sidebar',    label: 'Sidebar',    desc: 'Nav + panel' },
                         { key: 'cards3d',    label: 'Cards 3D',   desc: 'Depth shadows' },
+                        { key: 'kinetic',    label: 'Kinetic',    desc: 'Colored bars + pills' },
+                        { key: 'tactical',   label: 'Tactical',   desc: 'Badge header + icons' },
                       ] as const).map(({ key, label, desc }) => {
                         const isActive = (roadmapSettings.layoutVariant || 'ghost') === key;
                         return (

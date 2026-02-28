@@ -2326,6 +2326,287 @@ export const RoadmapPage = ({
     </div>
   );
 
+  // ── LAYOUT: KINETIC — colored version bars, compact rows, pill badges ───
+  const renderKinetic = () => {
+    const versionAccents = [
+      '#7c6af0', '#2563eb', '#0891b2', '#059669', '#d97706', '#dc2626', '#7c3aed', '#0d9488',
+    ];
+    return (
+      <div className={sectionSpacing} style={{ fontFamily: theme.font }}>
+        {versions.map((ver, idx) => {
+          const vAccent = versionAccents[idx % versionAccents.length];
+          const colors = sc(ver.status);
+          const isExp = expanded[ver.id];
+          const completedCount = ver.items?.filter(i => i.status === 'completed').length || 0;
+          const totalCount = ver.items?.length || 0;
+          return (
+            <div key={ver.id} className="rounded-xl overflow-hidden" style={{ border: `1px solid ${border}`, backgroundColor: surface }}>
+              {/* Version header bar */}
+              <button
+                className="w-full text-left flex items-center justify-between px-5 py-3.5 transition-opacity hover:opacity-90"
+                style={{ backgroundColor: withOpacity(vAccent, 0.18), borderBottom: isExp ? `1px solid ${withOpacity(vAccent, 0.25)}` : 'none' }}
+                onClick={() => setExpanded(p => ({ ...p, [ver.id]: !p[ver.id] }))}>
+                <div className="flex items-center gap-3">
+                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: vAccent, boxShadow: `0 0 8px ${vAccent}80` }} />
+                  <span className="font-semibold text-sm tracking-wide" style={{ color: text }}>{ver.version_name}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: withOpacity(vAccent, 0.2), color: vAccent, border: `1px solid ${withOpacity(vAccent, 0.4)}` }}>
+                    {ver.status.replace('_', ' ')}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-mono" style={{ color: textMuted }}>{completedCount}/{totalCount}</span>
+                  {isExp ? <ChevronUp className="w-3.5 h-3.5" style={{ color: textMuted }} /> : <ChevronDown className="w-3.5 h-3.5" style={{ color: textMuted }} />}
+                </div>
+              </button>
+              {isOwner && isExp && (
+                <div className="flex gap-2 px-5 py-2" style={{ borderBottom: `1px solid ${border}30`, backgroundColor: withOpacity(vAccent, 0.05) }}>
+                  <select value={ver.status} onChange={e => updateStatus('roadmap_versions', ver.id, e.target.value)}
+                    className="rounded px-2 py-1 text-xs border" style={{ backgroundColor: 'rgba(0,0,0,0.4)', color: text, borderColor: withOpacity(vAccent, 0.4) }}>
+                    <option value="backlog">Backlog</option><option value="in_progress">In Progress</option>
+                    <option value="qa">QA</option><option value="completed">Completed</option>
+                  </select>
+                  <Button size="sm" variant="ghost" onClick={() => deleteVersion(ver.id)} className="text-red-600 text-xs">Delete</Button>
+                </div>
+              )}
+              {isExp && (
+                <div>
+                  {ver.description && (
+                    <p className="px-5 py-2.5 text-xs border-b" style={{ color: textMuted, borderColor: border + '30' }}>{ver.description}</p>
+                  )}
+                  {isOwner && (
+                    <div className="px-5 py-1.5 border-b" style={{ borderColor: border + '20' }}>
+                      <button onClick={() => { setEditingVersionId(ver.id); setEditingVersionDesc(ver.description || ''); }}
+                        className="text-xs opacity-30 hover:opacity-60 transition-opacity" style={{ color: textMuted }}>
+                        <Edit2 className="w-3 h-3 inline mr-1" />{ver.description ? 'Edit description' : 'Add description'}
+                      </button>
+                    </div>
+                  )}
+                  {editingVersionId === ver.id && (
+                    <div className="px-5 py-3 border-b" style={{ borderColor: border + '30' }}>
+                      <Textarea value={editingVersionDesc} onChange={e => setEditingVersionDesc(e.target.value)}
+                        rows={2} className="w-full rounded mb-2 text-xs"
+                        style={{ backgroundColor: 'rgba(0,0,0,0.3)', borderColor: withOpacity(vAccent, 0.4), color: text }} autoFocus />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => updateVersionDescription(ver.id, editingVersionDesc)} style={{ backgroundColor: vAccent, color: '#fff' }}>Save</Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingVersionId(null)} style={{ color: textMuted }}>Cancel</Button>
+                      </div>
+                    </div>
+                  )}
+                  {/* Task rows */}
+                  {ver.items?.map((item, iIdx) => {
+                    const ic = sc(item.status);
+                    const isEdit = editingTaskId === item.id;
+                    const statusLabels: Record<string, string> = { backlog: 'Backlog', in_progress: 'In Progress', qa: 'QA', completed: 'Completed' };
+                    return (
+                      <div key={item.id} className="group flex items-center gap-3 px-5 py-3 border-b last:border-0 transition-colors hover:bg-white/[0.02]"
+                        style={{ borderColor: border + '25' }}>
+                        {isEdit ? (
+                          <div className="flex-1"><TaskEditForm item={item} statusColors={{ border: vAccent }} /></div>
+                        ) : (
+                          <>
+                            {itemVotingEnabled && item.voting_enabled !== false && (
+                              <button onClick={() => toggleItemVote(item.id, item.user_has_voted || false)}
+                                className="flex flex-col items-center px-1 flex-shrink-0 transition-all"
+                                style={{ color: item.user_has_voted ? vAccent : textMuted }}>
+                                <ArrowUp className="w-3 h-3" /><span className="text-[9px] font-bold">{item.vote_count || 0}</span>
+                              </button>
+                            )}
+                            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: ic.border }} />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm" style={{ color: item.status === 'completed' ? textMuted : text, textDecoration: item.status === 'completed' ? 'line-through' : 'none' }}>{item.title}</span>
+                              {item.description && <p className="text-xs mt-0.5 opacity-50" style={{ color: textMuted }}>{item.description}</p>}
+                            </div>
+                            {/* Right-aligned pill badge */}
+                            <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full flex-shrink-0 uppercase tracking-wide"
+                              style={{ backgroundColor: withOpacity(ic.border, 0.15), color: ic.border, border: `1px solid ${withOpacity(ic.border, 0.35)}` }}>
+                              {statusLabels[item.status] || item.status}
+                            </span>
+                            {isOwner && (
+                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                <button onClick={() => { setEditingTaskId(item.id); setEditingTaskTitle(item.title); setEditingTaskDesc(item.description || ''); }}
+                                  className="p-1 rounded hover:bg-white/10" style={{ color: textMuted }}>
+                                  <Edit2 className="w-3 h-3" />
+                                </button>
+                                <button onClick={() => deleteItem(item.id)} className="p-1 rounded hover:bg-red-900/30 text-red-600"><X className="w-3 h-3" /></button>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {/* Add task */}
+                  {isOwner && (
+                    addingTo === ver.id ? (
+                      <div className="px-5 py-3 border-t" style={{ borderColor: border + '30' }}>
+                        <Input placeholder="Task title..." value={newItem} onChange={e => setNewItem(e.target.value)}
+                          className="w-full mb-2 text-sm" style={{ backgroundColor: 'rgba(0,0,0,0.3)', borderColor: withOpacity(vAccent, 0.4), color: text }} autoFocus />
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => addItem(ver.id)} disabled={!newItem.trim()} style={{ backgroundColor: vAccent, color: '#fff' }}>Add</Button>
+                          <Button size="sm" variant="ghost" onClick={() => { setAddingTo(null); setNewItem(''); }} style={{ color: textMuted }}>Cancel</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button onClick={() => setAddingTo(ver.id)}
+                        className="w-full px-5 py-2.5 text-xs flex items-center gap-2 opacity-30 hover:opacity-60 transition-opacity border-t"
+                        style={{ color: textMuted, borderColor: border + '20' }}>
+                        <Plus className="w-3 h-3" />Add task
+                      </button>
+                    )
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // ── LAYOUT: TACTICAL — pure black, V-badge header, circle icons, outlined badges ──
+  const renderTactical = () => (
+    <div style={{ fontFamily: theme.font }}>
+      {versions.map(ver => {
+        const colors = sc(ver.status);
+        const isExp = expanded[ver.id];
+        const statusLabels: Record<string, string> = { backlog: 'BACKLOG', in_progress: 'IN PROGRESS', qa: 'QA', completed: 'COMPLETED' };
+        const StatusIcon = STATUS_ICONS[ver.status] || Circle;
+        return (
+          <div key={ver.id} className="mb-1" style={{ borderBottom: `1px solid ${border}` }}>
+            {/* Version header */}
+            <button
+              className="w-full text-left flex items-center justify-between px-6 py-5 transition-opacity hover:opacity-80"
+              onClick={() => setExpanded(p => ({ ...p, [ver.id]: !p[ver.id] }))}>
+              <div className="flex items-center gap-4">
+                <span className="text-2xl font-bold tracking-tight" style={{ color: text, fontFamily: '"JetBrains Mono", monospace' }}>
+                  {ver.version_name}
+                </span>
+                <span className="text-xs font-bold px-2.5 py-1 rounded tracking-widest uppercase"
+                  style={{ color: colors.border, border: `1px solid ${colors.border}`, backgroundColor: withOpacity(colors.border, 0.08) }}>
+                  {statusLabels[ver.status] || ver.status.toUpperCase()}
+                </span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-xs font-mono" style={{ color: textMuted }}>
+                  {ver.items?.length || 0} tasks
+                </span>
+                {isExp ? <ChevronUp className="w-4 h-4" style={{ color: textMuted }} /> : <ChevronDown className="w-4 h-4" style={{ color: textMuted }} />}
+              </div>
+            </button>
+            {isOwner && isExp && (
+              <div className="flex gap-2 px-6 pb-3">
+                <select value={ver.status} onChange={e => updateStatus('roadmap_versions', ver.id, e.target.value)}
+                  className="rounded px-2 py-1 text-xs border" style={{ backgroundColor: 'rgba(0,0,0,0.5)', color: text, borderColor: border }}>
+                  <option value="backlog">Backlog</option><option value="in_progress">In Progress</option>
+                  <option value="qa">QA</option><option value="completed">Completed</option>
+                </select>
+                <Button size="sm" variant="ghost" onClick={() => deleteVersion(ver.id)} className="text-red-600 text-xs">Delete</Button>
+              </div>
+            )}
+            {isExp && (
+              <div className="pb-4">
+                {ver.description && (
+                  <p className="px-6 pb-4 text-sm" style={{ color: textMuted }}>{ver.description}</p>
+                )}
+                {isOwner && editingVersionId !== ver.id && (
+                  <div className="px-6 pb-2">
+                    <button onClick={() => { setEditingVersionId(ver.id); setEditingVersionDesc(ver.description || ''); }}
+                      className="text-xs opacity-25 hover:opacity-60 transition-opacity" style={{ color: textMuted }}>
+                      <Edit2 className="w-3 h-3 inline mr-1" />{ver.description ? 'Edit description' : 'Add description'}
+                    </button>
+                  </div>
+                )}
+                {editingVersionId === ver.id && (
+                  <div className="px-6 pb-4">
+                    <Textarea value={editingVersionDesc} onChange={e => setEditingVersionDesc(e.target.value)}
+                      rows={2} className="w-full rounded mb-2 text-sm"
+                      style={{ backgroundColor: 'rgba(0,0,0,0.5)', borderColor: border, color: text }} autoFocus />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => updateVersionDescription(ver.id, editingVersionDesc)} style={{ backgroundColor: accent, color: '#000' }}>Save</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingVersionId(null)} style={{ color: textMuted }}>Cancel</Button>
+                    </div>
+                  </div>
+                )}
+                {/* Task rows */}
+                {ver.items?.map(item => {
+                  const ic = sc(item.status);
+                  const isEdit = editingTaskId === item.id;
+                  const ItemIcon = STATUS_ICONS[item.status] || Circle;
+                  return (
+                    <div key={item.id} className="group flex items-start gap-4 px-6 py-4 border-t transition-colors hover:bg-white/[0.015]"
+                      style={{ borderColor: border + '40' }}>
+                      {isEdit ? (
+                        <div className="flex-1"><TaskEditForm item={item} statusColors={ic} /></div>
+                      ) : (
+                        <>
+                          {itemVotingEnabled && item.voting_enabled !== false && (
+                            <button onClick={() => toggleItemVote(item.id, item.user_has_voted || false)}
+                              className="flex flex-col items-center flex-shrink-0 mt-1"
+                              style={{ color: item.user_has_voted ? accent : textMuted }}>
+                              <ArrowUp className="w-3 h-3" /><span className="text-[9px] font-bold">{item.vote_count || 0}</span>
+                            </button>
+                          )}
+                          {/* Circle icon */}
+                          <div className="flex-shrink-0 mt-0.5 w-6 h-6 rounded-full flex items-center justify-center"
+                            style={{ border: `1.5px solid ${ic.border}`, backgroundColor: withOpacity(ic.border, 0.1) }}>
+                            <ItemIcon className="w-3 h-3" style={{ color: ic.border }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold uppercase tracking-wide" style={{ color: item.status === 'completed' ? textMuted : text }}>
+                              {item.title}
+                            </p>
+                            {item.description && (
+                              <p className="text-xs mt-1 leading-relaxed" style={{ color: textMuted }}>{item.description}</p>
+                            )}
+                          </div>
+                          {/* Outlined status badge */}
+                          <span className="text-[10px] font-bold px-2.5 py-1 rounded flex-shrink-0 uppercase tracking-widest mt-0.5"
+                            style={{ color: ic.border, border: `1px solid ${ic.border}`, backgroundColor: withOpacity(ic.border, 0.06) }}>
+                            {statusLabels[item.status] || item.status.toUpperCase()}
+                          </span>
+                          {isOwner && (
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5">
+                              <button onClick={() => { setEditingTaskId(item.id); setEditingTaskTitle(item.title); setEditingTaskDesc(item.description || ''); }}
+                                className="p-1 rounded hover:bg-white/10" style={{ color: textMuted }}>
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                              <button onClick={() => deleteItem(item.id)} className="p-1 rounded hover:bg-red-900/30 text-red-600"><X className="w-3 h-3" /></button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+                {/* Add task */}
+                {isOwner && (
+                  addingTo === ver.id ? (
+                    <div className="px-6 pt-3 border-t" style={{ borderColor: border + '40' }}>
+                      <Input placeholder="Task title..." value={newItem} onChange={e => setNewItem(e.target.value)}
+                        className="w-full mb-2 text-sm" style={{ backgroundColor: 'rgba(0,0,0,0.4)', borderColor: border, color: text }} autoFocus />
+                      <Textarea placeholder="Description (optional)..." value={newItemDesc} onChange={e => setNewItemDesc(e.target.value)} rows={2}
+                        className="w-full mb-2 text-sm" style={{ backgroundColor: 'rgba(0,0,0,0.4)', borderColor: border, color: text }} />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => addItem(ver.id)} disabled={!newItem.trim()} style={{ backgroundColor: accent, color: '#000' }}>Add</Button>
+                        <Button size="sm" variant="ghost" onClick={() => { setAddingTo(null); setNewItem(''); setNewItemDesc(''); }} style={{ color: textMuted }}>Cancel</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button onClick={() => setAddingTo(ver.id)}
+                      className="w-full px-6 py-3 text-xs flex items-center gap-2 opacity-20 hover:opacity-50 transition-opacity border-t"
+                      style={{ color: textMuted, borderColor: border + '40' }}>
+                      <Plus className="w-3 h-3" />Add task
+                    </button>
+                  )
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
   // ── Layout dispatcher ────────────────────────────────────────────────────
   const renderLayout = () => {
     switch (layout) {
@@ -2347,6 +2628,8 @@ export const RoadmapPage = ({
       case 'magazine':  return renderMagazine();
       case 'swimlane':  return renderSwimlane();
       case 'codeblock': return renderCodeblock();
+      case 'kinetic':   return renderKinetic();
+      case 'tactical':  return renderTactical();
       default:          return renderGhost();
     }
   };
