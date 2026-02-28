@@ -1832,11 +1832,9 @@ export const PageBuilderSidebar = ({
                 <p className="text-xs text-white/40 font-semibold uppercase tracking-wider mb-3">Roadmap Theme</p>
                 {Object.entries(ROADMAP_THEMES).map(([id, theme]) => {
                   const isActive = roadmapSettings.theme === id;
-                  const bgPreview = theme.backgroundGradient
-                    ? `linear-gradient(135deg, ${theme.backgroundGradient.start}, ${theme.backgroundGradient.end})`
-                    : theme.backgroundColor;
-                  const fontLabel = theme.layout.fontFamily.includes('Mono') || theme.layout.fontFamily.includes('mono') || theme.layout.fontFamily.includes('Courier')
-                    ? 'Mono' : theme.layout.fontFamily.includes('serif') || theme.layout.fontFamily.includes('Playfair') || theme.layout.fontFamily.includes('Georgia')
+                  const bgPreview = theme.bgGradient || theme.bg;
+                  const fontLabel = theme.font.includes('Mono') || theme.font.includes('mono') || theme.font.includes('Courier')
+                    ? 'Mono' : theme.font.includes('serif') || theme.font.includes('Playfair') || theme.font.includes('Georgia')
                     ? 'Serif' : 'Sans';
                   return (
                     <button
@@ -1846,19 +1844,16 @@ export const PageBuilderSidebar = ({
                     >
                       {/* Mini preview strip */}
                       <div className="h-10 w-full relative flex items-center px-3 gap-2" style={{ background: bgPreview }}>
-                        {/* Fake card blobs */}
-                        <div className="h-5 rounded flex-1 opacity-70" style={{ backgroundColor: theme.cardBackground.includes('rgba') ? theme.cardBackground : theme.cardBackground, border: `1px solid ${theme.cardBorder}` }} />
-                        <div className="h-5 rounded flex-1 opacity-70" style={{ backgroundColor: theme.cardBackground.includes('rgba') ? theme.cardBackground : theme.cardBackground, border: `1px solid ${theme.cardBorder}` }} />
-                        {/* Accent dot */}
-                        <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: theme.accentColor, boxShadow: `0 0 6px ${theme.accentColor}` }} />
+                        <div className="h-5 rounded flex-1 opacity-70" style={{ backgroundColor: theme.surface, border: `1px solid ${theme.border}` }} />
+                        <div className="h-5 rounded flex-1 opacity-70" style={{ backgroundColor: theme.surface, border: `1px solid ${theme.border}` }} />
+                        <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: theme.accent, boxShadow: `0 0 6px ${theme.accent}` }} />
                       </div>
                       {/* Info row */}
                       <div className="flex items-center justify-between px-3 py-2 bg-white/[0.03]">
                         <p className="text-sm font-medium text-white">{theme.name}</p>
                         <div className="flex items-center gap-1.5">
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/50">{fontLabel}</span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/50 capitalize">{theme.layout.cardStyle.replace('-', ' ')}</span>
-                          {theme.layout.cardGlow && <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-300">Glow</span>}
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/50 capitalize">{theme.layout}</span>
                           {isActive && <div className="w-2 h-2 rounded-full bg-violet-400" />}
                         </div>
                       </div>
@@ -1887,39 +1882,30 @@ export const PageBuilderSidebar = ({
                   {/* Layout variant picker */}
                   <div>
                     <p className="text-xs text-white/40 font-semibold uppercase tracking-wider mb-2 mt-2">Layout</p>
-                    {(() => {
-                      const LAYOUT_GROUPS: Record<string, string[]> = {
-                        'List': ['stacked', 'timeline', 'minimal_list'],
-                        'Board': ['kanban', 'grid', 'bento'],
-                        'Editorial': ['magazine', 'newspaper', 'brutalist'],
-                        'Immersive': ['spotlight', 'progress', 'glass'],
-                        'Code': ['terminal', 'retro'],
-                        'Nav': ['sidebar'],
-                      };
-                      const LAYOUT_LABELS_LOCAL: Record<string, string> = {
-                        stacked: 'Stacked', timeline: 'Timeline', terminal: 'Terminal', grid: 'Grid',
-                        kanban: 'Kanban', magazine: 'Magazine', bento: 'Bento', brutalist: 'Brutalist',
-                        glass: 'Glass', minimal_list: 'Minimal', sidebar: 'Sidebar', progress: 'Progress',
-                        spotlight: 'Spotlight', retro: 'Retro', newspaper: 'Newspaper',
-                      };
-                      return Object.entries(LAYOUT_GROUPS).map(([group, keys]) => (
-                        <div key={group} className="mb-2">
-                          <p className="text-[10px] text-white/25 uppercase tracking-widest mb-1">{group}</p>
-                          <div className="grid grid-cols-3 gap-1">
-                            {keys.map(key => {
-                              const isActive = (roadmapSettings.layoutVariant || 'stacked') === key;
-                              return (
-                                <button key={key}
-                                  onClick={() => onRoadmapSettingsChange({ ...roadmapSettings, layoutVariant: key })}
-                                  className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${isActive ? 'bg-violet-500/30 text-violet-300 border border-violet-500/50' : 'bg-white/[0.04] text-white/50 border border-white/[0.06] hover:border-white/20 hover:text-white/80'}`}>
-                                  {LAYOUT_LABELS_LOCAL[key]}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ));
-                    })()}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {([
+                        { key: 'ghost',     label: 'Ghost',     desc: 'Pure text list' },
+                        { key: 'kanban',    label: 'Kanban',    desc: 'Status columns' },
+                        { key: 'timeline',  label: 'Timeline',  desc: 'Glowing spine' },
+                        { key: 'terminal',  label: 'Terminal',  desc: 'CLI output' },
+                        { key: 'spotlight', label: 'Spotlight', desc: 'One at a time' },
+                        { key: 'bento',     label: 'Bento',     desc: 'Grid mosaic' },
+                        { key: 'glass',     label: 'Glass',     desc: 'Frosted panels' },
+                        { key: 'brutalist', label: 'Brutalist', desc: 'Raw & bold' },
+                        { key: 'accordion', label: 'Accordion', desc: 'Expand/collapse' },
+                        { key: 'orbit',     label: 'Orbit',     desc: 'Radial layout' },
+                      ] as const).map(({ key, label, desc }) => {
+                        const isActive = (roadmapSettings.layoutVariant || 'ghost') === key;
+                        return (
+                          <button key={key}
+                            onClick={() => onRoadmapSettingsChange({ ...roadmapSettings, layoutVariant: key })}
+                            className={`px-2 py-2 rounded-lg text-left transition-all ${isActive ? 'bg-violet-500/30 border border-violet-500/50' : 'bg-white/[0.04] border border-white/[0.06] hover:border-white/20'}`}>
+                            <p className={`text-xs font-semibold ${isActive ? 'text-violet-300' : 'text-white/70'}`}>{label}</p>
+                            <p className="text-[10px] text-white/30 mt-0.5">{desc}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {/* Font family */}
