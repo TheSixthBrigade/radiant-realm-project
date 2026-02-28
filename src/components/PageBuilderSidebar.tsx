@@ -1884,29 +1884,13 @@ export const PageBuilderSidebar = ({
                     <p className="text-xs text-white/40 font-semibold uppercase tracking-wider mb-2 mt-2">Layout</p>
                     <div className="grid grid-cols-2 gap-1.5">
                       {([
-                        { key: 'ghost',      label: 'Ghost',      desc: 'Pure text list' },
-                        { key: 'changelog',  label: 'Changelog',  desc: 'Date rail + entries' },
-                        { key: 'minimal',    label: 'Minimal',    desc: 'Ultra-sparse numbers' },
-                        { key: 'terminal',   label: 'Terminal',   desc: 'CLI output' },
-                        { key: 'newspaper',  label: 'Newspaper',  desc: 'Editorial columns' },
-                        { key: 'codeblock',  label: 'Code Block', desc: 'Diff / PR style' },
-                        { key: 'kanban',     label: 'Kanban',     desc: 'Status columns' },
-                        { key: 'swimlane',   label: 'Swimlane',   desc: 'Horizontal lanes' },
-                        { key: 'table',      label: 'Table',      desc: 'Spreadsheet rows' },
-                        { key: 'timeline',   label: 'Timeline',   desc: 'Vertical spine' },
-                        { key: 'spotlight',  label: 'Spotlight',  desc: 'One at a time' },
-                        { key: 'magazine',   label: 'Magazine',   desc: 'Hero + grid tiles' },
-                        { key: 'bento',      label: 'Bento',      desc: 'Mosaic grid' },
-                        { key: 'glass',      label: 'Glass',      desc: 'Frosted panels' },
-                        { key: 'brutalist',  label: 'Brutalist',  desc: 'Raw & bold' },
-                        { key: 'accordion',  label: 'Accordion',  desc: 'Expand/collapse' },
-                        { key: 'orbit',      label: 'Orbit',      desc: 'Radial layout' },
-                        { key: 'sidebar',    label: 'Sidebar',    desc: 'Nav + panel' },
-                        { key: 'cards3d',    label: 'Cards 3D',   desc: 'Depth shadows' },
-                        { key: 'kinetic',    label: 'Kinetic',    desc: 'Colored bars + pills' },
-                        { key: 'tactical',   label: 'Tactical',   desc: 'Badge header + icons' },
+                        { key: 'tactical', label: 'Tactical', desc: 'Circle icons + outlined badges' },
+                        { key: 'cyber',    label: 'Cyber',    desc: 'Neon glow + HUD headers' },
+                        { key: 'ghost',    label: 'Ghost',    desc: 'Pure text, no cards' },
+                        { key: 'matrix',   label: 'Matrix',   desc: 'Terminal log output' },
+                        { key: 'slate',    label: 'Slate',    desc: 'Sidebar nav + panel' },
                       ] as const).map(({ key, label, desc }) => {
-                        const isActive = (roadmapSettings.layoutVariant || 'ghost') === key;
+                        const isActive = (roadmapSettings.layoutVariant || 'tactical') === key;
                         return (
                           <button key={key}
                             onClick={() => onRoadmapSettingsChange({ ...roadmapSettings, layoutVariant: key })}
