@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -277,7 +277,7 @@ export const RoadmapPage = ({
     } catch { toast.error('Failed'); }
   };
 
-  // ── Background ────────────────────────────────────────────────────────────
+  // â”€â”€ Background â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   let bgStyle: React.CSSProperties = {};
   const hasOwnBg = settings.backgroundType && settings.backgroundType !== 'default';
   if (hasOwnBg) {
@@ -310,7 +310,7 @@ export const RoadmapPage = ({
     </div>
   );
 
-  // ── Shared inline edit forms ──────────────────────────────────────────────
+  // â”€â”€ Shared inline edit forms â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const TaskEditForm = ({ item }: { item: RoadmapItem }) => {
     const c = sc(item.status);
     return (
@@ -392,10 +392,10 @@ export const RoadmapPage = ({
   };
 
 
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // LAYOUT: TACTICAL
   // Dark card per version. Rounded-xl. Monospace. Numbered tasks.
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   const renderTactical = () => (
     <div className="space-y-3" style={{ fontFamily: theme.font }}>
       {versions.map((ver, vIdx) => {
@@ -524,11 +524,11 @@ export const RoadmapPage = ({
   );
 
 
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // LAYOUT: CYBER
   // Deep navy. Neon glow. Rounded-xl panels with glowing left-border accent.
   // Progress bar in header. Tasks: glowing dot + text.
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   const renderCyber = () => (
     <div className="space-y-4" style={{ fontFamily: theme.font }}>
       {versions.map(ver => {
@@ -656,32 +656,6 @@ export const RoadmapPage = ({
       })}
     </div>
   );
-      {versions.map(ver => {
-        const c = sc(ver.status);
-        const isExp = expanded[ver.id];
-        const done = ver.items?.filter(i => i.status === 'completed').length || 0;
-        const total = ver.items?.length || 0;
-        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-        return (
-          <div key={ver.id} style={{
-            border: `1px solid ${withOpacity(c.border, 0.35)}`,
-            backgroundColor: withOpacity(surface, 0.7),
-            boxShadow: `0 0 20px ${withOpacity(c.border, 0.06)}`,
-          }}>
-            {/* HUD header */}
-            <button className="w-full text-left flex items-center gap-4 px-5 py-4"
-              style={{ borderLeft: `3px solid ${c.border}`, borderBottom: isExp ? `1px solid ${withOpacity(c.border, 0.2)}` : 'none' }}
-              onClick={() => setExpanded(p => ({ ...p, [ver.id]: !p[ver.id] }))}>
-              {/* Glowing dot */}
-              <div className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                style={{ backgroundColor: c.border, boxShadow: `0 0 8px ${c.border}, 0 0 20px ${withOpacity(c.border, 0.5)}` }} />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3">
-  // ══════════════════════════════════════════════════════════════════════════
-  // LAYOUT: GHOST
-  // No cards. Pure typography. Version = large heading + thin rule.
-  // Tasks = indented lines with colored dot. Clean and readable.
-  // ══════════════════════════════════════════════════════════════════════════
   const renderGhost = () => (
     <div className="space-y-10" style={{ fontFamily: theme.font }}>
       {versions.map(ver => {
@@ -783,14 +757,14 @@ export const RoadmapPage = ({
   );
 
 
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // LAYOUT: MATRIX
   // Green on black. Terminal aesthetic. Rounded outer container.
   // Version = $ command line. Tasks = log output lines.
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   const renderMatrix = () => {
     const prefixMap: Record<string, string> = {
-      backlog: '[ ]', in_progress: '[~]', qa: '[?]', completed: '[✓]',
+      backlog: '[ ]', in_progress: '[~]', qa: '[?]', completed: '[âœ“]',
     };
     const prefixColorMap: Record<string, string> = {
       backlog: theme.status.backlog,
@@ -806,7 +780,7 @@ export const RoadmapPage = ({
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#ff5f57' }} />
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#febc2e' }} />
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#28c840' }} />
-          <span className="ml-4 text-xs" style={{ color: withOpacity(accent, 0.45) }}>roadmap — bash — 80×24</span>
+          <span className="ml-4 text-xs" style={{ color: withOpacity(accent, 0.45) }}>roadmap â€” bash â€” 80Ã—24</span>
         </div>
 
         <div className="px-5 py-5 space-y-6" style={{ backgroundColor: withOpacity(surface, 0.9) }}>
@@ -827,7 +801,7 @@ export const RoadmapPage = ({
                   <span className="text-xs" style={{ color: withOpacity(accent, 0.4) }}>
                     ({ver.items?.filter(i => i.status === 'completed').length || 0}/{ver.items?.length || 0})
                   </span>
-                  <span className="ml-auto text-xs" style={{ color: withOpacity(accent, 0.3) }}>{isExp ? '▼' : '▶'}</span>
+                  <span className="ml-auto text-xs" style={{ color: withOpacity(accent, 0.3) }}>{isExp ? 'â–¼' : 'â–¶'}</span>
                 </button>
 
                 {isExp && (
@@ -902,7 +876,7 @@ export const RoadmapPage = ({
           {/* Blinking cursor */}
           <div className="flex items-center gap-2">
             <span className="font-bold" style={{ color: withOpacity(accent, 0.6) }}>$</span>
-            <span className="text-sm animate-pulse" style={{ color: accent }}>█</span>
+            <span className="text-sm animate-pulse" style={{ color: accent }}>â–ˆ</span>
           </div>
         </div>
       </div>
@@ -910,11 +884,11 @@ export const RoadmapPage = ({
   };
 
 
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // LAYOUT: SLATE
   // Dark slate. Clean SaaS. Left sidebar nav, right content panel.
   // Each version gets a unique accent color. Dense rows with pill badges.
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   const renderSlate = () => {
     const activeVer = versions.find(v => v.id === activeVersionId) || versions[0];
     const versionAccents = ['#6470f0','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899'];
@@ -1094,9 +1068,9 @@ export const RoadmapPage = ({
   };
 
 
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // SUGGESTIONS PANEL
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   const renderSuggestions = () => {
     const FORUM_STATUS_COLORS: Record<string, string> = {
       open: '#555', planned: '#5b6af0', in_progress: accent, completed: '#059669', declined: '#dc2626',
@@ -1315,7 +1289,7 @@ export const RoadmapPage = ({
     );
   };
 
-  // ── Layout dispatcher ─────────────────────────────────────────────────────
+  // â”€â”€ Layout dispatcher â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const renderLayout = () => {
     switch (layout) {
       case 'cyber':   return renderCyber();
@@ -1326,7 +1300,7 @@ export const RoadmapPage = ({
     }
   };
 
-  // ── Main render ───────────────────────────────────────────────────────────
+  // â”€â”€ Main render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   return (
     <div className="min-h-screen" style={{ ...bgStyle, fontFamily: theme.font }}>
       <div className={`mx-auto px-4 py-12 ${settings.roadmapWidth || 'max-w-4xl'}`}>
