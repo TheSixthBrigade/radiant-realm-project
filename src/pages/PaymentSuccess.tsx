@@ -83,7 +83,7 @@ const PaymentSuccess = () => {
             <div className="border border-white/[0.07] rounded-2xl p-5 mb-8 bg-[#0a0a0a] text-left">
               <p className="text-white/30 text-xs uppercase tracking-wider mb-3">Purchase details</p>
               <p className="text-white font-semibold text-sm mb-1">{productData.title}</p>
-              <p className="text-violet-400 font-bold">${productData.price}</p>
+              <p className="text-violet-400 font-bold">${Number(productData.price).toFixed(2)}</p>
             </div>
           )}
 

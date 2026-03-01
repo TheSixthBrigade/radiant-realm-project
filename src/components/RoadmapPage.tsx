@@ -394,40 +394,41 @@ export const RoadmapPage = ({
 
   // ══════════════════════════════════════════════════════════════════════════
   // LAYOUT: TACTICAL
-  // Pure black. Monospace. Full-width version header bar with status badge.
-  // Each task: numbered index, circle icon, UPPERCASE title, description, outlined badge.
+  // Dark card per version. Rounded-xl. Monospace. Numbered tasks.
   // ══════════════════════════════════════════════════════════════════════════
   const renderTactical = () => (
-    <div style={{ fontFamily: theme.font }}>
+    <div className="space-y-3" style={{ fontFamily: theme.font }}>
       {versions.map((ver, vIdx) => {
         const c = sc(ver.status);
         const isExp = expanded[ver.id];
         const ItemIcon = STATUS_ICONS[ver.status] || Circle;
         const done = ver.items?.filter(i => i.status === 'completed').length || 0;
         const total = ver.items?.length || 0;
+        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
         return (
-          <div key={ver.id} className="mb-1">
-            {/* Version header — full-width bar */}
+          <div key={ver.id} className="overflow-hidden"
+            style={{ backgroundColor: withOpacity(surface, 0.85), border: `1px solid ${withOpacity(border, 0.8)}`, borderRadius: '12px' }}>
+            {/* Version header */}
             <button
-              className="w-full text-left flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-white/[0.03]"
-              style={{ backgroundColor: withOpacity(surface, 0.8), border: `1px solid ${border}` }}
+              className="w-full text-left flex items-center gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03]"
               onClick={() => setExpanded(p => ({ ...p, [ver.id]: !p[ver.id] }))}>
-              {/* Index */}
-              <span className="text-xs font-bold w-6 text-center flex-shrink-0" style={{ color: textMuted }}>
+              <span className="text-xs font-bold w-6 text-center flex-shrink-0 font-mono" style={{ color: textMuted }}>
                 {String(vIdx + 1).padStart(2, '0')}
               </span>
-              {/* Status icon */}
-              <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+              <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
                 style={{ border: `1.5px solid ${c.border}`, backgroundColor: withOpacity(c.border, 0.12) }}>
-                <ItemIcon className="w-2.5 h-2.5" style={{ color: c.border }} />
+                <ItemIcon className="w-3 h-3" style={{ color: c.border }} />
               </div>
-              {/* Name */}
-              <span className="text-base font-bold tracking-tight flex-1" style={{ color: text }}>{ver.version_name}</span>
-              {/* Stats */}
-              <span className="text-xs" style={{ color: textMuted }}>{done}/{total}</span>
-              {/* Status badge */}
-              <span className="text-[10px] font-bold px-2.5 py-1 tracking-widest uppercase flex-shrink-0"
-                style={{ color: c.border, border: `1px solid ${c.border}`, backgroundColor: withOpacity(c.border, 0.1) }}>
+              <span className="text-sm font-bold tracking-tight flex-1" style={{ color: text }}>{ver.version_name}</span>
+              {/* Progress bar */}
+              <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+                <div className="w-20 h-1 rounded-full overflow-hidden" style={{ backgroundColor: withOpacity(border, 0.5) }}>
+                  <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: c.border }} />
+                </div>
+                <span className="text-[10px] font-mono w-7 text-right" style={{ color: textMuted }}>{pct}%</span>
+              </div>
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full tracking-widest uppercase flex-shrink-0"
+                style={{ color: c.border, border: `1px solid ${withOpacity(c.border, 0.5)}`, backgroundColor: withOpacity(c.border, 0.1) }}>
                 {STATUS_LABEL[ver.status]}
               </span>
               {isExp
@@ -436,12 +437,12 @@ export const RoadmapPage = ({
             </button>
 
             {isExp && (
-              <div style={{ border: `1px solid ${border}`, borderTop: 'none', backgroundColor: withOpacity(surface, 0.3) }}>
+              <div style={{ borderTop: `1px solid ${withOpacity(border, 0.5)}` }}>
                 {ver.description && (
-                  <p className="px-14 py-2 text-xs border-b" style={{ color: textMuted, borderColor: border }}>{ver.description}</p>
+                  <p className="px-5 py-2.5 text-xs" style={{ color: textMuted, borderBottom: `1px solid ${withOpacity(border, 0.3)}` }}>{ver.description}</p>
                 )}
                 {isOwner && (
-                  <div className="px-14 py-1.5 border-b" style={{ borderColor: `${border}60` }}>
+                  <div className="px-5 py-1.5" style={{ borderBottom: `1px solid ${withOpacity(border, 0.2)}` }}>
                     <button onClick={() => { setEditingVersionId(ver.id); setEditingVersionDesc(ver.description || ''); }}
                       className="text-xs flex items-center gap-1 transition-opacity hover:opacity-80" style={{ color: textMuted }}>
                       <Edit2 className="w-3 h-3" />{ver.description ? 'Edit description' : 'Add description'}
@@ -449,10 +450,10 @@ export const RoadmapPage = ({
                   </div>
                 )}
                 {editingVersionId === ver.id && (
-                  <div className="px-14 py-3 border-b" style={{ borderColor: border }}>
+                  <div className="px-5 py-3" style={{ borderBottom: `1px solid ${border}` }}>
                     <Textarea value={editingVersionDesc} onChange={e => setEditingVersionDesc(e.target.value)}
                       rows={2} className="w-full text-xs mb-2"
-                      style={{ backgroundColor: 'rgba(0,0,0,0.5)', borderColor: border, color: text, fontFamily: theme.font }} autoFocus />
+                      style={{ backgroundColor: 'rgba(0,0,0,0.4)', borderColor: border, color: text, fontFamily: theme.font }} autoFocus />
                     <div className="flex gap-2">
                       <Button size="sm" onClick={() => updateVersionDescription(ver.id, editingVersionDesc)} style={{ backgroundColor: accent, color: '#000' }}>Save</Button>
                       <Button size="sm" variant="ghost" onClick={() => setEditingVersionId(null)} style={{ color: textMuted }}>Cancel</Button>
@@ -464,58 +465,53 @@ export const RoadmapPage = ({
                   const ic = sc(item.status);
                   const IIcon = STATUS_ICONS[item.status] || Circle;
                   if (editingTaskId === item.id) return (
-                    <div key={item.id} className="px-4 py-3" style={{ borderBottom: `1px solid ${border}40` }}>
+                    <div key={item.id} className="px-5 py-3" style={{ borderBottom: `1px solid ${withOpacity(border, 0.3)}` }}>
                       <TaskEditForm item={item} />
                     </div>
                   );
                   return (
-                    <div key={item.id} className="group flex items-start gap-4 px-4 py-3.5 transition-colors hover:bg-white/[0.02]"
-                      style={{ borderBottom: `1px solid ${border}40` }}>
-                      {/* Row number */}
-                      <span className="text-[10px] w-6 text-center flex-shrink-0 mt-0.5 font-mono" style={{ color: textMuted }}>
+                    <div key={item.id} className="group flex items-center gap-4 px-5 py-3 transition-colors hover:bg-white/[0.025]"
+                      style={{ borderBottom: `1px solid ${withOpacity(border, 0.25)}` }}>
+                      <span className="text-[10px] w-5 text-center flex-shrink-0 font-mono" style={{ color: textMuted }}>
                         {String(iIdx + 1).padStart(2, '0')}
                       </span>
-                      {/* Vote */}
                       {itemVotingEnabled && item.voting_enabled !== false && (
                         <button onClick={() => toggleItemVote(item.id, item.user_has_voted || false)}
-                          className="flex flex-col items-center flex-shrink-0 mt-0.5 w-6"
+                          className="flex flex-col items-center flex-shrink-0"
                           style={{ color: item.user_has_voted ? accent : textMuted }}>
                           <ArrowUp className="w-3 h-3" />
                           <span className="text-[9px] font-bold">{item.vote_count || 0}</span>
                         </button>
                       )}
-                      {/* Status circle */}
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
                         style={{ border: `1.5px solid ${ic.border}`, backgroundColor: withOpacity(ic.border, 0.1) }}>
                         <IIcon className="w-2.5 h-2.5" style={{ color: ic.border }} />
                       </div>
-                      {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold uppercase tracking-wide leading-snug"
+                        <p className="text-sm font-semibold tracking-wide leading-snug"
                           style={{ color: item.status === 'completed' ? textMuted : text,
                             textDecoration: item.status === 'completed' ? 'line-through' : 'none' }}>
                           {item.title}
                         </p>
                         {item.description && (
-                          <p className="text-xs mt-1 leading-relaxed" style={{ color: textMuted }}>{item.description}</p>
+                          <p className="text-xs mt-0.5 leading-relaxed" style={{ color: textMuted }}>{item.description}</p>
                         )}
                       </div>
-                      {/* Status badge */}
-                      <span className="text-[10px] font-bold px-2.5 py-1 flex-shrink-0 uppercase tracking-widest"
-                        style={{ color: ic.border, border: `1px solid ${ic.border}`, backgroundColor: withOpacity(ic.border, 0.08) }}>
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full flex-shrink-0 uppercase tracking-widest"
+                        style={{ color: ic.border, border: `1px solid ${withOpacity(ic.border, 0.45)}`, backgroundColor: withOpacity(ic.border, 0.08) }}>
                         {STATUS_LABEL[item.status]}
                       </span>
                       {isOwner && (
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                           <button onClick={() => { setEditingTaskId(item.id); setEditingTaskTitle(item.title); setEditingTaskDesc(item.description || ''); }}
-                            className="p-1 hover:bg-white/10 rounded" style={{ color: textMuted }}><Edit2 className="w-3 h-3" /></button>
-                          <button onClick={() => deleteItem(item.id)} className="p-1 hover:bg-red-900/30 rounded text-red-600"><X className="w-3 h-3" /></button>
+                            className="p-1 hover:bg-white/10 rounded-lg" style={{ color: textMuted }}><Edit2 className="w-3 h-3" /></button>
+                          <button onClick={() => deleteItem(item.id)} className="p-1 hover:bg-red-900/30 rounded-lg text-red-500"><X className="w-3 h-3" /></button>
                         </div>
                       )}
                     </div>
                   );
                 })}
-                <div className="px-4 py-2">
+                <div className="px-5 py-3">
                   <AddTaskInline ver={ver} />
                 </div>
                 <OwnerVersionControls ver={ver} />
@@ -530,16 +526,136 @@ export const RoadmapPage = ({
 
   // ══════════════════════════════════════════════════════════════════════════
   // LAYOUT: CYBER
-  // Deep navy. Neon cyan. HUD-style version header with glowing left border.
-  // Tasks in a panel with scan-line dividers. Status shown as glowing dot + text.
-  // ══════════════════════════════════════════════════════════════════════════
-  // ══════════════════════════════════════════════════════════════════════════
-  // LAYOUT: CYBER
-  // Deep navy. Neon glow. Each version = a bordered HUD panel with glowing
-  // left-border accent. Progress bar in header. Tasks: glowing dot + text.
+  // Deep navy. Neon glow. Rounded-xl panels with glowing left-border accent.
+  // Progress bar in header. Tasks: glowing dot + text.
   // ══════════════════════════════════════════════════════════════════════════
   const renderCyber = () => (
-    <div className="space-y-3" style={{ fontFamily: theme.font }}>
+    <div className="space-y-4" style={{ fontFamily: theme.font }}>
+      {versions.map(ver => {
+        const c = sc(ver.status);
+        const isExp = expanded[ver.id];
+        const done = ver.items?.filter(i => i.status === 'completed').length || 0;
+        const total = ver.items?.length || 0;
+        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+        return (
+          <div key={ver.id} style={{
+            border: `1px solid ${withOpacity(c.border, 0.3)}`,
+            backgroundColor: withOpacity(surface, 0.65),
+            borderRadius: '14px',
+            boxShadow: `0 0 24px ${withOpacity(c.border, 0.07)}, inset 0 1px 0 ${withOpacity(c.border, 0.08)}`,
+            overflow: 'hidden',
+          }}>
+            {/* HUD header */}
+            <button className="w-full text-left flex items-center gap-4 px-5 py-4"
+              style={{ borderLeft: `3px solid ${c.border}`, borderBottom: isExp ? `1px solid ${withOpacity(c.border, 0.18)}` : 'none' }}
+              onClick={() => setExpanded(p => ({ ...p, [ver.id]: !p[ver.id] }))}>
+              {/* Glowing dot */}
+              <div className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                style={{ backgroundColor: c.border, boxShadow: `0 0 8px ${c.border}, 0 0 20px ${withOpacity(c.border, 0.5)}` }} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-sm font-bold tracking-widest uppercase" style={{ color: text }}>{ver.version_name}</span>
+                  <span className="text-[10px] font-bold tracking-widest uppercase px-2.5 py-0.5 rounded-full"
+                    style={{ color: c.border, border: `1px solid ${withOpacity(c.border, 0.5)}`, backgroundColor: withOpacity(c.border, 0.1) }}>
+                    {STATUS_LABEL[ver.status]}
+                  </span>
+                </div>
+                {ver.description && (
+                  <p className="text-xs mt-0.5" style={{ color: textMuted }}>{ver.description}</p>
+                )}
+              </div>
+              {/* Progress */}
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-24 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: withOpacity(c.border, 0.15) }}>
+                    <div className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${pct}%`, backgroundColor: c.border, boxShadow: `0 0 8px ${c.border}` }} />
+                  </div>
+                  <span className="text-[11px] font-bold font-mono w-8 text-right" style={{ color: c.border }}>{pct}%</span>
+                </div>
+                {isExp
+                  ? <ChevronUp className="w-3.5 h-3.5" style={{ color: textMuted }} />
+                  : <ChevronDown className="w-3.5 h-3.5" style={{ color: textMuted }} />}
+              </div>
+            </button>
+
+            {isExp && (
+              <div className="px-5 pb-4">
+                {isOwner && (
+                  <div className="py-2" style={{ borderBottom: `1px solid ${withOpacity(border, 0.3)}` }}>
+                    <button onClick={() => { setEditingVersionId(ver.id); setEditingVersionDesc(ver.description || ''); }}
+                      className="text-xs flex items-center gap-1 transition-opacity hover:opacity-80" style={{ color: textMuted }}>
+                      <Edit2 className="w-3 h-3" />{ver.description ? 'Edit description' : 'Add description'}
+                    </button>
+                  </div>
+                )}
+                {editingVersionId === ver.id && (
+                  <div className="py-3" style={{ borderBottom: `1px solid ${border}` }}>
+                    <Textarea value={editingVersionDesc} onChange={e => setEditingVersionDesc(e.target.value)}
+                      rows={2} className="w-full text-xs mb-2"
+                      style={{ backgroundColor: 'rgba(0,0,0,0.5)', borderColor: border, color: text, fontFamily: theme.font }} autoFocus />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => updateVersionDescription(ver.id, editingVersionDesc)} style={{ backgroundColor: accent, color: '#000' }}>Save</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingVersionId(null)} style={{ color: textMuted }}>Cancel</Button>
+                    </div>
+                  </div>
+                )}
+
+                {ver.items?.map((item, idx) => {
+                  const ic = sc(item.status);
+                  if (editingTaskId === item.id) return (
+                    <div key={item.id} className="py-3" style={{ borderBottom: `1px solid ${withOpacity(border, 0.25)}` }}>
+                      <TaskEditForm item={item} />
+                    </div>
+                  );
+                  return (
+                    <div key={item.id} className="group flex items-center gap-4 py-3 transition-colors hover:bg-white/[0.025] rounded-lg"
+                      style={{ borderBottom: `1px solid ${withOpacity(border, 0.2)}`, marginTop: idx === 0 ? '8px' : '0' }}>
+                      {itemVotingEnabled && item.voting_enabled !== false && (
+                        <button onClick={() => toggleItemVote(item.id, item.user_has_voted || false)}
+                          className="flex flex-col items-center flex-shrink-0"
+                          style={{ color: item.user_has_voted ? accent : textMuted }}>
+                          <ArrowUp className="w-3 h-3" />
+                          <span className="text-[9px] font-bold">{item.vote_count || 0}</span>
+                        </button>
+                      )}
+                      {/* Glowing status dot */}
+                      <div className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: ic.border, boxShadow: `0 0 6px ${ic.border}, 0 0 14px ${withOpacity(ic.border, 0.4)}` }} />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium" style={{ color: item.status === 'completed' ? textMuted : text,
+                          textDecoration: item.status === 'completed' ? 'line-through' : 'none' }}>
+                          {item.title}
+                        </span>
+                        {item.description && (
+                          <p className="text-xs mt-0.5" style={{ color: textMuted }}>{item.description}</p>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-bold font-mono tracking-widest flex-shrink-0 px-2.5 py-0.5 rounded-full"
+                        style={{ color: ic.border, backgroundColor: withOpacity(ic.border, 0.1), border: `1px solid ${withOpacity(ic.border, 0.3)}` }}>
+                        {STATUS_LABEL[item.status]}
+                      </span>
+                      {isOwner && (
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                          <button onClick={() => { setEditingTaskId(item.id); setEditingTaskTitle(item.title); setEditingTaskDesc(item.description || ''); }}
+                            className="p-1 hover:bg-white/10 rounded-lg" style={{ color: textMuted }}><Edit2 className="w-3 h-3" /></button>
+                          <button onClick={() => deleteItem(item.id)} className="p-1 hover:bg-red-900/30 rounded-lg text-red-500"><X className="w-3 h-3" /></button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                <div className="pt-2">
+                  <AddTaskInline ver={ver} />
+                </div>
+                <OwnerVersionControls ver={ver} />
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
       {versions.map(ver => {
         const c = sc(ver.status);
         const isExp = expanded[ver.id];
@@ -561,115 +677,13 @@ export const RoadmapPage = ({
                 style={{ backgroundColor: c.border, boxShadow: `0 0 8px ${c.border}, 0 0 20px ${withOpacity(c.border, 0.5)}` }} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold tracking-widest uppercase" style={{ color: text }}>{ver.version_name}</span>
-                  <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5"
-                    style={{ color: c.border, border: `1px solid ${withOpacity(c.border, 0.5)}`, backgroundColor: withOpacity(c.border, 0.1) }}>
-                    {STATUS_LABEL[ver.status]}
-                  </span>
-                </div>
-                {ver.description && (
-                  <p className="text-xs mt-0.5" style={{ color: textMuted }}>{ver.description}</p>
-                )}
-              </div>
-              {/* Progress */}
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <div className="flex items-center gap-2">
-                  <div className="w-28 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: withOpacity(c.border, 0.15) }}>
-                    <div className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${pct}%`, backgroundColor: c.border, boxShadow: `0 0 8px ${c.border}` }} />
-                  </div>
-                  <span className="text-[11px] font-bold font-mono w-8 text-right" style={{ color: c.border }}>{pct}%</span>
-                </div>
-                {isExp
-                  ? <ChevronUp className="w-3.5 h-3.5" style={{ color: textMuted }} />
-                  : <ChevronDown className="w-3.5 h-3.5" style={{ color: textMuted }} />}
-              </div>
-            </button>
-
-            {isExp && (
-              <div className="px-5 pb-4">
-                {isOwner && (
-                  <div className="py-2 border-b" style={{ borderColor: `${border}40` }}>
-                    <button onClick={() => { setEditingVersionId(ver.id); setEditingVersionDesc(ver.description || ''); }}
-                      className="text-xs flex items-center gap-1 transition-opacity hover:opacity-80" style={{ color: textMuted }}>
-                      <Edit2 className="w-3 h-3" />{ver.description ? 'Edit description' : 'Add description'}
-                    </button>
-                  </div>
-                )}
-                {editingVersionId === ver.id && (
-                  <div className="py-3 border-b" style={{ borderColor: border }}>
-                    <Textarea value={editingVersionDesc} onChange={e => setEditingVersionDesc(e.target.value)}
-                      rows={2} className="w-full text-xs mb-2"
-                      style={{ backgroundColor: 'rgba(0,0,0,0.5)', borderColor: border, color: text, fontFamily: theme.font }} autoFocus />
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => updateVersionDescription(ver.id, editingVersionDesc)} style={{ backgroundColor: accent, color: '#000' }}>Save</Button>
-                      <Button size="sm" variant="ghost" onClick={() => setEditingVersionId(null)} style={{ color: textMuted }}>Cancel</Button>
-                    </div>
-                  </div>
-                )}
-
-                {ver.items?.map((item, idx) => {
-                  const ic = sc(item.status);
-                  if (editingTaskId === item.id) return (
-                    <div key={item.id} className="py-3" style={{ borderBottom: `1px solid ${border}30` }}>
-                      <TaskEditForm item={item} />
-                    </div>
-                  );
-                  return (
-                    <div key={item.id} className="group flex items-center gap-4 py-3.5 transition-colors hover:bg-white/[0.02]"
-                      style={{ borderBottom: `1px solid ${border}25`, marginTop: idx === 0 ? '8px' : '0' }}>
-                      {itemVotingEnabled && item.voting_enabled !== false && (
-                        <button onClick={() => toggleItemVote(item.id, item.user_has_voted || false)}
-                          className="flex flex-col items-center flex-shrink-0"
-                          style={{ color: item.user_has_voted ? accent : textMuted }}>
-                          <ArrowUp className="w-3 h-3" />
-                          <span className="text-[9px] font-bold">{item.vote_count || 0}</span>
-                        </button>
-                      )}
-                      {/* Glowing status dot */}
-                      <div className="w-2 h-2 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: ic.border, boxShadow: `0 0 6px ${ic.border}, 0 0 12px ${withOpacity(ic.border, 0.4)}` }} />
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium" style={{ color: item.status === 'completed' ? textMuted : text }}>
-                          {item.title}
-                        </span>
-                        {item.description && (
-                          <p className="text-xs mt-0.5" style={{ color: textMuted }}>{item.description}</p>
-                        )}
-                      </div>
-                      <span className="text-[10px] font-bold font-mono tracking-widest flex-shrink-0"
-                        style={{ color: ic.border }}>{STATUS_LABEL[item.status]}</span>
-                      {isOwner && (
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                          <button onClick={() => { setEditingTaskId(item.id); setEditingTaskTitle(item.title); setEditingTaskDesc(item.description || ''); }}
-                            className="p-1 hover:bg-white/10 rounded" style={{ color: textMuted }}><Edit2 className="w-3 h-3" /></button>
-                          <button onClick={() => deleteItem(item.id)} className="p-1 hover:bg-red-900/30 rounded text-red-600"><X className="w-3 h-3" /></button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                <div className="pt-2">
-                  <AddTaskInline ver={ver} />
-                </div>
-                <OwnerVersionControls ver={ver} />
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-
-
   // ══════════════════════════════════════════════════════════════════════════
   // LAYOUT: GHOST
-  // No cards. No borders. Pure typography. Version = large heading with
-  // a thin rule. Tasks = indented lines with a colored dot and strikethrough
-  // on completed. Maximally readable, zero decoration.
+  // No cards. Pure typography. Version = large heading + thin rule.
+  // Tasks = indented lines with colored dot. Clean and readable.
   // ══════════════════════════════════════════════════════════════════════════
   const renderGhost = () => (
-    <div className="space-y-12" style={{ fontFamily: theme.font }}>
+    <div className="space-y-10" style={{ fontFamily: theme.font }}>
       {versions.map(ver => {
         const c = sc(ver.status);
         const isExp = expanded[ver.id];
@@ -677,12 +691,15 @@ export const RoadmapPage = ({
         const total = ver.items?.length || 0;
         return (
           <div key={ver.id}>
-            <button className="w-full text-left group"
+            <button className="w-full text-left"
               onClick={() => setExpanded(p => ({ ...p, [ver.id]: !p[ver.id] }))}>
-              <div className="flex items-baseline gap-4 pb-3" style={{ borderBottom: `1px solid ${border}` }}>
-                <span className="text-2xl font-bold" style={{ color: text }}>{ver.version_name}</span>
-                <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: c.border }}>{STATUS_LABEL[ver.status]}</span>
-                <span className="ml-auto text-xs" style={{ color: textMuted }}>{done}/{total} done</span>
+              <div className="flex items-center gap-4 pb-3" style={{ borderBottom: `1px solid ${withOpacity(border, 0.7)}` }}>
+                <span className="text-xl font-bold" style={{ color: text }}>{ver.version_name}</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full"
+                  style={{ color: c.border, backgroundColor: withOpacity(c.border, 0.1), border: `1px solid ${withOpacity(c.border, 0.35)}` }}>
+                  {STATUS_LABEL[ver.status]}
+                </span>
+                <span className="ml-auto text-xs" style={{ color: textMuted }}>{done}/{total}</span>
                 {isExp
                   ? <ChevronUp className="w-3.5 h-3.5" style={{ color: textMuted }} />
                   : <ChevronDown className="w-3.5 h-3.5" style={{ color: textMuted }} />}
@@ -719,7 +736,7 @@ export const RoadmapPage = ({
                   );
                   return (
                     <div key={item.id} className="group flex items-start gap-3 py-2.5"
-                      style={{ borderBottom: `1px solid ${border}30` }}>
+                      style={{ borderBottom: `1px solid ${withOpacity(border, 0.2)}` }}>
                       {itemVotingEnabled && item.voting_enabled !== false && (
                         <button onClick={() => toggleItemVote(item.id, item.user_has_voted || false)}
                           className="flex flex-col items-center flex-shrink-0 mt-1"
@@ -728,7 +745,6 @@ export const RoadmapPage = ({
                           <span className="text-[9px] font-bold">{item.vote_count || 0}</span>
                         </button>
                       )}
-                      {/* Status dot */}
                       <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: ic.border }} />
                       <div className="flex-1 min-w-0">
                         <span className="text-sm leading-snug"
@@ -740,12 +756,15 @@ export const RoadmapPage = ({
                           <p className="text-xs mt-0.5 leading-relaxed" style={{ color: textMuted }}>{item.description}</p>
                         )}
                       </div>
-                      <span className="text-xs flex-shrink-0 font-medium" style={{ color: ic.border }}>{STATUS_LABEL[item.status]}</span>
+                      <span className="text-[10px] flex-shrink-0 font-semibold px-2 py-0.5 rounded-full"
+                        style={{ color: ic.border, backgroundColor: withOpacity(ic.border, 0.1) }}>
+                        {STATUS_LABEL[item.status]}
+                      </span>
                       {isOwner && (
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                           <button onClick={() => { setEditingTaskId(item.id); setEditingTaskTitle(item.title); setEditingTaskDesc(item.description || ''); }}
-                            className="p-1 hover:bg-white/10 rounded" style={{ color: textMuted }}><Edit2 className="w-3 h-3" /></button>
-                          <button onClick={() => deleteItem(item.id)} className="p-1 hover:bg-red-900/30 rounded text-red-600"><X className="w-3 h-3" /></button>
+                            className="p-1 hover:bg-white/10 rounded-lg" style={{ color: textMuted }}><Edit2 className="w-3 h-3" /></button>
+                          <button onClick={() => deleteItem(item.id)} className="p-1 hover:bg-red-900/30 rounded-lg text-red-500"><X className="w-3 h-3" /></button>
                         </div>
                       )}
                     </div>
@@ -766,8 +785,8 @@ export const RoadmapPage = ({
 
   // ══════════════════════════════════════════════════════════════════════════
   // LAYOUT: MATRIX
-  // Green on black. Real terminal aesthetic. Version = $ command line.
-  // Tasks = log output lines with status prefix codes. Blinking cursor.
+  // Green on black. Terminal aesthetic. Rounded outer container.
+  // Version = $ command line. Tasks = log output lines.
   // ══════════════════════════════════════════════════════════════════════════
   const renderMatrix = () => {
     const prefixMap: Record<string, string> = {
@@ -780,17 +799,17 @@ export const RoadmapPage = ({
       completed: theme.status.completed,
     };
     return (
-      <div style={{ fontFamily: theme.font }}>
+      <div style={{ fontFamily: theme.font, borderRadius: '14px', overflow: 'hidden', border: `1px solid ${withOpacity(border, 0.8)}` }}>
         {/* Terminal window chrome */}
         <div className="flex items-center gap-2 px-4 py-2.5"
-          style={{ backgroundColor: '#0a0a0a', borderBottom: `1px solid ${border}`, border: `1px solid ${border}` }}>
+          style={{ backgroundColor: '#0a0f0a', borderBottom: `1px solid ${withOpacity(border, 0.6)}` }}>
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#ff5f57' }} />
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#febc2e' }} />
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#28c840' }} />
-          <span className="ml-4 text-xs" style={{ color: withOpacity(accent, 0.5) }}>roadmap — bash — 80×24</span>
+          <span className="ml-4 text-xs" style={{ color: withOpacity(accent, 0.45) }}>roadmap — bash — 80×24</span>
         </div>
 
-        <div className="px-5 py-5 space-y-6" style={{ border: `1px solid ${border}`, borderTop: 'none' }}>
+        <div className="px-5 py-5 space-y-6" style={{ backgroundColor: withOpacity(surface, 0.9) }}>
           {versions.map((ver) => {
             const c = sc(ver.status);
             const isExp = expanded[ver.id];
@@ -802,9 +821,11 @@ export const RoadmapPage = ({
                   <span className="font-bold" style={{ color: withOpacity(accent, 0.6) }}>$</span>
                   <span className="text-sm" style={{ color: withOpacity(accent, 0.5) }}>load</span>
                   <span className="text-sm font-bold" style={{ color: accent }}>{ver.version_name}</span>
-                  <span className="text-xs" style={{ color: c.border }}>--status={ver.status}</span>
+                  <span className="text-xs px-1.5 py-0.5 rounded" style={{ color: c.border, backgroundColor: withOpacity(c.border, 0.12) }}>
+                    --status={ver.status}
+                  </span>
                   <span className="text-xs" style={{ color: withOpacity(accent, 0.4) }}>
-                    ({ver.items?.filter(i => i.status === 'completed').length || 0}/{ver.items?.length || 0} done)
+                    ({ver.items?.filter(i => i.status === 'completed').length || 0}/{ver.items?.length || 0})
                   </span>
                   <span className="ml-auto text-xs" style={{ color: withOpacity(accent, 0.3) }}>{isExp ? '▼' : '▶'}</span>
                 </button>
@@ -840,7 +861,7 @@ export const RoadmapPage = ({
                         <div key={item.id} className="py-2"><TaskEditForm item={item} /></div>
                       );
                       return (
-                        <div key={item.id} className="group flex items-start gap-3 py-1.5 hover:bg-white/[0.02] transition-colors">
+                        <div key={item.id} className="group flex items-start gap-3 py-1.5 hover:bg-white/[0.02] transition-colors rounded">
                           {itemVotingEnabled && item.voting_enabled !== false && (
                             <button onClick={() => toggleItemVote(item.id, item.user_has_voted || false)}
                               className="flex-shrink-0 text-[10px] font-bold mt-0.5"
@@ -851,7 +872,8 @@ export const RoadmapPage = ({
                           <span className="text-xs font-bold font-mono flex-shrink-0 w-8 mt-0.5" style={{ color: prefixColor }}>{prefix}</span>
                           <div className="flex-1 min-w-0">
                             <span className="text-sm"
-                              style={{ color: item.status === 'completed' ? withOpacity(accent, 0.45) : accent }}>
+                              style={{ color: item.status === 'completed' ? withOpacity(accent, 0.4) : accent,
+                                textDecoration: item.status === 'completed' ? 'line-through' : 'none' }}>
                               {item.title}
                             </span>
                             {item.description && (
@@ -861,8 +883,8 @@ export const RoadmapPage = ({
                           {isOwner && (
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                               <button onClick={() => { setEditingTaskId(item.id); setEditingTaskTitle(item.title); setEditingTaskDesc(item.description || ''); }}
-                                className="p-1 hover:bg-white/10 rounded" style={{ color: textMuted }}><Edit2 className="w-3 h-3" /></button>
-                              <button onClick={() => deleteItem(item.id)} className="p-1 hover:bg-red-900/30 rounded text-red-600"><X className="w-3 h-3" /></button>
+                                className="p-1 hover:bg-white/10 rounded-lg" style={{ color: textMuted }}><Edit2 className="w-3 h-3" /></button>
+                              <button onClick={() => deleteItem(item.id)} className="p-1 hover:bg-red-900/30 rounded-lg text-red-500"><X className="w-3 h-3" /></button>
                             </div>
                           )}
                         </div>
